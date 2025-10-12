@@ -1,55 +1,639 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt-BR">
   <head>
-    <meta charset="UTF-8">
-    <title>Portifólio em manutenção</title>
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PicPay Mockup</title>
     <style>
-      body {
-        font-family: Arial, sans-serif;
-        background-color: #f8f9fa;
+      :root {
+        --background: #f5f6f8;
+        --primary: #0f9d58;
+        --primary-dark: #0b8043;
+        --card-bg: #ffffff;
+        --muted: #8d98a5;
+        --border: #e1e4e8;
+        --shadow: 0 16px 32px rgba(15, 104, 61, 0.1);
+        --radius-lg: 28px;
+        --radius-md: 20px;
+        --radius-sm: 12px;
       }
-      
-      .container {
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: "Poppins", "Helvetica Neue", Arial, sans-serif;
+        background: linear-gradient(180deg, #ebf3ed 0%, #f8f9fb 100%);
+        color: #101820;
         display: flex;
         justify-content: center;
         align-items: center;
-        height: 100vh;
+        min-height: 100vh;
+        padding: clamp(32px, 8vw, 72px) clamp(12px, 6vw, 48px);
       }
-      
-      #image {
-        display: block;
-        margin: 0 auto;
-        max-width: 100%;
-        height: auto;
+
+      h1,
+      h2,
+      h3,
+      h4,
+      h5,
+      p {
+        margin: 0;
       }
-      
-      #subtitle {
-        font-size: 1.5rem;
-        color: #6c757d;
+
+      .gallery {
+        display: grid;
+        gap: clamp(32px, 6vw, 56px);
+        width: min(1100px, 100%);
+      }
+
+      .gallery > header {
         text-align: center;
-        margin-top: 2rem;
+      }
+
+      .gallery h1 {
+        font-weight: 600;
+        font-size: clamp(2rem, 2.8vw, 2.8rem);
+      }
+
+      .gallery p {
+        margin-top: 8px;
+        color: var(--muted);
+        font-size: 0.95rem;
+      }
+
+      .mockups {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: clamp(24px, 5vw, 48px);
+        place-items: center;
+      }
+
+      .phone {
+        width: min(100%, 340px);
+        background: var(--card-bg);
+        border-radius: 36px;
+        padding: clamp(22px, 4vw, 30px) clamp(18px, 3vw, 24px) clamp(28px, 4vw, 36px);
+        box-shadow: 0 18px 30px rgba(18, 70, 32, 0.12);
+        position: relative;
+      }
+
+      .phone::before {
+        content: "";
+        position: absolute;
+        inset: 14px;
+        border-radius: 28px;
+        border: 2px solid rgba(255, 255, 255, 0.6);
+        pointer-events: none;
+      }
+
+      .screen {
+        background: var(--background);
+        border-radius: 28px;
+        padding: clamp(18px, 3vw, 24px) clamp(14px, 3vw, 20px) 90px;
+        position: relative;
+        min-height: 640px;
+        display: flex;
+        flex-direction: column;
+        gap: clamp(16px, 3vw, 22px);
+      }
+
+      .top-bar,
+      .secondary-bar {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .profile-chip {
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        background: #101820;
+        color: #ffffff;
+        display: grid;
+        place-items: center;
+        font-size: 0.9rem;
+        font-weight: 600;
+      }
+
+      .search {
+        flex: 1;
+        position: relative;
+      }
+
+      .search input {
+        width: 100%;
+        padding: 10px 14px 10px 36px;
+        border: none;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.9);
+        font-size: 0.9rem;
+        color: #101820;
+      }
+
+      .search input::placeholder {
+        color: var(--muted);
+      }
+
+      .search span {
+        position: absolute;
+        left: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 0.95rem;
+        color: var(--muted);
+      }
+
+      .icon-button {
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        border: none;
+        background: rgba(255, 255, 255, 0.9);
+        display: grid;
+        place-items: center;
+        font-size: 1.05rem;
+        color: var(--muted);
+      }
+
+      .chip-row {
+        display: flex;
+        gap: 10px;
+        overflow-x: auto;
+        padding-bottom: 6px;
+      }
+
+      .chip {
+        padding: 6px 14px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.75);
+        font-size: 0.78rem;
+        font-weight: 500;
+        color: #183228;
+        flex: 0 0 auto;
+        border: 1px solid rgba(15, 125, 76, 0.1);
+      }
+
+      .card-feature {
+        background: linear-gradient(135deg, var(--primary) 0%, #14c285 100%);
+        border-radius: var(--radius-lg);
+        padding: 20px;
+        color: #ffffff;
+        display: grid;
+        gap: 16px;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .card-feature small {
+        opacity: 0.8;
+        font-size: 0.75rem;
+      }
+
+      .card-feature strong {
+        font-size: 1.45rem;
+        letter-spacing: -0.5px;
+      }
+
+      .card-feature button {
+        justify-self: start;
+        padding: 10px 20px;
+        border-radius: 999px;
+        border: none;
+        font-weight: 600;
+        background: #ffffff;
+        color: var(--primary-dark);
+      }
+
+      .card-feature::after {
+        content: "";
+        width: 120px;
+        height: 120px;
+        background: rgba(255, 255, 255, 0.15);
+        border-radius: 32px;
+        position: absolute;
+        bottom: -20px;
+        right: -20px;
+        transform: rotate(25deg);
+      }
+
+      .section-title {
+        font-size: 1rem;
+        font-weight: 600;
+      }
+
+      .suggestions {
+        display: flex;
+        gap: 16px;
+        overflow-x: auto;
+        padding-bottom: 8px;
+      }
+
+      .suggestion-card {
+        display: grid;
+        justify-items: center;
+        gap: 8px;
+        flex: 0 0 72px;
+      }
+
+      .suggestion-icon {
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        font-size: 1.5rem;
+        background: rgba(255, 255, 255, 0.9);
+        box-shadow: var(--shadow);
+      }
+
+      .suggestion-card span {
+        font-size: 0.7rem;
+        text-align: center;
+        color: #22343b;
+      }
+
+      .horizontal-cards {
+        display: grid;
+        gap: 14px;
+      }
+
+      .credit-card {
+        background: linear-gradient(160deg, #0d8a4a, #0fa968);
+        padding: 18px;
+        border-radius: var(--radius-lg);
+        color: #ffffff;
+        display: grid;
+        gap: 10px;
+        box-shadow: var(--shadow);
+      }
+
+      .credit-card footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 0.85rem;
+      }
+
+      .actions-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 12px;
+      }
+
+      .action-tile {
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: var(--radius-md);
+        padding: 14px 10px;
+        display: grid;
+        gap: 10px;
+        justify-items: center;
+        text-align: center;
+        font-size: 0.75rem;
+        color: #1f2f36;
+        box-shadow: 0 4px 14px rgba(15, 125, 76, 0.05);
+      }
+
+      .action-icon {
+        width: 38px;
+        height: 38px;
+        border-radius: 12px;
+        background: rgba(15, 157, 88, 0.15);
+        display: grid;
+        place-items: center;
+        color: var(--primary-dark);
+      }
+
+      .bottom-bar {
+        position: absolute;
+        left: 0;
+        bottom: 0;
+        width: 100%;
+        padding: clamp(14px, 3vw, 18px) clamp(22px, 4vw, 32px) clamp(22px, 4vw, 28px);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-top: 1px solid rgba(15, 125, 76, 0.08);
+        background: rgba(255, 255, 255, 0.9);
+        border-bottom-left-radius: 28px;
+        border-bottom-right-radius: 28px;
+      }
+
+      .bottom-item {
+        display: grid;
+        justify-items: center;
+        gap: 6px;
+        font-size: 0.65rem;
+        color: var(--muted);
+      }
+
+      .bottom-item.active {
+        color: var(--primary-dark);
+      }
+
+      .bottom-dot {
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        background: var(--primary-dark);
+        display: grid;
+        place-items: center;
+        color: #ffffff;
+      }
+
+      .skeleton .screen {
+        background: linear-gradient(180deg, #f0f1f3 0%, #f6f8fb 100%);
+      }
+
+      .skeleton .placeholder {
+        background: #dfe3e8;
+        border-radius: 12px;
+        position: relative;
+        overflow: hidden;
+        display: block;
+      }
+
+      .skeleton .placeholder::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        transform: translateX(-100%);
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.45), transparent);
+        animation: shimmer 1.6s infinite;
+      }
+
+      @keyframes shimmer {
+        100% {
+          transform: translateX(100%);
+        }
+      }
+
+      .skeleton .placeholder.flex-1 {
+        flex: 1 1 auto;
+      }
+
+      .skeleton .placeholder.rounded {
+        border-radius: 999px;
+      }
+
+      .skeleton .placeholder.square {
+        aspect-ratio: 1;
+        height: auto;
+        flex: 0 0 auto;
+      }
+
+      .skeleton .placeholder.square.xs {
+        width: 34px;
+        flex: 0 0 34px;
+      }
+
+      .skeleton .placeholder.square.md {
+        width: 60px;
+      }
+
+      .skeleton .placeholder.bar {
+        height: 34px;
+      }
+
+      .skeleton .placeholder.bar.sm {
+        height: 18px;
+      }
+
+      .skeleton .placeholder.bar.xs {
+        height: 14px;
+      }
+
+      .skeleton .placeholder.hero {
+        height: 140px;
+      }
+
+      .skeleton .placeholder.hero.tall {
+        height: 160px;
+      }
+
+      .skeleton .placeholder.card {
+        height: 120px;
+        border-radius: var(--radius-lg);
+      }
+
+      .skeleton .placeholder.hero,
+      .skeleton .placeholder.hero.tall {
+        border-radius: var(--radius-lg);
+      }
+
+      .skeleton .placeholder-grid {
+        display: grid;
+        gap: 12px;
+      }
+
+      .skeleton section {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .skeleton .placeholder-grid.four {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+
+      .skeleton .placeholder-grid.chips {
+        grid-template-columns: repeat(auto-fit, minmax(64px, 1fr));
+        justify-items: center;
+      }
+
+      .skeleton .placeholder-grid.chips .placeholder.square {
+        width: 56px;
+      }
+
+      .skeleton .bottom-bar .placeholder.square {
+        width: 46px;
+        flex: 0 0 46px;
+      }
+
+      @media (max-width: 360px) {
+        .skeleton .placeholder-grid.four {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
       }
     </style>
   </head>
   <body>
-    <div class="container">
-      <div class="row justify-content-center align-items-center">
-        <div class="col-md-6 text-center">
-          <img id="image" src="https://i.ibb.co/2P8LQXf/bruno-Campelo.jpg" alt="Bruno Campelo" class="img-fluid">
-          <h1 class="mt-3 mb-0">404 ERROR</h1>
-        </div>
-      </div>
-    </div>
-    <div class="container">
-      <div class="row justify-content-center">
-        <div class="col-md-6 text-center">
-          <p id="subtitle">Desculpe, a página que você está procurando não está disponível no momento. Estamos trabalhando nisso e esperamos ter tudo funcionando em breve. Obrigado pela sua paciência!</p>
-        </div>
-      </div>
-    </div>
-    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
+    <main class="gallery">
+      <header>
+        <h1>PicPay Wallet Experience</h1>
+        <p>Versão completa e skeleton da tela inicial para estudos de UI.</p>
+      </header>
+      <section class="mockups">
+        <article class="phone real">
+          <div class="screen">
+            <div class="top-bar">
+              <div class="profile-chip">BC</div>
+              <div class="search">
+                <span>🔍</span>
+                <input type="text" placeholder="Buscar" />
+              </div>
+              <button class="icon-button">💬</button>
+              <button class="icon-button">🔔</button>
+            </div>
+
+            <div class="secondary-bar chip-row">
+              <span class="chip">PicPay</span>
+              <span class="chip">Nubank</span>
+              <span class="chip">Todas as contas</span>
+            </div>
+
+            <section class="card-feature">
+              <div>
+                <small>Cartão</small>
+                <h2>Fatura aberta</h2>
+                <strong>R$ 0,00</strong>
+                <small>Consulte seu limite disponível</small>
+              </div>
+              <button>Use seu cartão virtual</button>
+            </section>
+
+            <section>
+              <h3 class="section-title">Pro dia a dia</h3>
+              <div class="actions-grid">
+                <div class="action-tile">
+                  <div class="action-icon">🚌</div>
+                  <span>Cartão de transporte</span>
+                </div>
+                <div class="action-tile">
+                  <div class="action-icon">📊</div>
+                  <span>Radar de crédito</span>
+                </div>
+                <div class="action-tile">
+                  <div class="action-icon">💸</div>
+                  <span>Empréstimo pessoal</span>
+                </div>
+                <div class="action-tile">
+                  <div class="action-icon">💳</div>
+                  <span>Cartão virtual</span>
+                </div>
+              </div>
+            </section>
+
+            <section>
+              <h3 class="section-title">Sugestões</h3>
+              <div class="suggestions">
+                <div class="suggestion-card">
+                  <div class="suggestion-icon">₿</div>
+                  <span>Cripto</span>
+                </div>
+                <div class="suggestion-card">
+                  <div class="suggestion-icon">🔑</div>
+                  <span>Chave do Milhão</span>
+                </div>
+                <div class="suggestion-card">
+                  <div class="suggestion-icon">🎉</div>
+                  <span>PicPay Premiado</span>
+                </div>
+                <div class="suggestion-card">
+                  <div class="suggestion-icon">👤</div>
+                  <span>Marcos Almeida</span>
+                </div>
+              </div>
+            </section>
+
+            <section class="horizontal-cards">
+              <div class="credit-card">
+                <div>
+                  <small>Cartão</small>
+                  <h4>PicPay &middot; Crédito</h4>
+                </div>
+                <footer>
+                  <span>Fatura atual</span>
+                  <strong>R$ 0,00</strong>
+                </footer>
+                <button class="chip">Ver fatura</button>
+              </div>
+              <div class="card-feature" style="background: linear-gradient(140deg,#0b6d3f,#128a54);">
+                <div>
+                  <small>Conta</small>
+                  <h4>Saldo em conta</h4>
+                  <strong>R$ 1.000,88</strong>
+                  <small>Rendendo 102% do CDI</small>
+                </div>
+                <button>Invista seu dinheiro</button>
+              </div>
+            </section>
+
+            <nav class="bottom-bar">
+              <div class="bottom-item active">
+                <div>🏠</div>
+                <span>Início</span>
+              </div>
+              <div class="bottom-item">
+                <div>💳</div>
+                <span>Cartão</span>
+              </div>
+              <div class="bottom-dot">Pagar</div>
+              <div class="bottom-item">
+                <div>🛍️</div>
+                <span>Shop</span>
+              </div>
+              <div class="bottom-item">
+                <div>☰</div>
+                <span>Menu</span>
+              </div>
+            </nav>
+          </div>
+        </article>
+
+        <article class="phone skeleton">
+          <div class="screen">
+            <div class="top-bar">
+              <span class="placeholder square xs"></span>
+              <span class="placeholder bar rounded flex-1"></span>
+              <span class="placeholder square xs"></span>
+              <span class="placeholder square xs"></span>
+            </div>
+
+            <div class="chip-row">
+              <span class="placeholder bar sm" style="width:96px"></span>
+              <span class="placeholder bar sm" style="width:80px"></span>
+              <span class="placeholder bar sm" style="width:118px"></span>
+            </div>
+
+            <div class="placeholder hero"></div>
+
+            <section>
+              <span class="placeholder bar sm" style="width:150px"></span>
+              <div class="placeholder-grid four">
+                <span class="placeholder square"></span>
+                <span class="placeholder square"></span>
+                <span class="placeholder square"></span>
+                <span class="placeholder square"></span>
+              </div>
+            </section>
+
+            <section>
+              <span class="placeholder bar sm" style="width:120px"></span>
+              <div class="placeholder-grid chips">
+                <span class="placeholder square"></span>
+                <span class="placeholder square"></span>
+                <span class="placeholder square"></span>
+                <span class="placeholder square"></span>
+              </div>
+            </section>
+
+            <div class="placeholder card"></div>
+            <div class="placeholder hero tall"></div>
+
+            <nav class="bottom-bar">
+              <span class="placeholder square"></span>
+              <span class="placeholder square"></span>
+              <span class="placeholder square"></span>
+              <span class="placeholder square"></span>
+              <span class="placeholder square"></span>
+            </nav>
+          </div>
+        </article>
+      </section>
+    </main>
   </body>
 </html>
