@@ -18,12 +18,12 @@
  */
 
 export const firebaseConfig = {
-  apiKey:            "REPLACE_API_KEY",
-  authDomain:        "REPLACE_AUTH_DOMAIN",
-  projectId:         "REPLACE_PROJECT_ID",
-  storageBucket:     "REPLACE_STORAGE_BUCKET",
-  messagingSenderId: "REPLACE_SENDER_ID",
-  appId:             "REPLACE_APP_ID"
+  apiKey:            "AIzaSyCT3BGvNWRzoOc3mT4LDRRfz6GISptkUzc",
+  authDomain:        "adegas-pf.firebaseapp.com",
+  projectId:         "adegas-pf",
+  storageBucket:     "adegas-pf.firebasestorage.app",
+  messagingSenderId: "688042256969",
+  appId:             "1:688042256969:web:110f697c3db4ee7b57ed98"
 };
 
 /**
@@ -32,5 +32,10 @@ export const firebaseConfig = {
  * Se quiser rodar SEM Firebase (apenas vendo a UI funcionando local),
  * deixe `true` aqui. Os dados ficam no localStorage. Útil para
  * desenvolvimento. EM PRODUÇÃO, deixe false e configure o Firebase acima.
+ *
+ * IMPORTANTE: Antes de virar `false`, você precisa:
+ *   1. Habilitar Authentication (E-mail/Senha) no Firebase Console
+ *   2. Criar o Firestore Database
+ *   3. Criar pelo menos 1 usuário admin (instruções no README)
  */
 export const DEMO_MODE = true;
