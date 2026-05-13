@@ -53,8 +53,46 @@
           <span>Entrar</span>
         </button>
         <p class="login-hint">
-          Primeiro acesso? Use as credenciais do administrador criadas no Firebase Console
-          ou peça acesso ao gestor da loja.
+          <a href="#" id="link-bootstrap">Primeiro acesso? Configurar administrador →</a>
+        </p>
+      </form>
+    </div>
+  </section>
+
+  <!-- Bootstrap screen — criar primeiro admin -->
+  <section id="screen-bootstrap" class="screen-login hidden">
+    <div class="login-bg-grain"></div>
+    <div class="login-card">
+      <div class="login-medallion">
+        <img src="assets/logo.svg" alt="Empório das Bebidas" />
+      </div>
+      <h1 class="login-title">SETUP</h1>
+      <p class="login-sub">primeiro acesso</p>
+      <p class="login-since">★ CRIE O ADMIN ★</p>
+
+      <form id="form-bootstrap" class="login-form" autocomplete="off" novalidate>
+        <label class="field">
+          <span class="field-label">Seu nome</span>
+          <input type="text" id="bs-name" required placeholder="Ex.: Bruno" />
+        </label>
+        <label class="field">
+          <span class="field-label">E-mail</span>
+          <input type="email" id="bs-email" required placeholder="seu@email.com" />
+        </label>
+        <label class="field">
+          <span class="field-label">Senha</span>
+          <input type="password" id="bs-password" required minlength="6" placeholder="mínimo 6 caracteres" />
+        </label>
+        <label class="field">
+          <span class="field-label">Confirmar senha</span>
+          <input type="password" id="bs-password2" required minlength="6" placeholder="repita a senha" />
+        </label>
+        <div id="bootstrap-error" class="login-error" role="alert"></div>
+        <button type="submit" class="btn btn-primary btn-block" id="bs-submit">
+          <span>Criar administrador</span>
+        </button>
+        <p class="login-hint">
+          <a href="#" id="link-back-login">← Voltar para login</a>
         </p>
       </form>
     </div>

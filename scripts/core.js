@@ -563,6 +563,66 @@ export const auth = {
     users.push(rec);
     lsSave('users', users);
     return rec;
+  },
+
+  /**
+   * BOOTSTRAP: cria o primeiro administrador do sistema.
+   * Funciona apenas se `system/config` ainda não existir (controlado por rules).
+   * Em modo demo, simplesmente cria o admin no localStorage.
+   */
+  async bootstrapAdmin(name, email, password) {
+    await initFirebase();
+    if (_fb.demo) {
+      // Demo: simplesmente cria
+      return auth.demoCreateAdmin(name, email, password);
+    }
+    const { au, fs, auth: fbAuth, db: fsDb } = _fb;
+
+    // 1. Verifica se o setup já foi feito (system/config existe?)
+    const setupSnap = await fs.getDoc(fs.doc(fsDb, 'system', 'config'));
+    if (setupSnap.exists()) {
+      throw new Error('O sistema já foi configurado. Faça login normalmente ou peça acesso ao administrador.');
+    }
+
+    // 2. Cria usuário no Firebase Auth
+    let cred;
+    try {
+      cred = await au.createUserWithEmailAndPassword(fbAuth, email, password);
+    } catch (err) {
+      if (err.code === 'auth/email-already-in-use') {
+        // Já existe no Auth — tenta logar com ele
+        try {
+          cred = await au.signInWithEmailAndPassword(fbAuth, email, password);
+        } catch (_) {
+          throw new Error('Este e-mail já está cadastrado no Authentication. Use a senha existente ou outro e-mail.');
+        }
+      } else if (err.code === 'auth/weak-password') {
+        throw new Error('Senha muito fraca. Use no mínimo 6 caracteres.');
+      } else if (err.code === 'auth/invalid-email') {
+        throw new Error('E-mail inválido.');
+      } else {
+        throw err;
+      }
+    }
+    const uidNew = cred.user.uid;
+
+    // 3. Cria documento users/{uid} como admin
+    await fs.setDoc(fs.doc(fsDb, 'users', uidNew), {
+      name, email, role: 'admin', active: true,
+      createdAt: Date.now(), updatedAt: Date.now()
+    });
+
+    // 4. Marca o setup como concluído (system/config)
+    await fs.setDoc(fs.doc(fsDb, 'system', 'config'), {
+      initialized: true,
+      initializedAt: Date.now(),
+      initializedBy: uidNew
+    });
+
+    // 5. Atualiza estado interno
+    _currentUser = { uid: uidNew, name, email, role: 'admin', active: true };
+    _authListeners.forEach(fn => fn(_currentUser));
+    return _currentUser;
   }
 };
 

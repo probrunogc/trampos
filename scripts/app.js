@@ -70,6 +70,40 @@ async function boot() {
     }
   };
 
+  // Bootstrap: primeiro acesso
+  $('#link-bootstrap').onclick = (e) => {
+    e.preventDefault();
+    $('#screen-login').classList.add('hidden');
+    $('#screen-bootstrap').classList.remove('hidden');
+    $('#bs-name').focus();
+  };
+  $('#link-back-login').onclick = (e) => {
+    e.preventDefault();
+    $('#screen-bootstrap').classList.add('hidden');
+    $('#screen-login').classList.remove('hidden');
+  };
+  $('#form-bootstrap').onsubmit = async (e) => {
+    e.preventDefault();
+    const name = $('#bs-name').value.trim();
+    const email = $('#bs-email').value.trim();
+    const p1 = $('#bs-password').value;
+    const p2 = $('#bs-password2').value;
+    const errEl = $('#bootstrap-error');
+    const btn = $('#bs-submit');
+    errEl.textContent = '';
+    if (p1 !== p2) { errEl.textContent = 'As senhas não coincidem.'; return; }
+    if (p1.length < 6) { errEl.textContent = 'Senha deve ter no mínimo 6 caracteres.'; return; }
+    btn.disabled = true;
+    try {
+      await auth.bootstrapAdmin(name, email, p1);
+      ui.toast(`Administrador "${name}" criado com sucesso!`, 'success', { title: 'Bem-vindo' });
+      // showApp será chamado automaticamente pelo listener de auth
+    } catch (err) {
+      errEl.textContent = err.message || 'Erro ao criar administrador';
+      btn.disabled = false;
+    }
+  };
+
   // Logout
   $('#btn-logout').onclick = async () => {
     const ok = await ui.confirm({
@@ -112,6 +146,7 @@ async function boot() {
 
 function showLogin() {
   $('#app-shell').classList.add('hidden');
+  $('#screen-bootstrap').classList.add('hidden');
   $('#screen-login').classList.remove('hidden');
   $('#login-email').focus();
   $('#login-error').textContent = '';
@@ -120,6 +155,7 @@ function showLogin() {
 
 function showApp(user) {
   $('#screen-login').classList.add('hidden');
+  $('#screen-bootstrap').classList.add('hidden');
   $('#app-shell').classList.remove('hidden');
 
   // Avatar + chip

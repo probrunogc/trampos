@@ -38,4 +38,4 @@ export const firebaseConfig = {
  *   2. Criar o Firestore Database
  *   3. Criar pelo menos 1 usuário admin (instruções no README)
  */
-export const DEMO_MODE = true;
+export const DEMO_MODE = false;

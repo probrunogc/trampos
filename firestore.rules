@@ -4,9 +4,11 @@ rules_version = '2';
 // REGRAS DE SEGURANÇA — Empório das Bebidas
 //
 // Modelo:
-// - Apenas usuários autenticados (Firebase Auth) podem ler/escrever.
-// - O documento `users/{uid}` guarda o role do usuário (admin | vendedor | entregador).
-// - Admin: tudo. Vendedor: clientes, produtos (leitura), vendas. Entregador: vê entregas atribuídas e atualiza status.
+// - Apenas usuários autenticados podem ler/escrever.
+// - Bootstrap: o PRIMEIRO usuário do sistema pode se autocriar como admin
+//   (somente enquanto `system/config` ainda não existir). Após o primeiro
+//   admin ser criado, somente admin pode criar novos usuários.
+// - O documento `users/{uid}` guarda o role (admin | vendedor | entregador).
 // =============================================================
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -18,22 +20,33 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
     }
     function isAdmin()     { return isAuthed() && userRole() == 'admin'; }
-    function isSeller()    { return isAuthed() && userRole() == 'vendedor'; }
+    function isSeller()    { return isAuthed() && (userRole() == 'vendedor' || userRole() == 'admin'); }
     function isDeliverer() { return isAuthed() && userRole() == 'entregador'; }
     function isStaff()     { return isAdmin() || isSeller(); }
+    function isSetup()     { return exists(/databases/$(database)/documents/system/config); }
+
+    // === SYSTEM (config global) ===
+    match /system/{id} {
+      allow read:   if isAuthed();
+      // Permite criar `system/config` durante bootstrap (qualquer auth) ou se admin
+      allow create: if isAuthed() && !isSetup();
+      allow update, delete: if isAdmin();
+    }
 
     // === USUÁRIOS ===
-    // Cada usuário pode ler seu próprio documento (para o app saber o role).
-    // Admin lê/escreve todos.
     match /users/{uid} {
       allow read:   if isAuthed() && (request.auth.uid == uid || isAdmin());
-      allow create: if isAdmin();
+      // Bootstrap: primeiro usuário pode se autocriar como admin
+      // Depois disso: apenas admin pode criar novos usuários
+      allow create: if isAdmin()
+                    || (isAuthed() && request.auth.uid == uid && !isSetup()
+                        && request.resource.data.role == 'admin');
       allow update: if isAdmin() || (request.auth.uid == uid
                        && !('role' in request.resource.data.diff(resource.data).affectedKeys()));
       allow delete: if isAdmin();
     }
 
-    // === CONFIG / SETTINGS ===
+    // === CONFIG / SETTINGS DA EMPRESA ===
     match /settings/{id} {
       allow read:   if isAuthed();
       allow write:  if isAdmin();
@@ -61,7 +74,6 @@ service cloud.firestore {
     }
 
     // === VENDAS ===
-    // Entregadores podem ler vendas atribuídas a eles
     match /sales/{id} {
       allow read:   if isStaff() ||
                        (isDeliverer() && resource.data.delivery.delivererId == request.auth.uid);
