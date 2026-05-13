@@ -1,55 +1,150 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="UTF-8">
-    <title>Portifólio em manutenção</title>
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
-    <style>
-      body {
-        font-family: Arial, sans-serif;
-        background-color: #f8f9fa;
-      }
-      
-      .container {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        height: 100vh;
-      }
-      
-      #image {
-        display: block;
-        margin: 0 auto;
-        max-width: 100%;
-        height: auto;
-      }
-      
-      #subtitle {
-        font-size: 1.5rem;
-        color: #6c757d;
-        text-align: center;
-        margin-top: 2rem;
-      }
-    </style>
-  </head>
-  <body>
-    <div class="container">
-      <div class="row justify-content-center align-items-center">
-        <div class="col-md-6 text-center">
-          <img id="image" src="https://i.ibb.co/2P8LQXf/bruno-Campelo.jpg" alt="Bruno Campelo" class="img-fluid">
-          <h1 class="mt-3 mb-0">404 ERROR</h1>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0A1628" />
+  <title>Empório das Bebidas — Sistema de Gestão</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700;800;900&family=Inter:wght@400;500;600;700;800&family=Dancing+Script:wght@600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="styles/theme.css" />
+  <link rel="stylesheet" href="styles/layout.css" />
+  <link rel="stylesheet" href="styles/components.css" />
+  <link rel="stylesheet" href="styles/modules.css" />
+  <link rel="stylesheet" href="styles/print.css" media="print" />
+
+  <link rel="icon" type="image/svg+xml" href="assets/logo.svg" />
+</head>
+<body>
+  <!-- Boot splash -->
+  <div id="boot-splash" class="boot-splash">
+    <div class="boot-medallion">
+      <img src="assets/logo.svg" alt="Empório das Bebidas" />
+    </div>
+    <div class="boot-progress"><div class="boot-progress-bar"></div></div>
+    <p class="boot-hint">Inicializando sistema…</p>
+  </div>
+
+  <!-- Login screen -->
+  <section id="screen-login" class="screen-login hidden">
+    <div class="login-bg-grain"></div>
+    <div class="login-card">
+      <div class="login-medallion">
+        <img src="assets/logo.svg" alt="Empório das Bebidas" />
+      </div>
+      <h1 class="login-title">EMPÓRIO</h1>
+      <p class="login-sub">das Bebidas</p>
+      <p class="login-since">★ SINCE 2025 ★</p>
+
+      <form id="form-login" class="login-form" autocomplete="off" novalidate>
+        <label class="field">
+          <span class="field-label">E-mail</span>
+          <input type="email" id="login-email" required autocomplete="username" placeholder="seu@email.com" />
+        </label>
+        <label class="field">
+          <span class="field-label">Senha</span>
+          <input type="password" id="login-password" required autocomplete="current-password" placeholder="••••••••" />
+        </label>
+        <div id="login-error" class="login-error" role="alert"></div>
+        <button type="submit" class="btn btn-primary btn-block" id="login-submit">
+          <span>Entrar</span>
+        </button>
+        <p class="login-hint">
+          Primeiro acesso? Use as credenciais do administrador criadas no Firebase Console
+          ou peça acesso ao gestor da loja.
+        </p>
+      </form>
+    </div>
+  </section>
+
+  <!-- Main app shell -->
+  <div id="app-shell" class="app-shell hidden">
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <div class="sidebar-medallion">
+          <img src="assets/logo.svg" alt="" />
+        </div>
+        <div class="sidebar-brand-text">
+          <span class="sidebar-brand-name">EMPÓRIO</span>
+          <span class="sidebar-brand-sub">das Bebidas</span>
         </div>
       </div>
-    </div>
-    <div class="container">
-      <div class="row justify-content-center">
-        <div class="col-md-6 text-center">
-          <p id="subtitle">Desculpe, a página que você está procurando não está disponível no momento. Estamos trabalhando nisso e esperamos ter tudo funcionando em breve. Obrigado pela sua paciência!</p>
+
+      <nav class="sidebar-nav" id="sidebar-nav">
+        <!-- Items injected by app.js based on user role -->
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="user-chip" id="user-chip">
+          <div class="user-chip-avatar" id="user-avatar">?</div>
+          <div class="user-chip-info">
+            <span class="user-chip-name" id="user-name">—</span>
+            <span class="user-chip-role" id="user-role">—</span>
+          </div>
         </div>
+        <button class="btn-icon-ghost" id="btn-logout" title="Sair">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+            <polyline points="16 17 21 12 16 7"/>
+            <line x1="21" y1="12" x2="9" y2="12"/>
+          </svg>
+        </button>
       </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div class="topbar-left">
+          <button class="btn-icon-ghost sidebar-toggle" id="btn-sidebar-toggle" title="Menu">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="3" y1="6" x2="21" y2="6"/>
+              <line x1="3" y1="12" x2="21" y2="12"/>
+              <line x1="3" y1="18" x2="21" y2="18"/>
+            </svg>
+          </button>
+          <div class="topbar-title">
+            <h2 id="page-title">Dashboard</h2>
+            <p id="page-subtitle" class="topbar-sub">Visão geral do empório</p>
+          </div>
+        </div>
+        <div class="topbar-right">
+          <div class="topbar-date" id="topbar-date"></div>
+        </div>
+      </header>
+
+      <section id="page-content" class="page-content">
+        <!-- Modules render here -->
+      </section>
+    </main>
+  </div>
+
+  <!-- Modal host -->
+  <div id="modal-host" class="modal-host hidden" aria-hidden="true">
+    <div class="modal-backdrop" data-modal-close></div>
+    <div class="modal-window" role="dialog" aria-modal="true">
+      <header class="modal-header">
+        <h3 id="modal-title">Título</h3>
+        <button class="btn-icon-ghost" data-modal-close title="Fechar">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </header>
+      <div class="modal-body" id="modal-body"></div>
+      <footer class="modal-footer" id="modal-footer"></footer>
     </div>
-    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
-  </body>
+  </div>
+
+  <!-- Toast host -->
+  <div id="toast-host" class="toast-host" aria-live="polite"></div>
+
+  <!-- Print host (escondido em tela, visível em impressão) -->
+  <div id="print-host" class="print-host"></div>
+
+  <script type="module" src="scripts/app.js"></script>
+</body>
 </html>

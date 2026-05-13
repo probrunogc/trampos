@@ -1,0 +1,142 @@
+/* =========================================================
+   IMPRESSÃO — Cupom térmico 80mm
+   Aplicado APENAS em @media print
+   ========================================================= */
+
+@page {
+  size: 80mm auto;
+  margin: 3mm;
+}
+
+@media print {
+  /* Esconde toda a interface */
+  body * { visibility: hidden !important; }
+  #print-host, #print-host * { visibility: visible !important; }
+
+  body {
+    background: #fff !important;
+    color: #000 !important;
+    overflow: visible !important;
+  }
+  body::before, body::after { display: none !important; }
+
+  #print-host {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 74mm !important;
+    margin: 0 auto !important;
+    padding: 0 !important;
+    background: #fff !important;
+    color: #000 !important;
+    font-family: 'Courier New', 'Roboto Mono', monospace !important;
+    font-size: 10pt !important;
+    line-height: 1.35 !important;
+  }
+
+  .print-doc { width: 74mm; padding: 2mm 0; }
+  .print-doc * { color: #000 !important; background: transparent !important; }
+
+  .print-center { text-align: center; }
+  .print-row { display: flex; justify-content: space-between; gap: 4px; }
+  .print-strong { font-weight: 900; }
+  .print-hr { border: 0; border-top: 1px dashed #000; margin: 4px 0; }
+  .print-double-hr { border: 0; border-top: 2px solid #000; margin: 4px 0; }
+
+  .print-brand {
+    font-family: 'Cinzel', 'Times New Roman', serif !important;
+    font-weight: 900;
+    font-size: 13pt;
+    letter-spacing: 0.08em;
+    text-align: center;
+    margin: 2pt 0 0;
+  }
+  .print-sub {
+    text-align: center;
+    font-size: 9pt;
+    font-style: italic;
+    margin: 0 0 2pt;
+  }
+  .print-since {
+    text-align: center;
+    font-size: 7pt;
+    letter-spacing: 0.3em;
+    margin: 0 0 4pt;
+  }
+  .print-doc-title {
+    text-align: center;
+    font-weight: 900;
+    font-size: 11pt;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin: 2pt 0;
+    border-top: 1px solid #000;
+    border-bottom: 1px solid #000;
+    padding: 2pt 0;
+  }
+
+  .print-item {
+    display: grid;
+    grid-template-columns: 1fr;
+    margin-bottom: 1pt;
+  }
+  .print-item-line { display: flex; justify-content: space-between; gap: 4px; }
+  .print-item-name { font-weight: 700; font-size: 10pt; }
+  .print-item-meta { font-size: 9pt; }
+
+  .print-total {
+    font-weight: 900;
+    font-size: 12pt;
+    border-top: 2px solid #000;
+    border-bottom: 2px solid #000;
+    padding: 3pt 0;
+    margin: 3pt 0;
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .print-block { margin: 4pt 0; }
+  .print-label {
+    font-size: 8pt;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .print-address {
+    font-size: 10pt;
+    line-height: 1.4;
+    border: 1px solid #000;
+    padding: 3pt;
+    margin: 3pt 0;
+  }
+
+  .print-foot {
+    text-align: center;
+    font-size: 8pt;
+    margin-top: 6pt;
+  }
+
+  .print-medallion {
+    text-align: center;
+    margin-bottom: 2pt;
+  }
+  .print-medallion img {
+    width: 18mm;
+    height: 18mm;
+    margin: 0 auto;
+  }
+
+  .print-page-break { page-break-after: always; }
+
+  /* Esconde botões etc. */
+  .no-print { display: none !important; }
+}
+
+/* Container escondido na tela, visível só na impressão */
+.print-host {
+  position: fixed;
+  left: -10000px;
+  top: 0;
+  width: 74mm;
+  background: #fff;
+  color: #000;
+}

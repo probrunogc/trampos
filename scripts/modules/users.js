@@ -1,0 +1,215 @@
+/**
+ * Módulo: Usuários (admin only)
+ * Cadastra vendedores, entregadores e outros admins.
+ *
+ * Em DEMO_MODE: cria usuários no localStorage com senha em texto.
+ * Em produção (Firebase): cria via Firebase Auth (precisa do Admin SDK no servidor,
+ *  então aqui apenas gerencia o documento `users/{uid}` com o perfil/role
+ *  — o usuário precisa ter sido criado antes no Firebase Authentication).
+ */
+import { db, fmt, ui, icon, el, clearNode, auth, isDemoMode } from '../core.js';
+
+export const meta = {
+  id: 'users',
+  label: 'Usuários',
+  icon: 'users',
+  title: 'Usuários do sistema',
+  subtitle: 'Equipe e permissões',
+  roles: ['admin']
+};
+
+const ROLES = [
+  { id: 'admin',      label: 'Administrador', desc: 'Acesso total ao sistema' },
+  { id: 'vendedor',   label: 'Vendedor',      desc: 'PDV, clientes, produtos, entregas' },
+  { id: 'entregador', label: 'Entregador',    desc: 'Vê apenas suas entregas atribuídas' }
+];
+
+let state = { list: [], search: '' };
+
+export async function render(root) {
+  clearNode(root);
+  root.innerHTML = `
+    <div class="page-header">
+      <h3>Usuários cadastrados</h3>
+      <div class="page-header-actions">
+        <button class="btn btn-primary" id="btn-new">${icon('plus', { size: 16 })} <span>Novo usuário</span></button>
+      </div>
+    </div>
+    ${!isDemoMode() ? `
+      <div class="card" style="margin-bottom: var(--sp-4); border-left: 3px solid var(--gold-400)">
+        <strong class="text-gold">Modo Firebase ativo.</strong>
+        <p class="text-mute small" style="margin-top:6px">
+          Para criar um usuário, primeiro adicione o e-mail/senha em <strong>Firebase Console → Authentication</strong>.
+          Depois aqui você cadastra o perfil (nome + role) usando o UID gerado pelo Firebase.
+        </p>
+      </div>` : ''}
+    <div class="table-wrap">
+      <div class="table-toolbar">
+        <div class="table-search">${icon('search')}<input id="search-input" type="search" placeholder="Buscar..." /></div>
+        <span id="count" class="text-mute small"></span>
+      </div>
+      <div class="table-scroll">
+        <table class="data-table">
+          <thead><tr>
+            <th>Nome</th><th>E-mail</th><th>Perfil</th><th>Status</th><th></th>
+          </tr></thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  `;
+  document.getElementById('btn-new').onclick = () => openForm();
+  document.getElementById('search-input').oninput = (e) => { state.search = e.target.value.toLowerCase(); paint(); };
+  state.list = await db.list('users', { orderBy: 'name' });
+  paint();
+}
+
+function paint() {
+  const tbody = document.getElementById('tbody');
+  let arr = state.list;
+  if (state.search) arr = arr.filter(u =>
+    (u.name || '').toLowerCase().includes(state.search) ||
+    (u.email || '').toLowerCase().includes(state.search));
+  document.getElementById('count').textContent = `${arr.length} usuário${arr.length === 1 ? '' : 's'}`;
+
+  if (arr.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state">
+      ${icon('users', { size: 56 })}<h4>Nenhum usuário</h4>
+    </div></td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = arr.map(u => {
+    const role = ROLES.find(r => r.id === u.role);
+    return `
+      <tr class="clickable" data-id="${u.id}">
+        <td><strong>${fmt.escape(u.name)}</strong></td>
+        <td class="cell-mono">${fmt.escape(u.email)}</td>
+        <td><span class="badge">${fmt.escape(role?.label || u.role)}</span></td>
+        <td>${u.active !== false ? '<span class="badge badge-success badge-dot">Ativo</span>' : '<span class="badge badge-mute">Inativo</span>'}</td>
+        <td>
+          <div class="cell-actions">
+            <button class="btn-icon-ghost" data-edit="${u.id}">${icon('edit', { size: 16 })}</button>
+            <button class="btn-icon-ghost" data-del="${u.id}">${icon('trash', { size: 16 })}</button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+
+  tbody.querySelectorAll('[data-edit]').forEach(b => b.onclick = (e) => { e.stopPropagation(); openForm(b.dataset.edit); });
+  tbody.querySelectorAll('[data-del]').forEach(b => b.onclick = async (e) => {
+    e.stopPropagation();
+    const u = state.list.find(x => x.id === b.dataset.del);
+    if (u.id === auth.currentUser()?.id) { ui.toast('Você não pode excluir o próprio usuário.', 'warning'); return; }
+    const ok = await ui.confirm({ title: 'Excluir usuário', message: `Excluir "${u.name}"?`, okText: 'Excluir', danger: true });
+    if (ok) {
+      await db.remove('users', u.id);
+      state.list = state.list.filter(x => x.id !== u.id);
+      paint();
+      ui.toast('Usuário excluído.', 'success');
+    }
+  });
+  tbody.querySelectorAll('tr.clickable').forEach(tr => tr.onclick = () => openForm(tr.dataset.id));
+}
+
+async function openForm(id = null) {
+  const isEdit = !!id;
+  const u = isEdit ? state.list.find(x => x.id === id) : {};
+
+  const form = el('form', { autocomplete: 'off' });
+  form.innerHTML = `
+    <div class="field-row">
+      <label class="field" style="grid-column: span 2">
+        <span class="field-label">Nome *</span>
+        <input name="name" required value="${fmt.escape(u?.name || '')}" />
+      </label>
+      <label class="field">
+        <span class="field-label">E-mail *</span>
+        <input name="email" type="email" required ${isEdit ? 'readonly' : ''} value="${fmt.escape(u?.email || '')}" />
+      </label>
+    </div>
+    ${!isEdit && isDemoMode() ? `
+      <div class="field-row">
+        <label class="field">
+          <span class="field-label">Senha (modo demo) *</span>
+          <input name="password" type="password" minlength="6" required />
+          <span class="field-hint">Mínimo 6 caracteres. Em produção, crie no Firebase Auth.</span>
+        </label>
+      </div>
+    ` : ''}
+    ${!isEdit && !isDemoMode() ? `
+      <div class="field">
+        <span class="field-label">UID do Firebase *</span>
+        <input name="uid" required placeholder="Cole aqui o UID criado no Firebase Authentication" />
+        <span class="field-hint">Crie o usuário em Firebase Console → Authentication → Users e cole o UID aqui.</span>
+      </div>
+    ` : ''}
+
+    <div class="divider-text">Perfil de acesso</div>
+    <div class="flex flex-col gap-2">
+      ${ROLES.map(r => `
+        <label class="role-radio" style="display:flex;gap:var(--sp-3);padding:var(--sp-3);border:1px solid var(--line);border-radius:var(--r-md);cursor:pointer">
+          <input type="radio" name="role" value="${r.id}" ${u?.role === r.id || (!u?.role && r.id === 'vendedor') ? 'checked' : ''} style="margin-top:2px">
+          <div>
+            <div class="bold" style="color:var(--cream)">${r.label}</div>
+            <div class="text-mute small">${r.desc}</div>
+          </div>
+        </label>
+      `).join('')}
+    </div>
+
+    <label class="switch" style="margin-top: var(--sp-4)">
+      <input type="checkbox" name="active" ${u?.active !== false ? 'checked' : ''}>
+      <span class="switch-knob"></span>
+      <span>Usuário ativo</span>
+    </label>
+  `;
+
+  const cancelBtn = el('button', { class: 'btn btn-ghost', type: 'button', onClick: () => ui.closeModal(false) }, 'Cancelar');
+  const saveBtn = el('button', { class: 'btn btn-primary', type: 'submit' }, isEdit ? 'Salvar' : 'Cadastrar');
+
+  form.onsubmit = async (e) => {
+    e.preventDefault();
+    saveBtn.disabled = true;
+    const fd = Object.fromEntries(new FormData(form));
+    const payload = {
+      name: fd.name.trim(),
+      email: fd.email.trim().toLowerCase(),
+      role: fd.role,
+      active: form.querySelector('[name="active"]').checked
+    };
+    try {
+      if (isEdit) {
+        const upd = await db.update('users', id, payload);
+        const idx = state.list.findIndex(x => x.id === id);
+        state.list[idx] = { ...state.list[idx], ...upd };
+        ui.toast('Usuário atualizado.', 'success');
+      } else {
+        if (isDemoMode()) {
+          payload.password = fd.password;
+          const created = await db.create('users', payload);
+          state.list.push(created);
+        } else {
+          const uid = fd.uid?.trim();
+          if (!uid) throw new Error('UID do Firebase é obrigatório');
+          const created = await db.createWithId('users', uid, payload);
+          state.list.push(created);
+        }
+        ui.toast('Usuário cadastrado.', 'success');
+      }
+      state.list.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+      paint();
+      ui.closeModal(true);
+    } catch (err) {
+      ui.toast(err.message || 'Erro ao salvar', 'danger');
+      saveBtn.disabled = false;
+    }
+  };
+
+  await ui.modal({
+    title: isEdit ? 'Editar usuário' : 'Novo usuário',
+    body: form,
+    footer: [cancelBtn, saveBtn]
+  });
+}

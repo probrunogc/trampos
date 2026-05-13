@@ -1,0 +1,80 @@
+rules_version = '2';
+
+// =============================================================
+// REGRAS DE SEGURANÇA — Empório das Bebidas
+//
+// Modelo:
+// - Apenas usuários autenticados (Firebase Auth) podem ler/escrever.
+// - O documento `users/{uid}` guarda o role do usuário (admin | vendedor | entregador).
+// - Admin: tudo. Vendedor: clientes, produtos (leitura), vendas. Entregador: vê entregas atribuídas e atualiza status.
+// =============================================================
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isAuthed() {
+      return request.auth != null;
+    }
+    function userRole() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+    function isAdmin()     { return isAuthed() && userRole() == 'admin'; }
+    function isSeller()    { return isAuthed() && userRole() == 'vendedor'; }
+    function isDeliverer() { return isAuthed() && userRole() == 'entregador'; }
+    function isStaff()     { return isAdmin() || isSeller(); }
+
+    // === USUÁRIOS ===
+    // Cada usuário pode ler seu próprio documento (para o app saber o role).
+    // Admin lê/escreve todos.
+    match /users/{uid} {
+      allow read:   if isAuthed() && (request.auth.uid == uid || isAdmin());
+      allow create: if isAdmin();
+      allow update: if isAdmin() || (request.auth.uid == uid
+                       && !('role' in request.resource.data.diff(resource.data).affectedKeys()));
+      allow delete: if isAdmin();
+    }
+
+    // === CONFIG / SETTINGS ===
+    match /settings/{id} {
+      allow read:   if isAuthed();
+      allow write:  if isAdmin();
+    }
+
+    // === CLIENTES ===
+    match /customers/{id} {
+      allow read:   if isAuthed();
+      allow create, update: if isStaff();
+      allow delete: if isAdmin();
+    }
+
+    // === PRODUTOS ===
+    match /products/{id} {
+      allow read:   if isAuthed();
+      allow create, update: if isStaff();
+      allow delete: if isAdmin();
+    }
+
+    // === ENTREGADORES ===
+    match /deliverers/{id} {
+      allow read:   if isAuthed();
+      allow create, update: if isStaff();
+      allow delete: if isAdmin();
+    }
+
+    // === VENDAS ===
+    // Entregadores podem ler vendas atribuídas a eles
+    match /sales/{id} {
+      allow read:   if isStaff() ||
+                       (isDeliverer() && resource.data.delivery.delivererId == request.auth.uid);
+      allow create: if isStaff();
+      allow update: if isStaff() ||
+                       (isDeliverer() && resource.data.delivery.delivererId == request.auth.uid
+                          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['delivery', 'updatedAt', 'status']));
+      allow delete: if isAdmin();
+    }
+
+    // === FALLBACK ===
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
