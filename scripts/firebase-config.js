@@ -18,7 +18,7 @@
  */
 
 export const firebaseConfig = {
-  apiKey:            "AIzaSyCT3BGvNWRzoOc3mT4LDRRfz6GISptkUzc",
+  apiKey:            "AIzaSyCT3BGvNWRzoOc3mT4lDRRfz6GISptkUzc",
   authDomain:        "adegas-pf.firebaseapp.com",
   projectId:         "adegas-pf",
   storageBucket:     "adegas-pf.firebasestorage.app",
