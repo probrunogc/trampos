@@ -2,6 +2,7 @@
  * Módulo: Produtos / Estoque
  */
 import { db, fmt, ui, icon, el, clearNode, auth } from '../core.js';
+import { productImage } from '../product-art.js';
 
 export const meta = {
   id: 'products',
@@ -12,7 +13,7 @@ export const meta = {
   roles: ['admin', 'vendedor']
 };
 
-const CATEGORIES = ['Cerveja', 'Refrigerante', 'Água', 'Energético', 'Destilado', 'Vinho', 'Suco', 'Outros'];
+const CATEGORIES = ['Cerveja', 'Refrigerante', 'Água', 'Energético', 'Destilado', 'Vinho', 'Suco', 'Dose', 'Outros'];
 
 let state = { search: '', category: 'all', list: [] };
 
@@ -105,8 +106,13 @@ function paint() {
     return `
       <tr class="clickable" data-id="${p.id}">
         <td>
-          <strong>${fmt.escape(p.name)}</strong>
-          ${p.brand ? `<div class="text-mute small">${fmt.escape(p.brand)}</div>` : ''}
+          <div class="prod-cell">
+            ${productImage(p, { cls: 'prod-img-sm' })}
+            <div>
+              <strong>${fmt.escape(p.name)}</strong>
+              ${p.brand ? `<div class="text-mute small">${fmt.escape(p.brand)}</div>` : ''}
+            </div>
+          </div>
         </td>
         <td><span class="badge badge-mute">${fmt.escape(p.category || '—')}</span></td>
         <td class="cell-num text-gold bold">${fmt.currency(p.price)}</td>
@@ -187,6 +193,11 @@ async function openForm(id = null) {
       </label>
     </div>
 
+    <label class="field" style="margin-top: var(--sp-3)">
+      <span class="field-label">URL da foto (opcional)</span>
+      <input name="image" value="${fmt.escape(p?.image || '')}" placeholder="https://… — vazio usa ilustração automática" />
+    </label>
+
     <div class="divider-text">Preços</div>
     <div class="field-row">
       <label class="field">
@@ -233,6 +244,7 @@ async function openForm(id = null) {
       category: fd.category,
       unit: fd.unit,
       sku: fd.sku.trim(),
+      image: fd.image.trim(),
       price: parseFloat(fd.price) || 0,
       costPrice: parseFloat(fd.costPrice) || 0,
       stock: parseInt(fd.stock) || 0,

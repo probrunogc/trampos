@@ -3,6 +3,7 @@
  * Visão geral do empório — KPIs, top produtos, top clientes, vendas recentes
  */
 import { db, fmt, icon, el, clearNode } from '../core.js';
+import { productImage } from '../product-art.js';
 
 export const meta = {
   id: 'dashboard',
@@ -50,7 +51,10 @@ export async function render(root) {
   monthSales.forEach(s => {
     (s.items || []).forEach(i => {
       const key = i.productId || i.name;
-      if (!productSales[key]) productSales[key] = { name: i.name, qty: 0, revenue: 0 };
+      if (!productSales[key]) {
+        const prod = products.find(p => p.id === i.productId) || {};
+        productSales[key] = { name: i.name, art: prod.art, image: prod.image, category: prod.category, qty: 0, revenue: 0 };
+      }
       productSales[key].qty += Number(i.qty) || 0;
       productSales[key].revenue += (Number(i.qty) || 0) * (Number(i.unitPrice) || 0);
     });
@@ -164,6 +168,7 @@ export async function render(root) {
               ${topProducts.map((p, i) => `
                 <div class="list-row">
                   <div class="list-rank">${i + 1}</div>
+                  ${productImage(p, { cls: 'prod-img-sm' })}
                   <div class="list-row-body">
                     <div class="list-row-title">${fmt.escape(p.name)}</div>
                     <div class="list-row-sub">${p.qty} unidades vendidas</div>

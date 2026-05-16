@@ -567,3 +567,250 @@
   color: var(--gold-200);
   border-left: 3px solid var(--gold-400);
 }
+
+/* =========================================================
+   IMAGEM DE PRODUTO (foto ou ilustração vetorial)
+   ========================================================= */
+.prod-img {
+  display: grid;
+  place-items: center;
+  background: linear-gradient(180deg, #fbfaf6 0%, #e9e7df 100%);
+  border-radius: var(--r-md);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.prod-img .prod-art-svg,
+.prod-img img {
+  width: 100%; height: 100%;
+  object-fit: contain;
+  display: block;
+}
+.prod-art-svg { padding: 6%; }
+.prod-img-sm { width: 46px; height: 46px; border-radius: var(--r-sm); }
+.prod-cell { display: flex; align-items: center; gap: var(--sp-3); }
+
+.pdv-product-img {
+  width: 100%;
+  height: 92px;
+  margin-bottom: var(--sp-2);
+}
+
+/* =========================================================
+   RELATÓRIOS
+   ========================================================= */
+.rep-loading { padding: var(--sp-8); text-align: center; color: var(--text-3); }
+
+.seg {
+  display: inline-flex;
+  background: rgba(5,11,23,0.55);
+  border: 1px solid var(--line);
+  border-radius: var(--r-pill);
+  padding: 3px;
+}
+.seg-btn {
+  padding: 7px 16px;
+  border-radius: var(--r-pill);
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-2);
+  transition: all var(--t-fast) var(--ease);
+}
+.seg-btn:hover { color: var(--gold-200); }
+.seg-btn.active {
+  background: var(--grad-gold);
+  color: var(--navy-1000);
+  box-shadow: 0 3px 10px rgba(212,175,55,0.3);
+}
+
+.rep-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: var(--sp-4);
+}
+
+/* gráfico de barras */
+.rep-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 158px;
+  padding-top: var(--sp-2);
+}
+.rep-bar-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 5px;
+  height: 100%;
+  min-width: 0;
+}
+.rep-bar {
+  width: 100%;
+  max-width: 30px;
+  min-height: 3px;
+  background: linear-gradient(180deg, var(--gold-400), var(--gold-700));
+  border-radius: 3px 3px 0 0;
+  transition: opacity var(--t-fast) var(--ease);
+}
+.rep-bar-col:hover .rep-bar { opacity: 0.78; }
+.rep-bar.peak {
+  background: linear-gradient(180deg, #ffe089, var(--gold-500));
+  box-shadow: 0 0 12px rgba(212,175,55,0.55);
+}
+.rep-bar-lbl {
+  font-size: 0.6rem;
+  color: var(--text-mute);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.rep-bars-hour .rep-bar { max-width: none; }
+
+/* formas de pagamento */
+.rep-pay-track {
+  display: flex;
+  height: 16px;
+  border-radius: var(--r-pill);
+  overflow: hidden;
+  background: rgba(5,11,23,0.55);
+  border: 1px solid var(--line-mute);
+}
+.rep-pay-seg { height: 100%; }
+.rep-pay-row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: 9px 12px;
+  border-radius: var(--r-md);
+  background: rgba(5,11,23,0.4);
+  border: 1px solid var(--line-mute);
+}
+.rep-pay-dot { width: 11px; height: 11px; border-radius: 50%; flex-shrink: 0; }
+.rep-pay-name { font-weight: 600; font-size: 0.88rem; color: var(--cream); }
+.rep-pay-count { flex: 1; }
+.rep-pay-pct {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  color: var(--text-2);
+  font-size: 0.82rem;
+}
+.rep-pay-val {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  color: var(--gold-200);
+  min-width: 92px;
+  text-align: right;
+}
+
+/* fiado */
+.rep-fiado-big {
+  text-align: center;
+  padding: var(--sp-2) 0 var(--sp-4);
+  border-bottom: 1px dashed var(--line);
+  margin-bottom: var(--sp-3);
+}
+.rep-fiado-val {
+  font-family: var(--font-brand);
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--warning);
+  line-height: 1.1;
+}
+
+/* produtos mais vendidos */
+.rep-prod-list { display: flex; flex-direction: column; gap: var(--sp-2); }
+.rep-prod-row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: 8px 12px;
+  border-radius: var(--r-md);
+  background: rgba(5,11,23,0.4);
+  border: 1px solid var(--line-mute);
+}
+.rep-prod-rank {
+  width: 22px;
+  flex-shrink: 0;
+  text-align: center;
+  font-weight: 800;
+  color: var(--gold-300);
+  font-family: var(--font-brand);
+}
+.rep-prod-info { flex: 1; min-width: 0; }
+.rep-prod-name {
+  font-weight: 600;
+  font-size: 0.88rem;
+  color: var(--cream);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.rep-prod-rev {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  color: var(--gold-200);
+}
+
+/* doses & copão */
+.rep-dose {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-2);
+}
+.rep-dose-card {
+  background: rgba(5,11,23,0.4);
+  border: 1px solid var(--line-mute);
+  border-radius: var(--r-md);
+  padding: var(--sp-4);
+  text-align: center;
+}
+.rep-dose-num {
+  font-family: var(--font-brand);
+  font-size: 1.7rem;
+  font-weight: 700;
+  color: var(--cream);
+  line-height: 1.1;
+}
+.rep-dose-bar-row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: 5px 2px;
+}
+.rep-dose-bar-name {
+  width: 140px;
+  flex-shrink: 0;
+  font-size: 0.8rem;
+  color: var(--text-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.rep-dose-bar-track {
+  flex: 1;
+  height: 9px;
+  background: rgba(5,11,23,0.55);
+  border-radius: var(--r-pill);
+  overflow: hidden;
+}
+.rep-dose-bar-fill {
+  display: block;
+  height: 100%;
+  background: var(--grad-gold);
+  border-radius: var(--r-pill);
+}
+.rep-dose-bar-qty {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  color: var(--gold-200);
+  min-width: 32px;
+  text-align: right;
+}
+
+@media (max-width: 600px) {
+  .rep-dose-bar-name { width: 96px; }
+  .rep-pay-val { min-width: 78px; }
+  .pdv-product-img { height: 80px; }
+}

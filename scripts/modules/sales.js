@@ -5,6 +5,7 @@
  */
 import { db, fmt, ui, icon, el, clearNode, auth } from '../core.js';
 import { printSaleCupom } from './deliveries.js';
+import { productImage } from '../product-art.js';
 
 export const meta = {
   id: 'sales',
@@ -29,7 +30,7 @@ let state = {
   note: ''
 };
 
-const CATEGORIES = ['Cerveja', 'Refrigerante', 'Água', 'Energético', 'Destilado', 'Vinho', 'Suco', 'Outros'];
+const CATEGORIES = ['Cerveja', 'Refrigerante', 'Água', 'Energético', 'Destilado', 'Vinho', 'Suco', 'Dose', 'Outros'];
 const PAYMENTS = [
   { id: 'dinheiro',   label: 'Dinheiro' },
   { id: 'pix',        label: 'PIX' },
@@ -194,6 +195,7 @@ function paintProducts() {
     const low = !out && p.minStock != null && p.stock <= p.minStock;
     return `
       <div class="pdv-product ${out ? 'out' : ''}" data-id="${p.id}">
+        ${productImage(p, { cls: 'pdv-product-img' })}
         <div class="pdv-product-cat">${fmt.escape(p.category || '')}</div>
         <div class="pdv-product-name">${fmt.escape(p.name)}</div>
         <div class="pdv-product-price">${fmt.currency(p.price)}</div>

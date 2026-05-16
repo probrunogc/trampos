@@ -9,17 +9,18 @@ import * as Dashboard   from './modules/dashboard.js';
 import * as Customers   from './modules/customers.js';
 import * as Products    from './modules/products.js';
 import * as Sales       from './modules/sales.js';
+import * as Reports     from './modules/reports.js';
 import * as Deliveries  from './modules/deliveries.js';
 import * as Deliverers  from './modules/deliverers.js';
 import * as Users       from './modules/users.js';
 import * as Settings    from './modules/settings.js';
 
 const MODULES = [
-  Dashboard, Sales, Customers, Products, Deliveries, Deliverers, Users, Settings
+  Dashboard, Sales, Reports, Customers, Products, Deliveries, Deliverers, Users, Settings
 ];
 
 const SECTIONS = [
-  { title: 'Operação',  ids: ['dashboard', 'sales', 'deliveries'] },
+  { title: 'Operação',  ids: ['dashboard', 'sales', 'reports', 'deliveries'] },
   { title: 'Cadastros', ids: ['customers', 'products', 'deliverers'] },
   { title: 'Sistema',   ids: ['users', 'settings'] }
 ];
