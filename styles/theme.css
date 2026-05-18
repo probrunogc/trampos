@@ -115,7 +115,8 @@
 
 /* === RESET ENXUTO === */
 *, *::before, *::after { box-sizing: border-box; }
-html, body { height: 100%; }
+* { -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; overscroll-behavior: none; }
 body {
   margin: 0;
   font-family: var(--font-ui);
@@ -127,10 +128,18 @@ body {
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
   overflow: hidden;
+  /* comportamento de aplicativo / quiosque */
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
 }
-img { display: block; max-width: 100%; }
+img { display: block; max-width: 100%; -webkit-user-drag: none; }
 button { font: inherit; color: inherit; cursor: pointer; background: none; border: 0; }
-input, select, textarea { font: inherit; color: inherit; }
+input, select, textarea {
+  font: inherit; color: inherit;
+  user-select: text;
+  -webkit-user-select: text;
+}
 a { color: var(--gold-300); text-decoration: none; }
 a:hover { color: var(--gold-200); }
 ::selection { background: var(--gold-400); color: var(--navy-1000); }
