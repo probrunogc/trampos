@@ -105,7 +105,7 @@ function paint() {
     const zero = p.stock === 0;
     return `
       <tr class="clickable" data-id="${p.id}">
-        <td>
+        <td data-label="Produto">
           <div class="prod-cell">
             ${productImage(p, { cls: 'prod-img-sm' })}
             <div>
@@ -114,13 +114,13 @@ function paint() {
             </div>
           </div>
         </td>
-        <td><span class="badge badge-mute">${fmt.escape(p.category || '—')}</span></td>
-        <td class="cell-num text-gold bold">${fmt.currency(p.price)}</td>
-        <td class="cell-num">
+        <td data-label="Categoria"><span class="badge badge-mute">${fmt.escape(p.category || '—')}</span></td>
+        <td class="cell-num text-gold bold" data-label="Preço">${fmt.currency(p.price)}</td>
+        <td class="cell-num" data-label="Estoque">
           <span class="${zero ? 'text-danger' : low ? 'text-mute' : ''}">${p.stock ?? '—'}</span>
           <span class="text-mute small"> / mín ${p.minStock ?? '—'}</span>
         </td>
-        <td>
+        <td data-label="Status">
           ${zero ? '<span class="badge badge-danger badge-dot">Esgotado</span>'
             : low ? '<span class="badge badge-warning badge-dot">Baixo</span>'
             : p.active === false ? '<span class="badge badge-mute">Inativo</span>'

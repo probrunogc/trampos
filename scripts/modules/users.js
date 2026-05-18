@@ -83,10 +83,10 @@ function paint() {
     const role = ROLES.find(r => r.id === u.role);
     return `
       <tr class="clickable" data-id="${u.id}">
-        <td><strong>${fmt.escape(u.name)}</strong></td>
-        <td class="cell-mono">${fmt.escape(u.email)}</td>
-        <td><span class="badge">${fmt.escape(role?.label || u.role)}</span></td>
-        <td>${u.active !== false ? '<span class="badge badge-success badge-dot">Ativo</span>' : '<span class="badge badge-mute">Inativo</span>'}</td>
+        <td data-label="Nome"><strong>${fmt.escape(u.name)}</strong></td>
+        <td class="cell-mono" data-label="E-mail">${fmt.escape(u.email)}</td>
+        <td data-label="Perfil"><span class="badge">${fmt.escape(role?.label || u.role)}</span></td>
+        <td data-label="Status">${u.active !== false ? '<span class="badge badge-success badge-dot">Ativo</span>' : '<span class="badge badge-mute">Inativo</span>'}</td>
         <td>
           <div class="cell-actions">
             <button class="btn-icon-ghost" data-edit="${u.id}">${icon('edit', { size: 16 })}</button>

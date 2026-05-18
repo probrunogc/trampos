@@ -22,6 +22,7 @@ export async function render(root) {
       <aside class="settings-side">
         <button class="settings-tab active" data-tab="company">Dados do Empório</button>
         <button class="settings-tab" data-tab="delivery">Entrega</button>
+        <button class="settings-tab" data-tab="payments">Pagamentos</button>
         <button class="settings-tab" data-tab="system">Sistema</button>
       </aside>
       <div id="settings-content"></div>
@@ -35,6 +36,7 @@ export async function render(root) {
     tabs.forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
     if (tab === 'company') content.innerHTML = renderCompanyForm(company);
     if (tab === 'delivery') content.innerHTML = renderDeliveryForm(company);
+    if (tab === 'payments') content.innerHTML = renderPaymentsForm(company);
     if (tab === 'system') content.innerHTML = renderSystemPanel();
     wire(tab, content, company);
   }
@@ -100,6 +102,34 @@ function renderDeliveryForm(c) {
   `;
 }
 
+function renderPaymentsForm(c) {
+  return `
+    <div class="card">
+      <div class="card-title">Taxas de cartão</div>
+      <p class="text-mute small" style="margin-bottom: var(--sp-4); line-height: 1.5">
+        Informe as taxas cobradas pela maquininha. O Relatório usa elas pra calcular
+        o <strong>faturamento líquido</strong> — quanto entra de fato após as taxas.
+      </p>
+      <form id="payments-form">
+        <div class="field-row">
+          <label class="field">
+            <span class="field-label">Taxa no débito (%)</span>
+            <input name="feeDebito" type="number" min="0" step="0.01" value="${c.feeDebito ?? 1.99}" />
+          </label>
+          <label class="field">
+            <span class="field-label">Taxa no crédito (%)</span>
+            <input name="feeCredito" type="number" min="0" step="0.01" value="${c.feeCredito ?? 3.49}" />
+          </label>
+        </div>
+        <span class="field-hint" style="display:block;margin-bottom:var(--sp-3)">
+          Dinheiro, PIX e fiado não têm taxa.
+        </span>
+        <button class="btn btn-primary" type="submit">Salvar</button>
+      </form>
+    </div>
+  `;
+}
+
 function renderSystemPanel() {
   const demo = isDemoMode();
   return `
@@ -113,7 +143,7 @@ function renderSystemPanel() {
             : '<span class="badge badge-success badge-dot">Firebase conectado</span>'}
         </div>
         <div class="flex justify-between items-center">
-          <span>Versão</span><span class="badge badge-mute">v1.0.0</span>
+          <span>Versão</span><span class="badge badge-mute">v1.1.0</span>
         </div>
       </div>
       ${demo ? `
@@ -124,9 +154,11 @@ function renderSystemPanel() {
           2. Mude <code>DEMO_MODE</code> para <code>false</code><br>
           3. Recarregue a página
         </div>` : ''}
-      <div class="divider"></div>
-      <h4 class="card-title">Manutenção</h4>
-      <button class="btn btn-danger" id="reset-demo">${icon('refresh', { size: 14 })} Limpar dados (demo)</button>
+      ${demo ? `
+        <div class="divider"></div>
+        <h4 class="card-title">Manutenção</h4>
+        <button class="btn btn-danger" id="reset-demo">${icon('refresh', { size: 14 })} Limpar dados (demo)</button>
+      ` : ''}
     </div>
   `;
 }
@@ -157,6 +189,18 @@ function wire(tab, content, c) {
       };
       await db.createWithId('settings', 'company', { ...c, ...payload });
       ui.toast('Configurações atualizadas.', 'success');
+    };
+  }
+  if (tab === 'payments') {
+    content.querySelector('#payments-form').onsubmit = async (e) => {
+      e.preventDefault();
+      const fd = Object.fromEntries(new FormData(e.target));
+      const payload = {
+        feeDebito: parseFloat(fd.feeDebito) || 0,
+        feeCredito: parseFloat(fd.feeCredito) || 0
+      };
+      await db.createWithId('settings', 'company', { ...c, ...payload });
+      ui.toast('Taxas atualizadas.', 'success');
     };
   }
   if (tab === 'system') {

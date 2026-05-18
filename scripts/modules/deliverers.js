@@ -72,10 +72,10 @@ function paint() {
 
   tbody.innerHTML = arr.map(d => `
     <tr class="clickable" data-id="${d.id}">
-      <td><strong>${fmt.escape(d.name)}</strong></td>
-      <td class="cell-mono">${fmt.phone(d.phone)}</td>
-      <td>${fmt.escape(d.vehicle || '—')} ${d.plate ? `<span class="text-mute small">· ${fmt.escape(d.plate)}</span>` : ''}</td>
-      <td>${d.active !== false
+      <td data-label="Nome"><strong>${fmt.escape(d.name)}</strong></td>
+      <td class="cell-mono" data-label="Telefone">${fmt.phone(d.phone)}</td>
+      <td data-label="Veículo">${fmt.escape(d.vehicle || '—')} ${d.plate ? `<span class="text-mute small">· ${fmt.escape(d.plate)}</span>` : ''}</td>
+      <td data-label="Status">${d.active !== false
         ? '<span class="badge badge-success badge-dot">Ativo</span>'
         : '<span class="badge badge-mute">Inativo</span>'}</td>
       <td>

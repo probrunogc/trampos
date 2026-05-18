@@ -98,13 +98,13 @@ function paint() {
     const sub = [addr.neighborhood, addr.city].filter(Boolean).join(' — ');
     return `
       <tr class="clickable" data-id="${c.id}">
-        <td><strong>${fmt.escape(c.name)}</strong></td>
-        <td class="cell-mono">${fmt.phone(c.phone)}</td>
-        <td>
+        <td data-label="Cliente"><strong>${fmt.escape(c.name)}</strong></td>
+        <td class="cell-mono" data-label="Telefone">${fmt.phone(c.phone)}</td>
+        <td data-label="Endereço">
           ${addrLine ? `<div>${fmt.escape(addrLine)}</div>` : '<span class="cell-mute">Sem endereço</span>'}
           ${sub ? `<div class="text-mute small">${fmt.escape(sub)}</div>` : ''}
         </td>
-        <td class="text-mute small">${fmt.date(c.createdAt)}</td>
+        <td class="text-mute small" data-label="Cadastro">${fmt.date(c.createdAt)}</td>
         <td>
           <div class="cell-actions">
             <button class="btn-icon-ghost" data-edit="${c.id}" title="Editar">${icon('edit', { size: 16 })}</button>
@@ -198,11 +198,11 @@ async function openForm(id = null) {
     <div class="field-row">
       <label class="field">
         <span class="field-label">Cidade</span>
-        <input name="city" value="${fmt.escape(a.city || 'São Paulo')}" />
+        <input name="city" value="${fmt.escape(a.city || 'Manaus')}" />
       </label>
       <label class="field">
         <span class="field-label">Estado</span>
-        <input name="state" maxlength="2" value="${fmt.escape(a.state || 'SP')}" style="text-transform:uppercase" />
+        <input name="state" maxlength="2" value="${fmt.escape(a.state || 'AM')}" style="text-transform:uppercase" />
       </label>
       <label class="field" style="grid-column: span 2;">
         <span class="field-label">Ponto de referência</span>
