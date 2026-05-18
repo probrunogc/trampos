@@ -7,7 +7,7 @@
       "**/.*",
       "**/node_modules/**",
       "README.md",
-      "iniciar-quiosque.bat",
+      "*.bat",
       ".firebaserc"
     ],
     "rewrites": [
