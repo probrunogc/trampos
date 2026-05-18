@@ -1,7 +1,7 @@
 {
-  "name": "Empório das Bebidas — Gestão",
-  "short_name": "Empório",
-  "description": "Sistema de gestão do Empório das Bebidas — vendas, estoque, entregas e relatórios.",
+  "name": "Empório GO — Gestão",
+  "short_name": "Empório GO",
+  "description": "Sistema de gestão do Empório GO — vendas, estoque, entregas e relatórios.",
   "lang": "pt-BR",
   "start_url": "./",
   "scope": "./",

@@ -648,7 +648,7 @@ export async function seedDemoIfNeeded() {
   // Configurações padrão
   lsSave('settings', [{
     id: 'company',
-    name: 'Empório das Bebidas',
+    name: 'Empório GO',
     slogan: 'A gente bota a fé que rola a sede',
     address: 'Rua da Cerveja, 100 — Centro',
     phone: '(11) 99999-0000',

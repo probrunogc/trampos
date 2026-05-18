@@ -884,3 +884,56 @@
   .rep-bars { height: 130px; gap: 2px; }
   .seg-btn { padding: 7px 12px; }
 }
+
+/* =========================================================
+   TEMA CLARO — sobrescritas de módulos
+   ========================================================= */
+[data-theme="light"] .list-row,
+[data-theme="light"] .rep-pay-row,
+[data-theme="light"] .rep-prod-row,
+[data-theme="light"] .rep-dose-card,
+[data-theme="light"] .cart-item { background: var(--bg-item); }
+
+[data-theme="light"] .pdv-search-bar input,
+[data-theme="light"] .pdv-customer-select { background: var(--bg-input); }
+
+[data-theme="light"] .pdv-cat-chip,
+[data-theme="light"] .pdv-cart-foot,
+[data-theme="light"] .seg,
+[data-theme="light"] .rep-pay-track,
+[data-theme="light"] .rep-dose-bar-track { background: var(--bg-inset); }
+
+[data-theme="light"] .pdv-product {
+  background: linear-gradient(160deg, rgba(255,255,255,0.92), rgba(248,244,236,0.95));
+}
+
+[data-theme="light"] table.data-table tbody tr {
+  background: transparent;
+}
+[data-theme="light"] table.data-table tbody tr:hover {
+  background: rgba(212,175,55,0.05);
+}
+@media (max-width: 640px) {
+  [data-theme="light"] table.data-table tbody tr {
+    background: rgba(255,255,255,0.72);
+  }
+}
+
+/* Textos cream → text-1 no tema claro */
+[data-theme="light"] .list-row-title,
+[data-theme="light"] .pdv-product-name,
+[data-theme="light"] .pdv-customer-name,
+[data-theme="light"] .pdv-search-bar input,
+[data-theme="light"] .cart-item-name,
+[data-theme="light"] .cart-qty,
+[data-theme="light"] .rep-pay-name,
+[data-theme="light"] .rep-dose-num,
+[data-theme="light"] .rep-prod-name { color: var(--text-1); }
+
+/* Gold-200 → gold-700 no tema claro (contraste) */
+[data-theme="light"] .list-row-meta,
+[data-theme="light"] .cart-item-total,
+[data-theme="light"] .rep-pay-val,
+[data-theme="light"] .rep-prod-rev,
+[data-theme="light"] .rep-dose-bar-qty,
+[data-theme="light"] .delivery-code { color: var(--gold-700); }

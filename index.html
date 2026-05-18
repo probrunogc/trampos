@@ -3,16 +3,16 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <meta name="theme-color" content="#0A1628" />
-  <title>Empório das Bebidas — Sistema de Gestão</title>
+  <meta name="theme-color" content="#0A1628" id="meta-theme-color" />
+  <title>Empório GO — Sistema de Gestão</title>
 
   <!-- PWA / modo aplicativo -->
   <link rel="manifest" href="manifest.json" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="Empório" />
-  <meta name="application-name" content="Empório" />
+  <meta name="apple-mobile-web-app-title" content="Empório GO" />
+  <meta name="application-name" content="Empório GO" />
   <link rel="apple-touch-icon" href="assets/logo.svg" />
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -26,12 +26,19 @@
   <link rel="stylesheet" href="styles/print.css" media="print" />
 
   <link rel="icon" type="image/svg+xml" href="assets/logo.svg" />
+  <script>
+    /* Aplica o tema antes do render para evitar flash */
+    (function () {
+      var t = localStorage.getItem('emporio:theme') || 'dark';
+      document.documentElement.setAttribute('data-theme', t);
+    })();
+  </script>
 </head>
 <body>
   <!-- Boot splash -->
   <div id="boot-splash" class="boot-splash">
     <div class="boot-medallion">
-      <img src="assets/logo.svg" alt="Empório das Bebidas" />
+      <img src="assets/logo.svg" alt="Empório GO" />
     </div>
     <div class="boot-progress"><div class="boot-progress-bar"></div></div>
     <p class="boot-hint">Inicializando sistema…</p>
@@ -42,10 +49,10 @@
     <div class="login-bg-grain"></div>
     <div class="login-card">
       <div class="login-medallion">
-        <img src="assets/logo.svg" alt="Empório das Bebidas" />
+        <img src="assets/logo.svg" alt="Empório GO" />
       </div>
       <h1 class="login-title">EMPÓRIO</h1>
-      <p class="login-sub">das Bebidas</p>
+      <p class="login-sub">GO</p>
       <p class="login-since">★ SINCE 2025 ★</p>
 
       <form id="form-login" class="login-form" autocomplete="off" novalidate>
@@ -73,7 +80,7 @@
     <div class="login-bg-grain"></div>
     <div class="login-card">
       <div class="login-medallion">
-        <img src="assets/logo.svg" alt="Empório das Bebidas" />
+        <img src="assets/logo.svg" alt="Empório GO" />
       </div>
       <h1 class="login-title">SETUP</h1>
       <p class="login-sub">primeiro acesso</p>
@@ -116,7 +123,7 @@
         </div>
         <div class="sidebar-brand-text">
           <span class="sidebar-brand-name">EMPÓRIO</span>
-          <span class="sidebar-brand-sub">das Bebidas</span>
+          <span class="sidebar-brand-sub">GO</span>
         </div>
       </div>
 
@@ -158,6 +165,7 @@
           </div>
         </div>
         <div class="topbar-right">
+          <button class="btn-icon-ghost" id="btn-theme" title="Alternar tema claro/escuro" aria-label="Alternar tema"></button>
           <div class="topbar-date" id="topbar-date"></div>
         </div>
       </header>
