@@ -471,6 +471,39 @@ export const auth = {
 
   onChange(fn) { _authListeners.push(fn); fn(_currentUser); },
 
+  // --- Login anônimo automático (apps caixa e financeiro) ---
+  async ensureAnon() {
+    await initFirebase();
+    if (_fb.demo) return null;
+    const { au, auth: fbAuth } = _fb;
+    if (fbAuth.currentUser) return fbAuth.currentUser;
+    return new Promise((resolve, reject) => {
+      const unsub = au.onAuthStateChanged(fbAuth, async (u) => {
+        unsub();
+        if (u) { resolve(u); return; }
+        try { resolve((await au.signInAnonymously(fbAuth)).user); }
+        catch (e) { reject(e); }
+      });
+    });
+  },
+
+  // --- Operador do caixa (sem senha — apenas identifica quem opera) ---
+  operator() {
+    try { return JSON.parse(localStorage.getItem('emporio:operator') || 'null'); }
+    catch { return null; }
+  },
+  setOperator(name) {
+    _currentUser = { name, role: 'admin', operator: name };
+    try { localStorage.setItem('emporio:operator', JSON.stringify(name)); } catch {}
+    _authListeners.forEach(fn => fn(_currentUser));
+    return _currentUser;
+  },
+  clearOperator() {
+    _currentUser = null;
+    try { localStorage.removeItem('emporio:operator'); } catch {}
+    _authListeners.forEach(fn => fn(null));
+  },
+
   async signIn(email, password) {
     await initFirebase();
     if (_fb.demo) {

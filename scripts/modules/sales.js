@@ -487,7 +487,7 @@ async function finishSale() {
         fee
       } : null,
       status: state.needsDelivery ? 'pending_delivery' : 'paid',
-      seller: user ? { id: user.id || user.uid, name: user.name } : null,
+      seller: user ? { name: user.name } : null,
       note: state.note
     };
 

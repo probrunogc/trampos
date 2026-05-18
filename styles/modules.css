@@ -884,3 +884,222 @@
   .rep-bars { height: 130px; gap: 2px; }
   .seg-btn { padding: 7px 12px; }
 }
+
+/* =========================================================
+   SELETOR DE OPERADOR (caixa)
+   ========================================================= */
+.op-prompt {
+  font-size: 0.98rem;
+  color: var(--text-2);
+  margin: var(--sp-6) 0 var(--sp-4);
+  font-weight: 500;
+}
+.op-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-3); }
+.op-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-6) var(--sp-3);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-lg);
+  background: rgba(5,11,23,0.5);
+  transition: transform var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease);
+}
+.op-btn:hover { border-color: var(--gold-500); transform: translateY(-3px); }
+.op-btn:active { transform: translateY(0); }
+.op-avatar {
+  width: 60px; height: 60px;
+  border-radius: 50%;
+  display: grid; place-items: center;
+  background: var(--grad-gold);
+  color: var(--navy-1000);
+  font-family: var(--font-brand);
+  font-weight: 800;
+  font-size: 1.6rem;
+  box-shadow: 0 6px 16px rgba(212,175,55,0.32);
+}
+.op-name { font-weight: 700; color: var(--cream); font-size: 1.05rem; }
+
+/* =========================================================
+   PIN — painel financeiro
+   ========================================================= */
+.pin-dots { display: flex; justify-content: center; gap: var(--sp-3); margin: var(--sp-3) 0; }
+.pin-dot {
+  width: 15px; height: 15px;
+  border-radius: 50%;
+  border: 2px solid var(--line-strong);
+  transition: all var(--t-fast) var(--ease);
+}
+.pin-dot.filled {
+  background: var(--grad-gold);
+  border-color: transparent;
+  box-shadow: 0 0 10px rgba(212,175,55,0.5);
+}
+.pin-pad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--sp-3);
+  margin-top: var(--sp-4);
+}
+.pin-key {
+  padding: var(--sp-4) 0;
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--cream);
+  background: rgba(5,11,23,0.55);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  transition: border-color var(--t-fast) var(--ease), background var(--t-fast) var(--ease);
+}
+.pin-key:hover { border-color: var(--gold-500); }
+.pin-key:active { background: rgba(212,175,55,0.12); }
+
+/* =========================================================
+   PAINEL FINANCEIRO — shell mobile-first
+   ========================================================= */
+.fin-app {
+  position: fixed;
+  inset: 0;
+  height: 100vh;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  z-index: 5;
+  animation: fadeIn 280ms var(--ease);
+}
+.fin-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding: var(--sp-4) var(--sp-4) var(--sp-3);
+  border-bottom: 1px solid var(--line);
+  background: linear-gradient(180deg, rgba(10,22,40,0.6), rgba(10,22,40,0));
+}
+.fin-header-brand { display: flex; align-items: center; gap: var(--sp-3); min-width: 0; }
+.fin-header-brand img { width: 40px; height: 40px; flex-shrink: 0; }
+.fin-header-brand h1 {
+  font-family: var(--font-brand);
+  font-size: 1.15rem;
+  letter-spacing: 0.06em;
+  background: var(--grad-gold-text);
+  -webkit-background-clip: text;
+          background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+.fin-header-sub { font-size: 0.72rem; color: var(--text-3); }
+.fin-date {
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  color: var(--text-2);
+  text-align: right;
+  text-transform: capitalize;
+  white-space: nowrap;
+}
+.fin-content {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--sp-4);
+  animation: fadeInUp 240ms var(--ease-out);
+}
+.fin-nav {
+  display: flex;
+  border-top: 1px solid var(--line);
+  background: linear-gradient(180deg, rgba(15,31,58,0.6), rgba(5,11,23,0.96));
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.fin-nav-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 9px 4px 11px;
+  color: var(--text-mute);
+  font-size: 0.66rem;
+  font-weight: 600;
+  transition: color var(--t-fast) var(--ease);
+}
+.fin-nav-icon { display: grid; place-items: center; }
+.fin-nav-btn.active { color: var(--gold-300); }
+.fin-nav-btn.active .fin-nav-icon { filter: drop-shadow(0 0 6px rgba(212,175,55,0.5)); }
+
+/* =========================================================
+   HISTÓRICO DE VENDAS
+   ========================================================= */
+.hist-filters {
+  display: flex;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+  margin-bottom: var(--sp-3);
+}
+.hist-filters .table-search { min-width: 180px; max-width: none; flex: 1; }
+.hist-filters .input { flex: 1; min-width: 130px; }
+.hist-summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--sp-2) var(--sp-1);
+  margin-bottom: var(--sp-2);
+  font-size: 0.86rem;
+  color: var(--text-2);
+}
+.hist-summary strong { font-family: var(--font-brand); font-size: 1.05rem; }
+.hist-card {
+  padding: var(--sp-3) var(--sp-4);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--grad-navy-card);
+  margin-bottom: var(--sp-2);
+  cursor: pointer;
+  transition: border-color var(--t-fast) var(--ease);
+}
+.hist-card:hover { border-color: var(--gold-500); }
+.hist-card-top { display: flex; justify-content: space-between; align-items: baseline; }
+.hist-code { font-family: var(--font-mono); font-size: 0.78rem; color: var(--gold-300); }
+.hist-total { font-family: var(--font-brand); font-weight: 700; font-size: 1.05rem; color: var(--cream); }
+.hist-card-mid {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--sp-3);
+  margin: 5px 0 3px;
+}
+.hist-cust {
+  font-weight: 600;
+  color: var(--cream);
+  font-size: 0.9rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.hist-detail-row {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  padding: 5px 0;
+  font-size: 0.9rem;
+  color: var(--text-2);
+}
+.hist-detail-row strong { color: var(--cream); }
+.hist-detail-total {
+  border-top: 1px dashed var(--line);
+  margin-top: 6px;
+  padding-top: 9px;
+  font-family: var(--font-brand);
+  font-size: 1.1rem;
+}
+.hist-items { display: flex; flex-direction: column; gap: 2px; }
+.hist-item {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding: 5px 0;
+  font-size: 0.88rem;
+  color: var(--text-2);
+  border-bottom: 1px solid var(--line-mute);
+}
+.hist-item:last-child { border-bottom: 0; }

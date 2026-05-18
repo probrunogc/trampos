@@ -37,7 +37,7 @@ export async function render(root) {
     if (tab === 'company') content.innerHTML = renderCompanyForm(company);
     if (tab === 'delivery') content.innerHTML = renderDeliveryForm(company);
     if (tab === 'payments') content.innerHTML = renderPaymentsForm(company);
-    if (tab === 'system') content.innerHTML = renderSystemPanel();
+    if (tab === 'system') content.innerHTML = renderSystemPanel(company);
     wire(tab, content, company);
   }
 
@@ -130,7 +130,7 @@ function renderPaymentsForm(c) {
   `;
 }
 
-function renderSystemPanel() {
+function renderSystemPanel(c = {}) {
   const demo = isDemoMode();
   return `
     <div class="card">
@@ -143,9 +143,20 @@ function renderSystemPanel() {
             : '<span class="badge badge-success badge-dot">Firebase conectado</span>'}
         </div>
         <div class="flex justify-between items-center">
-          <span>Versão</span><span class="badge badge-mute">v1.1.0</span>
+          <span>Versão</span><span class="badge badge-mute">v1.2.0</span>
         </div>
       </div>
+
+      <div class="divider"></div>
+      <h4 class="card-title">Painel financeiro</h4>
+      <form id="pin-form">
+        <label class="field">
+          <span class="field-label">PIN de acesso (4 dígitos)</span>
+          <input name="financePin" inputmode="numeric" maxlength="4" value="${fmt.escape(String(c.financePin || '1234'))}" />
+          <span class="field-hint">Código que abre o painel financeiro no celular (endereço /financeiro).</span>
+        </label>
+        <button class="btn btn-primary" type="submit">Salvar PIN</button>
+      </form>
       ${demo ? `
         <div style="margin-top: var(--sp-4); padding: var(--sp-3); background: rgba(243,156,18,0.08); border: 1px solid rgba(243,156,18,0.3); border-radius: var(--r-md); font-size: .88rem; line-height: 1.5;">
           <strong class="text-gold">⚠ Modo Demo ativo</strong><br>
@@ -204,6 +215,14 @@ function wire(tab, content, c) {
     };
   }
   if (tab === 'system') {
+    const pinForm = content.querySelector('#pin-form');
+    if (pinForm) pinForm.onsubmit = async (e) => {
+      e.preventDefault();
+      const pin = String(new FormData(pinForm).get('financePin') || '').replace(/\D/g, '').slice(0, 4);
+      if (pin.length !== 4) { ui.toast('O PIN precisa ter 4 dígitos.', 'warning'); return; }
+      await db.createWithId('settings', 'company', { ...c, financePin: pin });
+      ui.toast('PIN do painel atualizado.', 'success');
+    };
     const btn = content.querySelector('#reset-demo');
     if (btn) btn.onclick = async () => {
       const ok = await ui.confirm({

@@ -1,94 +1,15 @@
 rules_version = '2';
 
 // =============================================================
-// REGRAS DE SEGURANÇA — Empório das Bebidas
-//
-// Modelo:
-// - Apenas usuários autenticados podem ler/escrever.
-// - Bootstrap: o PRIMEIRO usuário do sistema pode se autocriar como admin
-//   (somente enquanto `system/config` ainda não existir). Após o primeiro
-//   admin ser criado, somente admin pode criar novos usuários.
-// - O documento `users/{uid}` guarda o role (admin | vendedor | entregador).
+// REGRAS — Empório das Bebidas
+// Modelo simples: o app entra autenticado (login anônimo do Firebase).
+// Qualquer sessão autenticada pelo app pode ler/gravar os dados.
+// Sem internet/sem sessão do app = sem acesso.
 // =============================================================
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    function isAuthed() {
-      return request.auth != null;
-    }
-    function userRole() {
-      return exists(/databases/$(database)/documents/users/$(request.auth.uid))
-        ? get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role
-        : null;
-    }
-    function isAdmin()     { return isAuthed() && userRole() == 'admin'; }
-    function isSeller()    { return isAuthed() && (userRole() == 'vendedor' || userRole() == 'admin'); }
-    function isDeliverer() { return isAuthed() && userRole() == 'entregador'; }
-    function isStaff()     { return isAdmin() || isSeller(); }
-    function isSetup()     { return exists(/databases/$(database)/documents/system/config); }
-
-    // === SYSTEM (config global) ===
-    match /system/{id} {
-      allow read:   if isAuthed();
-      // Permite criar `system/config` durante bootstrap (qualquer auth) ou se admin
-      allow create: if isAuthed() && !isSetup();
-      allow update, delete: if isAdmin();
-    }
-
-    // === USUÁRIOS ===
-    match /users/{uid} {
-      allow read:   if isAuthed() && (request.auth.uid == uid || isAdmin());
-      // Bootstrap: primeiro usuário pode se autocriar como admin
-      // Depois disso: apenas admin pode criar novos usuários
-      allow create: if isAdmin()
-                    || (isAuthed() && request.auth.uid == uid && !isSetup()
-                        && request.resource.data.role == 'admin');
-      allow update: if isAdmin() || (request.auth.uid == uid
-                       && !('role' in request.resource.data.diff(resource.data).affectedKeys()));
-      allow delete: if isAdmin();
-    }
-
-    // === CONFIG / SETTINGS DA EMPRESA ===
-    match /settings/{id} {
-      allow read:   if isAuthed();
-      allow write:  if isAdmin();
-    }
-
-    // === CLIENTES ===
-    match /customers/{id} {
-      allow read:   if isAuthed();
-      allow create, update: if isStaff();
-      allow delete: if isAdmin();
-    }
-
-    // === PRODUTOS ===
-    match /products/{id} {
-      allow read:   if isAuthed();
-      allow create, update: if isStaff();
-      allow delete: if isAdmin();
-    }
-
-    // === ENTREGADORES ===
-    match /deliverers/{id} {
-      allow read:   if isAuthed();
-      allow create, update: if isStaff();
-      allow delete: if isAdmin();
-    }
-
-    // === VENDAS ===
-    match /sales/{id} {
-      allow read:   if isStaff() ||
-                       (isDeliverer() && resource.data.delivery.delivererId == request.auth.uid);
-      allow create: if isStaff();
-      allow update: if isStaff() ||
-                       (isDeliverer() && resource.data.delivery.delivererId == request.auth.uid
-                          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['delivery', 'updatedAt', 'status']));
-      allow delete: if isAdmin();
-    }
-
-    // === FALLBACK ===
     match /{document=**} {
-      allow read, write: if false;
+      allow read, write: if request.auth != null;
     }
   }
 }

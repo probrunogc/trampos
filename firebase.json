@@ -11,6 +11,7 @@
       ".firebaserc"
     ],
     "rewrites": [
+      { "source": "/financeiro", "destination": "/financeiro.html" },
       { "source": "**", "destination": "/index.html" }
     ],
     "headers": [

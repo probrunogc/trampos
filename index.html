@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <meta name="theme-color" content="#0A1628" />
-  <title>Empório das Bebidas — Sistema de Gestão</title>
+  <title>Empório das Bebidas — Caixa</title>
 
   <!-- PWA / modo aplicativo -->
   <link rel="manifest" href="manifest.json" />
@@ -34,11 +34,11 @@
       <img src="assets/logo.svg" alt="Empório das Bebidas" />
     </div>
     <div class="boot-progress"><div class="boot-progress-bar"></div></div>
-    <p class="boot-hint">Inicializando sistema…</p>
+    <p class="boot-hint">Inicializando caixa…</p>
   </div>
 
-  <!-- Login screen -->
-  <section id="screen-login" class="screen-login hidden">
+  <!-- Seletor de operador -->
+  <section id="screen-operator" class="screen-login hidden">
     <div class="login-bg-grain"></div>
     <div class="login-card">
       <div class="login-medallion">
@@ -46,64 +46,10 @@
       </div>
       <h1 class="login-title">EMPÓRIO</h1>
       <p class="login-sub">das Bebidas</p>
-      <p class="login-since">★ SINCE 2025 ★</p>
+      <p class="login-since">★ CAIXA ★</p>
 
-      <form id="form-login" class="login-form" autocomplete="off" novalidate>
-        <label class="field">
-          <span class="field-label">E-mail</span>
-          <input type="email" id="login-email" required autocomplete="username" placeholder="seu@email.com" />
-        </label>
-        <label class="field">
-          <span class="field-label">Senha</span>
-          <input type="password" id="login-password" required autocomplete="current-password" placeholder="••••••••" />
-        </label>
-        <div id="login-error" class="login-error" role="alert"></div>
-        <button type="submit" class="btn btn-primary btn-block" id="login-submit">
-          <span>Entrar</span>
-        </button>
-        <p class="login-hint">
-          <a href="#" id="link-bootstrap">Primeiro acesso? Configurar administrador →</a>
-        </p>
-      </form>
-    </div>
-  </section>
-
-  <!-- Bootstrap screen — criar primeiro admin -->
-  <section id="screen-bootstrap" class="screen-login hidden">
-    <div class="login-bg-grain"></div>
-    <div class="login-card">
-      <div class="login-medallion">
-        <img src="assets/logo.svg" alt="Empório das Bebidas" />
-      </div>
-      <h1 class="login-title">SETUP</h1>
-      <p class="login-sub">primeiro acesso</p>
-      <p class="login-since">★ CRIE O ADMIN ★</p>
-
-      <form id="form-bootstrap" class="login-form" autocomplete="off" novalidate>
-        <label class="field">
-          <span class="field-label">Seu nome</span>
-          <input type="text" id="bs-name" required placeholder="Ex.: Bruno" />
-        </label>
-        <label class="field">
-          <span class="field-label">E-mail</span>
-          <input type="email" id="bs-email" required placeholder="seu@email.com" />
-        </label>
-        <label class="field">
-          <span class="field-label">Senha</span>
-          <input type="password" id="bs-password" required minlength="6" placeholder="mínimo 6 caracteres" />
-        </label>
-        <label class="field">
-          <span class="field-label">Confirmar senha</span>
-          <input type="password" id="bs-password2" required minlength="6" placeholder="repita a senha" />
-        </label>
-        <div id="bootstrap-error" class="login-error" role="alert"></div>
-        <button type="submit" class="btn btn-primary btn-block" id="bs-submit">
-          <span>Criar administrador</span>
-        </button>
-        <p class="login-hint">
-          <a href="#" id="link-back-login">← Voltar para login</a>
-        </p>
-      </form>
+      <p class="op-prompt">Quem está no caixa?</p>
+      <div class="op-grid" id="op-grid"><!-- operadores injetados pelo app.js --></div>
     </div>
   </section>
 
@@ -121,7 +67,7 @@
       </div>
 
       <nav class="sidebar-nav" id="sidebar-nav">
-        <!-- Items injected by app.js based on user role -->
+        <!-- Items injected by app.js -->
       </nav>
 
       <div class="sidebar-footer">
@@ -132,7 +78,7 @@
             <span class="user-chip-role" id="user-role">—</span>
           </div>
         </div>
-        <button class="btn-icon-ghost" id="btn-logout" title="Sair">
+        <button class="btn-icon-ghost" id="btn-logout" title="Trocar operador">
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
             <polyline points="16 17 21 12 16 7"/>
@@ -153,8 +99,8 @@
             </svg>
           </button>
           <div class="topbar-title">
-            <h2 id="page-title">Dashboard</h2>
-            <p id="page-subtitle" class="topbar-sub">Visão geral do empório</p>
+            <h2 id="page-title">PDV</h2>
+            <p id="page-subtitle" class="topbar-sub">Registrar nova venda</p>
           </div>
         </div>
         <div class="topbar-right">
@@ -189,19 +135,17 @@
   <!-- Toast host -->
   <div id="toast-host" class="toast-host" aria-live="polite"></div>
 
-  <!-- Print host (escondido em tela, visível em impressão) -->
+  <!-- Print host -->
   <div id="print-host" class="print-host"></div>
 
   <script type="module" src="scripts/app.js"></script>
 
-  <!-- PWA: registra service worker + comportamento de aplicativo -->
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('sw.js').catch(() => {});
       });
     }
-    // Bloqueia menu de contexto e zoom por gesto — cara de programa
     document.addEventListener('contextmenu', e => e.preventDefault());
     document.addEventListener('gesturestart', e => e.preventDefault());
     document.addEventListener('dblclick', e => e.preventDefault());
