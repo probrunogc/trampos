@@ -158,15 +158,7 @@ function renderSystemPanel() {
         <div class="divider"></div>
         <h4 class="card-title">Manutenção</h4>
         <button class="btn btn-danger" id="reset-demo">${icon('refresh', { size: 14 })} Limpar dados (demo)</button>
-      ` : `
-        <div class="divider"></div>
-        <h4 class="card-title">Manutenção</h4>
-        <p class="text-mute small" style="margin-bottom: var(--sp-3); line-height: 1.5">
-          Apaga <strong>todas</strong> as vendas, clientes, produtos e entregadores cadastrados.
-          Os usuários e configurações são mantidos. Use para zerar os dados de demonstração antes de começar a usar de verdade.
-        </p>
-        <button class="btn btn-danger" id="reset-firebase">${icon('trash', { size: 14 })} Apagar todos os dados operacionais</button>
-      `}
+      ` : ''}
     </div>
   `;
 }
@@ -226,31 +218,5 @@ function wire(tab, content, c) {
       }
     };
 
-    const btnFb = content.querySelector('#reset-firebase');
-    if (btnFb) btnFb.onclick = async () => {
-      const ok = await ui.confirm({
-        title: 'Apagar todos os dados operacionais',
-        message: 'Serão removidos TODOS os registros de vendas, clientes, produtos e entregadores do Firebase. Usuários e configurações são preservados. Esta ação é irreversível.',
-        okText: 'Apagar tudo', danger: true
-      });
-      if (!ok) return;
-      btnFb.disabled = true;
-      btnFb.textContent = 'Apagando…';
-      try {
-        const collections = ['sales', 'customers', 'products', 'deliverers'];
-        for (const col of collections) {
-          const docs = await db.list(col);
-          for (const doc of docs) {
-            await db.remove(col, doc.id);
-          }
-        }
-        ui.toast('Dados apagados com sucesso. Recarregando...', 'success');
-        setTimeout(() => location.reload(), 1200);
-      } catch (err) {
-        ui.toast(err.message || 'Erro ao apagar dados.', 'danger');
-        btnFb.disabled = false;
-        btnFb.innerHTML = `${icon('trash', { size: 14 })} Apagar todos os dados operacionais`;
-      }
-    };
   }
 }
