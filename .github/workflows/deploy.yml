@@ -1,4 +1,4 @@
-name: Deploy Firebase Hosting + Firestore Rules
+name: Deploy Firebase Hosting
 
 on:
   push:
@@ -10,13 +10,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      - uses: google-github-actions/auth@v2
-        with:
-          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-
-      - name: Deploy Firestore Rules
-        run: npx firebase-tools@latest deploy --only firestore:rules --non-interactive
 
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
