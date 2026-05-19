@@ -1,0 +1,17 @@
+{
+  "name": "Empório GO — Delivery",
+  "short_name": "Empório GO",
+  "description": "Delivery de bebidas — Empório GO, Presidente Figueiredo.",
+  "lang": "pt-BR",
+  "start_url": "./loja.html",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": ["standalone", "fullscreen"],
+  "orientation": "portrait",
+  "background_color": "#1A0A4A",
+  "theme_color": "#1A0A4A",
+  "categories": ["food", "shopping"],
+  "icons": [
+    { "src": "assets/logo.png", "sizes": "any", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

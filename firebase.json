@@ -11,7 +11,9 @@
       ".firebaserc"
     ],
     "rewrites": [
-      { "source": "**", "destination": "/index.html" }
+      { "source": "/loja",    "destination": "/loja.html" },
+      { "source": "/loja/**", "destination": "/loja.html" },
+      { "source": "**",       "destination": "/index.html" }
     ],
     "headers": [
       {

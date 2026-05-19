@@ -50,7 +50,7 @@ service cloud.firestore {
 
     // === CONFIG / SETTINGS DA EMPRESA ===
     match /settings/{id} {
-      allow read:   if isAuthed();
+      allow read:   if true;    // loja pública lê configurações
       allow write:  if isAdmin();
     }
 
@@ -63,8 +63,15 @@ service cloud.firestore {
 
     // === PRODUTOS ===
     match /products/{id} {
-      allow read:   if isAuthed();
+      allow read:   if true;    // loja pública lê catálogo
       allow create, update: if isStaff();
+      allow delete: if isAdmin();
+    }
+
+    // === PEDIDOS DA LOJA ONLINE ===
+    match /orders/{id} {
+      allow create: if true;    // qualquer visitante pode fazer pedido
+      allow read, update: if isStaff();
       allow delete: if isAdmin();
     }
 

@@ -23,6 +23,7 @@ export async function render(root) {
         <button class="settings-tab active" data-tab="company">Dados do Empório</button>
         <button class="settings-tab" data-tab="delivery">Entrega</button>
         <button class="settings-tab" data-tab="payments">Pagamentos</button>
+        <button class="settings-tab" data-tab="loja">Loja Online</button>
         <button class="settings-tab" data-tab="system">Sistema</button>
       </aside>
       <div id="settings-content"></div>
@@ -34,10 +35,11 @@ export async function render(root) {
 
   function activate(tab) {
     tabs.forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
-    if (tab === 'company') content.innerHTML = renderCompanyForm(company);
+    if (tab === 'company')  content.innerHTML = renderCompanyForm(company);
     if (tab === 'delivery') content.innerHTML = renderDeliveryForm(company);
     if (tab === 'payments') content.innerHTML = renderPaymentsForm(company);
-    if (tab === 'system') content.innerHTML = renderSystemPanel();
+    if (tab === 'loja')     content.innerHTML = renderLojaForm(company);
+    if (tab === 'system')   content.innerHTML = renderSystemPanel();
     wire(tab, content, company);
   }
 
@@ -130,6 +132,68 @@ function renderPaymentsForm(c) {
   `;
 }
 
+function renderLojaForm(c) {
+  const pays = c.lojaPayments || ['pix', 'credito', 'debito', 'dinheiro'];
+  const ALL_PAY = [
+    { id: 'pix',      label: 'PIX' },
+    { id: 'credito',  label: 'Crédito' },
+    { id: 'debito',   label: 'Débito' },
+    { id: 'dinheiro', label: 'Dinheiro' },
+  ];
+  return `
+    <div class="card">
+      <div class="card-title">Loja Online — Configurações</div>
+      <form id="loja-form">
+        <div class="field-row">
+          <label class="field" style="grid-column: span 2">
+            <span class="field-label">WhatsApp para pedidos</span>
+            <input name="lojaWhatsApp" value="${fmt.escape(c.lojaWhatsApp || c.phone || '')}" placeholder="Ex.: 92991234567" />
+            <span class="field-hint">Só números. Os clientes serão direcionados a este número.</span>
+          </label>
+          <label class="field">
+            <span class="field-label">Tempo estimado de entrega</span>
+            <input name="lojaDeliveryTime" value="${fmt.escape(c.lojaDeliveryTime || '30–45 min')}" placeholder="Ex.: 30–45 min" />
+          </label>
+        </div>
+        <div class="field-row">
+          <label class="field">
+            <span class="field-label">Status da loja</span>
+            <select name="lojaOpen">
+              <option value="true"  ${c.lojaOpen !== false ? 'selected' : ''}>Aberta (aceitando pedidos)</option>
+              <option value="false" ${c.lojaOpen === false  ? 'selected' : ''}>Fechada</option>
+            </select>
+          </label>
+          <label class="field">
+            <span class="field-label">Pedido mínimo (R$)</span>
+            <input name="lojaMinOrder" type="number" min="0" step="0.01" value="${c.lojaMinOrder || 0}" />
+          </label>
+        </div>
+        <label class="field">
+          <span class="field-label">Formas de pagamento aceitas na entrega</span>
+          <div class="flex gap-3 flex-wrap" style="margin-top:6px">
+            ${ALL_PAY.map(p => `
+              <label style="display:flex;align-items:center;gap:6px;font-size:.88rem;cursor:pointer">
+                <input type="checkbox" name="pay_${p.id}" ${pays.includes(p.id) ? 'checked' : ''} />
+                ${p.label}
+              </label>
+            `).join('')}
+          </div>
+        </label>
+        <button class="btn btn-primary" type="submit">Salvar</button>
+      </form>
+    </div>
+    <div class="card" style="margin-top:var(--sp-4)">
+      <div class="card-title">Link da loja</div>
+      <p class="text-mute small" style="line-height:1.5;margin-bottom:var(--sp-3)">
+        Compartilhe este link com os clientes para acessar o aplicativo de delivery:
+      </p>
+      <a href="/loja.html" target="_blank" class="btn btn-ghost" style="word-break:break-all">
+        ${location.origin}/loja.html →
+      </a>
+    </div>
+  `;
+}
+
 function renderSystemPanel() {
   const demo = isDemoMode();
   return `
@@ -201,6 +265,22 @@ function wire(tab, content, c) {
       };
       await db.createWithId('settings', 'company', { ...c, ...payload });
       ui.toast('Taxas atualizadas.', 'success');
+    };
+  }
+  if (tab === 'loja') {
+    content.querySelector('#loja-form').onsubmit = async (e) => {
+      e.preventDefault();
+      const fd = Object.fromEntries(new FormData(e.target));
+      const pays = ['pix', 'credito', 'debito', 'dinheiro'].filter(id => fd[`pay_${id}`] === 'on');
+      const payload = {
+        lojaWhatsApp:    (fd.lojaWhatsApp || '').replace(/\D/g, ''),
+        lojaDeliveryTime: fd.lojaDeliveryTime.trim(),
+        lojaOpen:        fd.lojaOpen === 'true',
+        lojaMinOrder:    parseFloat(fd.lojaMinOrder) || 0,
+        lojaPayments:    pays,
+      };
+      await db.createWithId('settings', 'company', { ...c, ...payload });
+      ui.toast('Configurações da loja atualizadas.', 'success');
     };
   }
   if (tab === 'system') {

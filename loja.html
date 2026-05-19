@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#1A0A4A" />
+  <title>Empório GO — Delivery</title>
+
+  <!-- PWA -->
+  <link rel="manifest" href="loja-manifest.json" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Empório GO" />
+  <link rel="apple-touch-icon" href="assets/logo.png" />
+  <link rel="icon" type="image/png" href="assets/logo.png" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="styles/loja.css" />
+</head>
+<body>
+  <!-- Splash -->
+  <div id="splash" class="loja-splash">
+    <img src="assets/logo.png" alt="Empório GO" />
+    <p>Carregando…</p>
+  </div>
+
+  <!-- App shell -->
+  <div id="app" class="loja-app hidden">
+    <div id="view-root" class="view-root"></div>
+    <nav id="bottom-nav" class="bottom-nav"></nav>
+  </div>
+
+  <script type="module" src="scripts/loja.js"></script>
+  <script>
+    document.addEventListener('contextmenu', e => e.preventDefault());
+    document.addEventListener('gesturestart', e => e.preventDefault());
+    document.addEventListener('dblclick', e => e.preventDefault());
+  </script>
+</body>
+</html>
