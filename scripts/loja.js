@@ -3,7 +3,7 @@
  * SPA de delivery com Firebase Firestore + WhatsApp checkout
  */
 
-import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js';
+import { initializeApp, getApps, getApp } from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js';
 import {
   getFirestore, collection, getDocs, query, orderBy,
   addDoc, serverTimestamp, doc, getDoc
@@ -12,7 +12,7 @@ import { firebaseConfig } from './firebase-config.js';
 import { productImage } from './product-art.js';
 
 /* ─── Firebase ─────────────────────────────────────────────── */
-const fbApp = initializeApp(firebaseConfig, 'loja');
+const fbApp = getApps().length ? getApp() : initializeApp(firebaseConfig);
 const db    = getFirestore(fbApp);
 
 /* ─── Categories definition ─────────────────────────────────── */
@@ -134,6 +134,20 @@ function getWAPhone() {
   return (S.settings.lojaWhatsApp || S.settings.phone || '').replace(/\D/g, '');
 }
 
+/* Mensagem rápida do carrinho — sem dados do cliente (ele informa no chat) */
+function buildCartMessage() {
+  const fee   = S.settings.deliveryFee || 0;
+  const total = cartTotal() + fee;
+  const items = S.cart.map(i => `• ${i.qty}x ${i.name} — ${brl(i.price * i.qty)}`).join('\n');
+  let msg = `*Pedido — Empório GO* 🍺\n\n`;
+  msg += `*Itens:*\n${items}\n\n`;
+  if (fee > 0) msg += `Taxa de entrega: ${brl(fee)}\n`;
+  msg += `*Total: ${brl(total)}*\n\n`;
+  msg += `Olá! Gostaria de fazer este pedido. Pode confirmar disponibilidade e me passar o endereço de entrega? 😊`;
+  return msg;
+}
+
+/* Mensagem completa após checkout com dados do cliente */
 function buildOrderMessage() {
   const d = S.checkout;
   const fee = S.settings.deliveryFee || 0;
@@ -141,11 +155,11 @@ function buildOrderMessage() {
   const payLabel = { pix:'PIX', credito:'Cartão de Crédito', debito:'Cartão de Débito', dinheiro:'Dinheiro' };
   const items = S.cart.map(i => `• ${i.qty}x ${i.name} — ${brl(i.price * i.qty)}`).join('\n');
 
-  let msg = `*Pedido — Empório GO*\n\n`;
+  let msg = `*Pedido — Empório GO* 🍺\n\n`;
   msg += `*Itens:*\n${items}\n\n`;
   if (fee > 0) msg += `Entrega: ${brl(fee)}\n`;
   msg += `*Total: ${brl(total)}*\n\n`;
-  msg += `*Dados:*\n`;
+  msg += `*Dados do cliente:*\n`;
   msg += `Nome: ${d.name}\n`;
   msg += `WhatsApp: ${d.phone}\n`;
   msg += `Endereço: ${d.address}${d.number ? ', nº ' + d.number : ''}`;
@@ -764,7 +778,7 @@ function wireCart(c) {
     btn.addEventListener('click', () => { removeFromCart(btn.dataset.cid); go('cart'); });
   });
   c.querySelector('#btn-wa-cart')?.addEventListener('click', () => {
-    openWhatsApp(buildOrderMessage());
+    openWhatsApp(buildCartMessage());
   });
   c.querySelector('#btn-go-checkout')?.addEventListener('click', () => {
     if (S.cart.length > 0) go('checkout');
