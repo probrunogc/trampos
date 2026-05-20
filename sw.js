@@ -5,7 +5,7 @@
  *  - Offline → serve do cache; navegação cai no index.html.
  * Nunca serve código velho com internet — seguro pra atualizações.
  */
-const CACHE = 'emporio-v17';
+const CACHE = 'emporio-v18';
 const SHELL = [
   './',
   './kiosk.html',

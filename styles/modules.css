@@ -947,33 +947,72 @@
 .kiosk-mode .pdv-cart {
   min-width: 420px;
 }
+
+/* Grid: cards um pouco maiores */
 .kiosk-mode .pdv-grid {
-  grid-template-columns: repeat(auto-fill, minmax(175px, 1fr));
-  gap: var(--sp-4);
-  padding: var(--sp-5);
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: var(--sp-3);
+  padding: var(--sp-4);
 }
+
+/* Card: canvas sem padding, imagem borda a borda */
 .kiosk-mode .pdv-product {
-  min-height: 130px;
+  padding: 0;
+  overflow: hidden;
+  min-height: 0;
+  flex-direction: column;
 }
 .kiosk-mode .pdv-product-img {
-  height: 110px;
+  width: 100%;
+  height: 130px;
+  margin-bottom: 0;
+  border-radius: 0;
+  flex-shrink: 0;
 }
+
+/* Categoria removida do card — já existe no filtro de chips */
+.kiosk-mode .pdv-product-cat { display: none; }
+
+/* Nome como inscrição: centralizado e legível */
 .kiosk-mode .pdv-product-name {
-  font-size: 0.9rem;
+  font-size: 0.82rem;
   font-weight: 700;
+  text-align: center;
+  padding: 8px 10px 2px;
+  line-height: 1.25;
+  flex: 0;
+  letter-spacing: 0.01em;
 }
+
+/* Preço centrado em destaque */
 .kiosk-mode .pdv-product-price {
-  font-size: 1.05rem;
+  font-size: 1rem;
   font-weight: 800;
+  text-align: center;
+  padding: 0 10px 10px;
+}
+
+/* Estoque: esconde quando normal, mostra só quando crítico */
+.kiosk-mode .pdv-product-stock { display: none; }
+.kiosk-mode .pdv-product-stock.low,
+.kiosk-mode .pdv-product-stock.zero {
+  display: block;
+  text-align: center;
+  font-size: 0.7rem;
+  padding-bottom: 8px;
+}
+
+/* Chips de categoria: tamanho equilibrado */
+.kiosk-mode .pdv-cat-chip {
+  font-size: 0.82rem;
+  padding: 6px 14px;
 }
 .kiosk-mode .pdv-search-bar input {
   font-size: 1rem;
   padding: 13px 14px 13px 44px;
 }
-.kiosk-mode .pdv-cat-chip {
-  font-size: 0.85rem;
-  padding: 8px 18px;
-}
+
+/* Carrinho */
 .kiosk-mode .cart-item-name {
   font-size: 0.95rem;
   font-weight: 600;
