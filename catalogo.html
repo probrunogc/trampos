@@ -7,494 +7,324 @@
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 :root{
-  --gold:#F5C842;--purple:#1A0A4A;--purple2:#2D1070;--purple3:#3D1A8A;
-  --green:#22c55e;--red:#ef4444;--white:#fff;--grey:rgba(255,255,255,0.55);
-  --card-bg:rgba(255,255,255,0.07);--card-sel:rgba(245,200,66,0.18);
+  --gold:#F5C842;--purple:#12073a;--purple2:#1e0f5c;--purple3:#2d1a8a;
+  --card:rgba(255,255,255,0.07);--sel:rgba(245,200,66,0.15);--grey:rgba(255,255,255,0.5);
 }
-html,body{height:100%;overflow:hidden;background:var(--purple);color:#fff;
-  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif}
-/* ── Screens ── */
-.screen{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;
-  justify-content:center;padding:24px;overflow-y:auto;overflow-x:hidden;
-  transition:opacity .35s,transform .35s;will-change:transform,opacity}
-.screen.hidden{opacity:0;pointer-events:none;transform:translateX(60px)}
-.screen.out{opacity:0;pointer-events:none;transform:translateX(-60px)}
-/* ── XP bar ── */
-#xp-bar-wrap{position:fixed;top:0;left:0;right:0;height:4px;background:rgba(255,255,255,0.1);z-index:99;display:none}
-#xp-bar{height:100%;background:linear-gradient(90deg,var(--gold),#ff9d00);width:0;transition:width .4s cubic-bezier(.34,1.56,.64,1)}
-/* ── Floating XP toast ── */
-#xp-toast{position:fixed;top:18px;right:18px;background:var(--gold);color:var(--purple);
-  font-weight:800;font-size:13px;padding:4px 10px;border-radius:20px;z-index:200;
-  opacity:0;transform:translateY(0);pointer-events:none;transition:opacity .2s,transform .6s}
-#xp-toast.pop{opacity:1;transform:translateY(-28px)}
-/* ── Screen 1: Intro ── */
-#s-intro{background:radial-gradient(ellipse at 50% 30%,#3D1A8A 0%,#1A0A4A 70%)}
-.intro-logo{width:88px;height:88px;border-radius:24px;margin-bottom:20px;
-  animation:logoPulse 2s ease-in-out infinite}
-@keyframes logoPulse{0%,100%{box-shadow:0 0 0 0 rgba(245,200,66,0.5)}50%{box-shadow:0 0 0 18px rgba(245,200,66,0)}}
-.intro-title{font-size:28px;font-weight:900;letter-spacing:1px;color:var(--gold);text-align:center}
-.intro-sub{font-size:14px;color:rgba(255,255,255,0.6);margin-top:8px;text-align:center;line-height:1.5}
-.stars{font-size:22px;margin:16px 0;letter-spacing:4px}
-/* ── Buttons ── */
-.btn-main{width:100%;max-width:320px;padding:16px;background:var(--gold);color:var(--purple);
-  border:none;border-radius:14px;font-size:17px;font-weight:800;cursor:pointer;margin-top:28px;
-  transition:transform .12s,box-shadow .12s;box-shadow:0 4px 20px rgba(245,200,66,0.4)}
-.btn-main:active{transform:scale(0.96);box-shadow:0 2px 8px rgba(245,200,66,0.3)}
-.btn-sec{background:transparent;border:2px solid rgba(255,255,255,0.2);color:#fff;
-  box-shadow:none;margin-top:12px;font-size:15px}
-.btn-sec:active{transform:scale(0.96)}
-/* ── Screen 2: Register ── */
-.field-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;
-  color:rgba(255,255,255,0.5);margin-bottom:6px;display:block}
-.field-input{width:100%;background:rgba(255,255,255,0.08);border:1.5px solid rgba(255,255,255,0.12);
-  border-radius:12px;padding:14px 16px;color:#fff;font-size:16px;outline:none;margin-bottom:20px;
-  transition:border-color .15s}
-.field-input:focus{border-color:var(--gold)}
-.reg-title{font-size:22px;font-weight:800;margin-bottom:6px;text-align:center}
-.reg-sub{font-size:13px;color:var(--grey);margin-bottom:32px;text-align:center}
-/* ── Screen 3: Categories ── */
-.cats-header{text-align:center;margin-bottom:24px;width:100%}
-.cats-header h2{font-size:20px;font-weight:800}
-.cats-header p{font-size:13px;color:var(--grey);margin-top:4px}
-.cats-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;width:100%;max-width:400px}
-.cat-card{background:var(--card-bg);border:1.5px solid rgba(255,255,255,0.1);border-radius:18px;
-  padding:20px 14px;text-align:center;cursor:pointer;transition:transform .15s,border-color .15s,background .15s;
-  position:relative;overflow:hidden}
-.cat-card:active{transform:scale(0.95)}
-.cat-card.done{border-color:var(--gold);background:rgba(245,200,66,0.1)}
-.cat-card.done::after{content:'✓';position:absolute;top:8px;right:10px;
-  font-size:12px;font-weight:800;color:var(--gold)}
-.cat-icon{font-size:32px;margin-bottom:8px}
-.cat-name{font-size:13px;font-weight:700}
-.cat-count{font-size:11px;color:var(--grey);margin-top:3px}
-.cat-progress{height:3px;background:rgba(255,255,255,0.1);border-radius:2px;margin-top:8px}
-.cat-progress-fill{height:100%;background:var(--gold);border-radius:2px;transition:width .3s}
-/* ── Screen 4: Products ── */
-.prod-header{width:100%;display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-shrink:0}
-.btn-back{background:rgba(255,255,255,0.1);border:none;border-radius:10px;
-  width:40px;height:40px;color:#fff;font-size:18px;cursor:pointer;flex-shrink:0;transition:background .15s}
-.btn-back:active{background:rgba(255,255,255,0.2)}
-.prod-cat-title{font-size:17px;font-weight:800;flex:1}
-.prod-cat-icon{font-size:22px}
-.prod-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%;
-  overflow-y:auto;flex:1;padding-bottom:80px;align-content:start}
-.prod-card{background:var(--card-bg);border:1.5px solid rgba(255,255,255,0.09);
-  border-radius:14px;padding:14px 12px;cursor:pointer;transition:transform .12s,border-color .15s,background .15s;
-  user-select:none;position:relative;min-height:90px;display:flex;flex-direction:column;justify-content:space-between}
-.prod-card:active{transform:scale(0.94)}
-.prod-card.sel{border-color:var(--gold);background:var(--card-sel)}
-.prod-card.sel::before{content:'✓';position:absolute;top:8px;right:10px;
-  font-size:13px;font-weight:900;color:var(--gold);
-  animation:checkPop .2s cubic-bezier(.34,1.56,.64,1)}
-@keyframes checkPop{from{transform:scale(0)}to{transform:scale(1)}}
-.prod-card.bounce{animation:cardBounce .25s cubic-bezier(.34,1.56,.64,1)}
-@keyframes cardBounce{0%{transform:scale(1)}50%{transform:scale(1.06)}100%{transform:scale(1)}}
-.prod-name{font-size:13px;font-weight:700;line-height:1.3}
-.prod-brand-input{width:100%;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.15);
-  border-radius:8px;padding:6px 8px;color:#fff;font-size:11px;margin-top:6px;outline:none;
-  display:none;transition:border-color .15s}
-.prod-brand-input:focus{border-color:var(--gold)}
-.prod-price-input{width:100%;background:rgba(245,200,66,0.12);border:1px solid rgba(245,200,66,0.3);
-  border-radius:8px;padding:6px 8px;color:var(--gold);font-size:12px;font-weight:700;margin-top:5px;
-  outline:none;display:none}
-.prod-card.sel .prod-brand-input,.prod-card.sel .prod-price-input{display:block}
-/* bottom done bar */
-.done-bar{position:fixed;bottom:0;left:0;right:0;padding:12px 16px;background:var(--purple);
-  border-top:1px solid rgba(255,255,255,0.08);display:flex;gap:10px;align-items:center}
-.done-bar-count{font-size:13px;color:var(--grey);flex:1}
-.done-bar-count strong{color:var(--gold)}
-/* ── Combo toast ── */
-#combo-toast{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(0);
-  background:var(--gold);color:var(--purple);font-size:24px;font-weight:900;
-  padding:10px 24px;border-radius:16px;z-index:300;pointer-events:none;
-  transition:transform .2s cubic-bezier(.34,1.56,.64,1),opacity .3s}
-#combo-toast.show{transform:translate(-50%,-60%) scale(1);opacity:1}
-#combo-toast.hide{transform:translate(-50%,-60%) scale(0.8);opacity:0}
-/* ── Screen 5: Final ── */
-#s-final{background:radial-gradient(ellipse at 50% 20%,#3D1A8A,#1A0A4A 70%);overflow-y:auto}
-.final-emoji{font-size:64px;animation:finalPop .6s cubic-bezier(.34,1.56,.64,1) both}
-@keyframes finalPop{from{transform:scale(0) rotate(-20deg)}to{transform:scale(1) rotate(0)}}
-.final-title{font-size:26px;font-weight:900;color:var(--gold);margin-top:16px;text-align:center}
-.final-sub{font-size:14px;color:var(--grey);margin-top:6px;text-align:center}
-.final-score{background:rgba(245,200,66,0.12);border:1.5px solid rgba(245,200,66,0.3);
-  border-radius:16px;padding:20px;margin:20px 0;width:100%;max-width:340px;text-align:center}
-.final-score-num{font-size:48px;font-weight:900;color:var(--gold);line-height:1}
-.final-score-label{font-size:12px;color:var(--grey);margin-top:4px}
-.final-cats{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:20px;width:100%;max-width:340px}
-.final-cat-badge{background:rgba(255,255,255,0.08);border-radius:20px;padding:5px 12px;
-  font-size:12px;font-weight:600}
-/* ── Confetti ── */
-.confetti-piece{position:fixed;width:8px;height:8px;border-radius:2px;
-  animation:confettiFall 2.5s ease-in forwards;pointer-events:none;z-index:400}
-@keyframes confettiFall{
-  0%{transform:translateY(-20px) rotate(0deg);opacity:1}
-  100%{transform:translateY(110vh) rotate(720deg);opacity:0}
-}
-/* ── Ripple ── */
-.ripple{position:absolute;border-radius:50%;background:rgba(245,200,66,0.35);
-  transform:scale(0);animation:rippleAnim .5s ease-out forwards;pointer-events:none}
-@keyframes rippleAnim{to{transform:scale(4);opacity:0}}
+html,body{height:100%;background:var(--purple);color:#fff;
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;overflow:hidden}
+
+/* ── screens ── */
+.screen{position:absolute;inset:0;display:flex;flex-direction:column;
+  transition:opacity .28s,transform .28s;will-change:transform,opacity;overflow:hidden}
+.screen.hidden{opacity:0;pointer-events:none;transform:translateX(48px)}
+.screen.out   {opacity:0;pointer-events:none;transform:translateX(-48px)}
+
+/* ── save indicator ── */
+#save-dot{position:fixed;top:14px;right:16px;font-size:11px;font-weight:700;
+  color:rgba(255,255,255,0.35);z-index:99;transition:color .3s}
+#save-dot.saving{color:var(--gold)}
+#save-dot.saved {color:#22c55e}
+
+/* ── CATEGORIES screen ── */
+#s-cats{padding:0;background:var(--purple)}
+.cats-top{padding:24px 20px 16px;flex-shrink:0}
+.cats-top h1{font-size:22px;font-weight:900;color:var(--gold)}
+.cats-top p{font-size:13px;color:var(--grey);margin-top:4px}
+.total-badge{display:inline-flex;align-items:center;gap:6px;background:var(--sel);
+  border:1px solid rgba(245,200,66,0.3);border-radius:20px;padding:4px 12px;
+  font-size:12px;font-weight:700;color:var(--gold);margin-top:10px}
+.cats-scroll{flex:1;overflow-y:auto;padding:0 16px 24px;display:grid;
+  grid-template-columns:1fr 1fr;gap:12px;align-content:start}
+.cat-card{background:var(--card);border:1.5px solid rgba(255,255,255,0.08);
+  border-radius:18px;padding:20px 14px 16px;cursor:pointer;
+  transition:transform .12s,border-color .2s,background .2s;position:relative;
+  display:flex;flex-direction:column;align-items:center;text-align:center}
+.cat-card:active{transform:scale(0.94)}
+.cat-card.has-sel{border-color:rgba(245,200,66,0.5);background:var(--sel)}
+.cat-icon{font-size:34px;margin-bottom:8px;line-height:1}
+.cat-name{font-size:14px;font-weight:700}
+.cat-sub{font-size:11px;color:var(--grey);margin-top:3px}
+.cat-pill{position:absolute;top:10px;right:10px;background:var(--gold);color:var(--purple);
+  font-size:11px;font-weight:900;border-radius:20px;padding:2px 7px;
+  opacity:0;transition:opacity .2s}
+.cat-card.has-sel .cat-pill{opacity:1}
+.cat-bar{width:100%;height:3px;background:rgba(255,255,255,0.1);border-radius:2px;margin-top:10px;overflow:hidden}
+.cat-bar-fill{height:100%;background:var(--gold);border-radius:2px;transition:width .4s}
+
+/* ── PRODUCTS screen ── */
+#s-prods{background:var(--purple)}
+.prods-top{padding:14px 16px 10px;display:flex;align-items:center;gap:10px;flex-shrink:0;
+  border-bottom:1px solid rgba(255,255,255,0.07)}
+.btn-back{background:rgba(255,255,255,0.09);border:none;border-radius:10px;
+  width:38px;height:38px;color:#fff;font-size:17px;cursor:pointer;flex-shrink:0}
+.prods-title{font-size:17px;font-weight:800;flex:1}
+.prods-count{font-size:12px;color:var(--gold);font-weight:700}
+.prods-grid{flex:1;overflow-y:auto;padding:12px 14px 32px;
+  display:grid;grid-template-columns:1fr 1fr;gap:9px;align-content:start}
+.prod-card{background:var(--card);border:1.5px solid rgba(255,255,255,0.08);
+  border-radius:13px;padding:13px 11px 10px;cursor:pointer;position:relative;
+  transition:transform .1s,border-color .15s,background .15s;min-height:70px;
+  display:flex;flex-direction:column;justify-content:space-between}
+.prod-card:active{transform:scale(0.93)}
+.prod-card.sel{border-color:var(--gold);background:var(--sel)}
+.prod-check{position:absolute;top:7px;right:9px;font-size:14px;font-weight:900;
+  color:var(--gold);opacity:0;transform:scale(0);transition:opacity .15s,transform .2s}
+.prod-card.sel .prod-check{opacity:1;transform:scale(1)}
+.prod-name{font-size:13px;font-weight:700;line-height:1.3;padding-right:18px}
+.prod-price-wrap{display:none;margin-top:8px}
+.prod-card.sel .prod-price-wrap{display:flex;align-items:center;gap:6px}
+.price-label{font-size:10px;color:var(--gold);font-weight:700;white-space:nowrap}
+.prod-price{width:100%;background:rgba(245,200,66,0.1);border:1px solid rgba(245,200,66,0.25);
+  border-radius:7px;padding:5px 8px;color:var(--gold);font-size:13px;font-weight:700;
+  outline:none;-webkit-appearance:none}
+/* bounce animation */
+.bounce{animation:bounce .22s cubic-bezier(.34,1.56,.64,1)}
+@keyframes bounce{0%{transform:scale(1)}50%{transform:scale(1.07)}100%{transform:scale(1)}}
+/* ripple */
+.ripple{position:absolute;border-radius:50%;background:rgba(245,200,66,0.3);
+  transform:scale(0);animation:rpl .45s ease-out forwards;pointer-events:none}
+@keyframes rpl{to{transform:scale(5);opacity:0}}
 </style>
 </head>
 <body>
+<div id="save-dot">●</div>
 
-<div id="xp-bar-wrap"><div id="xp-bar"></div></div>
-<div id="xp-toast">+0 XP</div>
-<div id="combo-toast">🔥 COMBO x3!</div>
-
-<!-- S1: Intro -->
-<div class="screen" id="s-intro">
-  <img class="intro-logo" src="assets/logo.png" onerror="this.style.display='none'" alt="">
-  <div class="intro-title">EMPÓRIO GO</div>
-  <div class="stars">⭐⭐⭐</div>
-  <div class="intro-sub">Catalogue os produtos do seu estoque<br>e nos ajude a montar o cardápio ideal!</div>
-  <button class="btn-main" onclick="showScreen('s-register');playTone(440,.12)">Começar →</button>
+<!-- Categories -->
+<div class="screen" id="s-cats">
+  <div class="cats-top">
+    <h1>📦 Catálogo de Produtos</h1>
+    <p>Toque nas categorias e marque o que você tem</p>
+    <div class="total-badge">✓ <span id="total-sel">0</span> produtos selecionados</div>
+  </div>
+  <div class="cats-scroll" id="cats-grid"></div>
 </div>
 
-<!-- S2: Register -->
-<div class="screen hidden" id="s-register">
-  <div style="width:100%;max-width:340px">
-    <div class="reg-title">Quem é você? 👋</div>
-    <div class="reg-sub">Antes de começar, nos diga seu nome e o da sua distribuidora.</div>
-    <label class="field-label">Seu nome</label>
-    <input class="field-input" id="inp-name" type="text" placeholder="Ex.: João Silva" autocomplete="name">
-    <label class="field-label">Nome da distribuidora / loja</label>
-    <input class="field-input" id="inp-store" type="text" placeholder="Ex.: Bebidas do João">
-    <button class="btn-main" onclick="startCatalog()">Montar meu catálogo 🚀</button>
-    <button class="btn-sec btn-main" onclick="showScreen('s-intro');playTone(300,.08)">← Voltar</button>
+<!-- Products -->
+<div class="screen hidden" id="s-prods">
+  <div class="prods-top">
+    <button class="btn-back" id="btn-back">←</button>
+    <span id="prods-title" class="prods-title"></span>
+    <span id="prods-count" class="prods-count"></span>
   </div>
-</div>
-
-<!-- S3: Categories -->
-<div class="screen hidden" id="s-cats" style="justify-content:flex-start;padding-top:40px">
-  <div class="cats-header">
-    <h2 id="cats-greeting">Olá! 🎯</h2>
-    <p>Selecione as categorias que você trabalha</p>
-  </div>
-  <div class="cats-grid" id="cats-grid"></div>
-  <button class="btn-main" style="max-width:340px;margin-top:20px" onclick="finishCatalog()">Ver resumo →</button>
-</div>
-
-<!-- S4: Products -->
-<div class="screen hidden" id="s-products" style="justify-content:flex-start;padding-top:16px">
-  <div class="prod-header">
-    <button class="btn-back" onclick="backToCats()">←</button>
-    <span class="prod-cat-icon" id="prod-cat-icon"></span>
-    <span class="prod-cat-title" id="prod-cat-title"></span>
-  </div>
-  <div class="prod-grid" id="prod-grid"></div>
-  <div class="done-bar">
-    <div class="done-bar-count"><strong id="done-count">0</strong> selecionados</div>
-    <button class="btn-main" style="margin-top:0;max-width:160px;padding:12px" onclick="backToCats()">Pronto ✓</button>
-  </div>
-</div>
-
-<!-- S5: Final -->
-<div class="screen hidden" id="s-final" style="justify-content:flex-start;padding-top:48px">
-  <div class="final-emoji">🏆</div>
-  <div class="final-title">Incrível!</div>
-  <div class="final-sub" id="final-sub"></div>
-  <div class="final-score">
-    <div class="final-score-num" id="final-num">0</div>
-    <div class="final-score-label">produtos catalogados</div>
-  </div>
-  <div class="final-cats" id="final-cats"></div>
-  <button class="btn-main" style="max-width:340px" id="btn-submit" onclick="submitCatalog()">Enviar catálogo 🚀</button>
-  <button class="btn-sec btn-main" style="max-width:340px" onclick="showScreen('s-cats')">← Editar</button>
-  <div style="height:40px"></div>
+  <div class="prods-grid" id="prods-grid"></div>
 </div>
 
 <script type="module">
 import { initializeApp, getApps, getApp } from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js';
-import { getFirestore, collection, addDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js';
+import { getFirestore, doc, getDoc, setDoc, serverTimestamp }
+  from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js';
 import { firebaseConfig } from './scripts/firebase-config.js';
 
-const fbApp = getApps().length ? getApp() : initializeApp(firebaseConfig);
-const db    = getFirestore(fbApp);
+const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
+const db  = getFirestore(app);
 
-// ── Audio ──
+/* ── Session ID (persiste no localStorage) ── */
+const SESSION_KEY = 'emporio_cat_session';
+let sessionId = localStorage.getItem(SESSION_KEY);
+if (!sessionId) {
+  sessionId = 'cat_' + Date.now().toString(36) + Math.random().toString(36).slice(2,8);
+  localStorage.setItem(SESSION_KEY, sessionId);
+}
+
+/* ── Audio ── */
 const AC = new (window.AudioContext || window.webkitAudioContext)();
-window.playTone = (freq, dur = 0.1, type = 'sine', vol = 0.18) => {
+const beep = (freq, dur=0.08, vol=0.15, type='sine') => {
   try {
-    const g = AC.createGain(); const o = AC.createOscillator();
-    o.type = type; o.frequency.value = freq;
+    const o=AC.createOscillator(), g=AC.createGain();
+    o.type=type; o.frequency.value=freq;
     g.gain.setValueAtTime(vol, AC.currentTime);
-    g.gain.exponentialRampToValueAtTime(0.001, AC.currentTime + dur);
+    g.gain.exponentialRampToValueAtTime(0.001, AC.currentTime+dur);
     o.connect(g); g.connect(AC.destination);
-    o.start(); o.stop(AC.currentTime + dur);
-  } catch {}
+    o.start(); o.stop(AC.currentTime+dur);
+  } catch{}
 };
-window.playSelect   = () => { playTone(523,.07); setTimeout(()=>playTone(659,.07),60); };
-window.playDeselect = () => { playTone(400,.07); setTimeout(()=>playTone(330,.07),60); };
-window.playCatDone  = () => { [523,659,784,1047].forEach((f,i)=>setTimeout(()=>playTone(f,.15,'triangle',.15),i*80)); };
-window.playFanfare  = () => { [523,659,784,1047,1319].forEach((f,i)=>setTimeout(()=>playTone(f,.22,'triangle',.2),i*100)); };
+const sndOn  = () => { beep(523,.06); setTimeout(()=>beep(659,.07),55); };
+const sndOff = () => { beep(440,.06); setTimeout(()=>beep(350,.07),55); };
+const sndNav = () => beep(400,.08,'sine',.1);
 
-// ── Products DB ──
+/* ── Data ── */
 const CATS = [
-  { id:'cerveja',     icon:'🍺', name:'Cervejas',       color:'#F5A623' },
-  { id:'destilado',   icon:'🥃', name:'Destilados',      color:'#8B5CF6' },
-  { id:'energetico',  icon:'⚡', name:'Energéticos',     color:'#EF4444' },
-  { id:'refrigerante',icon:'🥤', name:'Refrigerantes',   color:'#06B6D4' },
-  { id:'vinho',       icon:'🍷', name:'Vinhos',          color:'#7C3AED' },
-  { id:'agua',        icon:'💧', name:'Águas & Gelo',    color:'#3B82F6' },
-  { id:'outros',      icon:'🛒', name:'Outros',          color:'#6B7280' },
+  { id:'cerveja',      icon:'🍺', name:'Cervejas',      color:'#F5A623' },
+  { id:'destilado',    icon:'🥃', name:'Destilados',     color:'#8B5CF6' },
+  { id:'energetico',   icon:'⚡', name:'Energéticos',    color:'#EF4444' },
+  { id:'refrigerante', icon:'🥤', name:'Refrigerantes',  color:'#06B6D4' },
+  { id:'vinho',        icon:'🍷', name:'Vinhos',         color:'#7C3AED' },
+  { id:'agua',         icon:'💧', name:'Águas & Gelo',   color:'#3B82F6' },
+  { id:'outros',       icon:'🛒', name:'Outros',         color:'#6B7280' },
 ];
-
-const PRODUCTS = {
-  cerveja: [
-    'Antarctica Pilsen','Brahma Chopp','Skol','Heineken','Budweiser','Corona','Stella Artois',
-    'Itaipava','Crystal','Bohemia','Spaten','Devassa','Original','Amstel','Beck\'s',
-    'Eisenbahn Pilsen','Baden Baden','Patagônica','Petra','Modelo','Bud Light','Carlsberg',
-    'Leffe','Hoegaarden','Guinness','Paulaner','Weissbier','IPA Artesanal','Stout'
-  ],
-  destilado: [
-    'Cachaça 51','Ypióca Prata','Ypióca Ouro','Velho Barreiro','Pirassununga 965',
-    'Gin Tanqueray','Gin Beefeater','Gin Gordon\'s','Gin Bombay Sapphire','Gin Hendrick\'s',
+const PRODS = {
+  cerveja:['Antarctica Pilsen','Brahma Chopp','Skol','Heineken','Budweiser','Corona','Stella Artois',
+    'Itaipava','Crystal','Bohemia','Spaten','Devassa','Original','Amstel','Beck\'s','Eisenbahn Pilsen',
+    'Baden Baden','Patagônica','Petra','Modelo','Bud Light','Carlsberg','Leffe','Hoegaarden',
+    'Guinness','Paulaner','Weissbier','IPA Artesanal','Stout Artesanal'],
+  destilado:['Cachaça 51','Ypióca Prata','Ypióca Ouro','Velho Barreiro','Pirassununga 965',
+    'Gin Tanqueray','Gin Beefeater','Gin Gordon\'s','Gin Bombay','Gin Hendrick\'s',
     'Vodka Absolut','Vodka Smirnoff','Vodka Grey Goose','Vodka Skyy',
-    'Whisky J.W. Red Label','Whisky J.W. Black Label','Jack Daniel\'s','Ballantine\'s',
+    'Whisky J.W. Red','Whisky J.W. Black','Jack Daniel\'s','Ballantine\'s',
     'Chivas Regal','Old Parr','Jameson','Rum Bacardi','Rum Havana Club','Tequila Cuervo',
-    'Tequila Olmeca','Licor Amarula','Licor Baileys','Cointreau'
-  ],
-  energetico: [
-    'Red Bull 250ml','Red Bull 355ml','Monster Energy','Monster Ultra','TNT Energy',
-    'Fusion Energy','Baly','Vibe','Burn','Flying Horse','Flash Power','Integralmedica'
-  ],
-  refrigerante: [
-    'Coca-Cola','Coca-Cola Zero','Pepsi','Pepsi Black','Guaraná Antarctica','Guaraná Jesus',
-    'Sprite','Fanta Laranja','Fanta Uva','7Up','Schweppes Tônica','Schweppes Citrus',
-    'Sukita','Del Valle','Suco Do Bem','H2OH!','Lipton Ice Tea'
-  ],
-  vinho: [
-    'Vinho Tinto Seco','Vinho Tinto Suave','Vinho Branco Seco','Vinho Branco Suave',
-    'Vinho Rosé','Espumante Brut','Espumante Moscatel','Prosecco','Champagne',
-    'Vinho Porto','Sangria'
-  ],
-  agua: [
-    'Água Mineral s/ Gás 500ml','Água Mineral s/ Gás 1,5L','Água Mineral c/ Gás',
-    'Água de Coco','Gelo Barra','Gelo Picado'
-  ],
-  outros: [
-    'Cerveja Artesanal Diversas','Dose Avulsa','Combo Família','Petisco / Snack',
-    'Carvão','Isqueiro','Copo Descartável','Canudo'
-  ]
+    'Tequila Olmeca','Licor Amarula','Licor Baileys','Cointreau'],
+  energetico:['Red Bull 250ml','Red Bull 355ml','Monster Energy','Monster Ultra','TNT Energy',
+    'Fusion Energy','Baly','Vibe','Burn','Flying Horse','Flash Power'],
+  refrigerante:['Coca-Cola','Coca-Cola Zero','Pepsi','Pepsi Black','Guaraná Antarctica',
+    'Guaraná Jesus','Sprite','Fanta Laranja','Fanta Uva','7Up','Schweppes Tônica',
+    'Schweppes Citrus','H2OH!','Del Valle','Lipton Ice Tea'],
+  vinho:['Vinho Tinto Seco','Vinho Tinto Suave','Vinho Branco Seco','Vinho Branco Suave',
+    'Vinho Rosé','Espumante Brut','Espumante Moscatel','Prosecco','Champagne','Vinho Porto'],
+  agua:['Água s/ Gás 500ml','Água s/ Gás 1,5L','Água c/ Gás','Água de Coco',
+    'Gelo em Barra','Gelo Picado'],
+  outros:['Dose Avulsa','Combo Família','Petisco/Snack','Carvão','Copo Descartável'],
 };
 
-// ── State ──
-const S = { name:'', store:'', sel:{}, xp:0, combo:0, comboT:null, curCat:null };
+/* ── State: sel = { 'cerveja:Heineken': { price:'' }, ... } ── */
+let sel = {};
+let saveTimer = null;
+let curCat = null;
 
-// ── XP ──
-function addXP(pts) {
-  S.xp += pts;
-  const el = document.getElementById('xp-toast');
-  el.textContent = `+${pts} XP`;
-  el.classList.remove('pop');
-  void el.offsetWidth;
-  el.classList.add('pop');
-  setTimeout(()=>el.classList.remove('pop'),800);
-  const total = Object.values(PRODUCTS).flat().length;
-  const done  = Object.keys(S.sel).length;
-  document.getElementById('xp-bar').style.width = Math.min(100, done/total*100) + '%';
-}
-
-// ── Screen transition ──
-window.showScreen = (id) => {
-  document.querySelectorAll('.screen').forEach(s=>{
-    if (s.id === id) { s.classList.remove('hidden','out'); }
-    else if (!s.classList.contains('hidden')) { s.classList.add('out'); setTimeout(()=>s.classList.add('hidden'),360); }
-  });
-  if (id !== 's-intro') document.getElementById('xp-bar-wrap').style.display = 'block';
-};
-
-// ── Ripple ──
-function addRipple(el, e) {
-  const r = document.createElement('span');
-  r.className = 'ripple';
-  const rect = el.getBoundingClientRect();
-  const size = Math.max(rect.width, rect.height);
-  r.style.cssText = `width:${size}px;height:${size}px;left:${(e.clientX||rect.left+rect.width/2)-rect.left-size/2}px;top:${(e.clientY||rect.top+rect.height/2)-rect.top-size/2}px`;
-  el.style.position = 'relative'; el.appendChild(r);
-  setTimeout(()=>r.remove(), 500);
-}
-
-// ── Start ──
-window.startCatalog = () => {
-  const n = document.getElementById('inp-name').value.trim();
-  const s = document.getElementById('inp-store').value.trim();
-  if (!n) { document.getElementById('inp-name').focus(); shake(document.getElementById('inp-name')); return; }
-  if (!s) { document.getElementById('inp-store').focus(); shake(document.getElementById('inp-store')); return; }
-  S.name = n; S.store = s;
-  document.getElementById('cats-greeting').textContent = `Olá, ${n.split(' ')[0]}! 🎯`;
-  playSelect();
-  showScreen('s-cats');
+/* ── Load from Firestore ── */
+async function loadState() {
+  try {
+    const snap = await getDoc(doc(db,'catalogs',sessionId));
+    if (snap.exists()) sel = snap.data().sel || {};
+  } catch {}
   renderCats();
-};
-
-function shake(el) {
-  el.style.animation='none'; void el.offsetWidth;
-  el.style.animation='shake .3s ease';
-  if (!document.getElementById('shake-style')) {
-    const st=document.createElement('style'); st.id='shake-style';
-    st.textContent='@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}';
-    document.head.appendChild(st);
-  }
+  updateTotal();
 }
 
-// ── Render categories ──
+/* ── Auto-save (debounced 2s) ── */
+function scheduleSave() {
+  const dot = document.getElementById('save-dot');
+  dot.textContent = '● salvando…'; dot.className = 'saving';
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(async () => {
+    try {
+      await setDoc(doc(db,'catalogs',sessionId), {
+        sel, updatedAt: serverTimestamp(), sessionId
+      }, { merge: true });
+      dot.textContent = '● salvo'; dot.className = 'saved';
+      setTimeout(()=>{ dot.textContent='●'; dot.className=''; }, 2000);
+    } catch { dot.textContent='●'; dot.className=''; }
+  }, 1800);
+}
+
+/* ── Utils ── */
+function catSelCount(catId) {
+  return Object.keys(sel).filter(k=>k.startsWith(catId+':')).length;
+}
+function totalSel() {
+  return Object.keys(sel).length;
+}
+function ripple(el, e) {
+  const r=document.createElement('span'); r.className='ripple';
+  const rect=el.getBoundingClientRect();
+  const s=Math.max(rect.width,rect.height);
+  r.style.cssText=`width:${s}px;height:${s}px;left:${(e?.clientX??rect.left+rect.width/2)-rect.left-s/2}px;top:${(e?.clientY??rect.top+rect.height/2)-rect.top-s/2}px`;
+  el.appendChild(r); setTimeout(()=>r.remove(),460);
+}
+
+/* ── Render categories ── */
 function renderCats() {
   const g = document.getElementById('cats-grid');
   g.innerHTML = CATS.map(c => {
-    const prods = PRODUCTS[c.id] || [];
-    const selCount = prods.filter(p => S.sel[c.id+':'+p]).length;
-    const pct = selCount / prods.length * 100;
-    return `<div class="cat-card${selCount>0?' done':''}" onclick="openCat('${c.id}',event)" data-cat="${c.id}">
+    const n = catSelCount(c.id);
+    const total = PRODS[c.id].length;
+    const pct = n/total*100;
+    return `<div class="cat-card${n>0?' has-sel':''}" data-cat="${c.id}">
+      <span class="cat-pill">${n}</span>
       <div class="cat-icon">${c.icon}</div>
       <div class="cat-name">${c.name}</div>
-      <div class="cat-count">${selCount > 0 ? selCount + ' produto' + (selCount>1?'s':'') : prods.length + ' itens'}</div>
-      <div class="cat-progress"><div class="cat-progress-fill" style="width:${pct}%"></div></div>
+      <div class="cat-sub">${n>0?n+' de '+total+' itens':total+' itens'}</div>
+      <div class="cat-bar"><div class="cat-bar-fill" style="width:${pct}%"></div></div>
     </div>`;
   }).join('');
+  g.querySelectorAll('.cat-card').forEach(card => {
+    card.addEventListener('click', e => { sndNav(); openCat(card.dataset.cat, e); });
+  });
 }
 
-// ── Open category ──
-window.openCat = (catId, e) => {
-  playTone(440,.1);
-  S.curCat = catId;
+function updateTotal() {
+  document.getElementById('total-sel').textContent = totalSel();
+}
+
+/* ── Open category ── */
+function openCat(catId, e) {
+  curCat = catId;
   const cat = CATS.find(c=>c.id===catId);
-  document.getElementById('prod-cat-icon').textContent = cat.icon;
-  document.getElementById('prod-cat-title').textContent = cat.name;
-  const grid = document.getElementById('prod-grid');
-  const prods = PRODUCTS[catId] || [];
-  grid.innerHTML = prods.map(name => {
-    const key = catId+':'+name;
-    const info = S.sel[key] || {};
-    return `<div class="prod-card${info.sel?' sel':''}" data-key="${key}" data-name="${name}" onclick="toggleProd(this,event)">
+  document.getElementById('prods-title').textContent = cat.icon+' '+cat.name;
+  renderProds();
+  goTo('s-prods');
+}
+
+/* ── Render products ── */
+function renderProds() {
+  const prods = PRODS[curCat];
+  const n = catSelCount(curCat);
+  document.getElementById('prods-count').textContent = n ? n+' selecionados' : '';
+  const g = document.getElementById('prods-grid');
+  g.innerHTML = prods.map(name => {
+    const key = curCat+':'+name;
+    const info = sel[key];
+    return `<div class="prod-card${info?' sel':''}" data-key="${key}" data-name="${name}">
+      <span class="prod-check">✓</span>
       <div class="prod-name">${name}</div>
-      <input class="prod-brand-input" type="text" placeholder="Marca (opcional)" value="${info.brand||''}"
-        onclick="event.stopPropagation()" oninput="updateField(this,'brand')" />
-      <input class="prod-price-input" type="number" inputmode="decimal" placeholder="Preço R$" value="${info.price||''}"
-        onclick="event.stopPropagation()" oninput="updateField(this,'price')" />
+      <div class="prod-price-wrap">
+        <span class="price-label">R$</span>
+        <input class="prod-price" type="number" inputmode="decimal" placeholder="Preço"
+          value="${info?.price||''}" />
+      </div>
     </div>`;
   }).join('');
-  updateDoneCount();
-  showScreen('s-products');
-};
+  g.querySelectorAll('.prod-card').forEach(card => {
+    card.addEventListener('click', e => {
+      if (e.target.tagName==='INPUT') return;
+      toggleProd(card, e);
+    });
+    const inp = card.querySelector('.prod-price');
+    if (inp) inp.addEventListener('input', () => {
+      const key = card.dataset.key;
+      if (sel[key]) { sel[key].price = inp.value; scheduleSave(); }
+    });
+  });
+}
 
-window.toggleProd = (card, e) => {
-  if (e.target.tagName === 'INPUT') return;
-  addRipple(card, e);
+function toggleProd(card, e) {
+  ripple(card, e);
   const key = card.dataset.key;
   const name = card.dataset.name;
-  if (S.sel[key]) {
-    delete S.sel[key];
+  if (sel[key]) {
+    delete sel[key];
     card.classList.remove('sel');
-    playDeselect();
+    sndOff();
   } else {
-    S.sel[key] = { name, cat: S.curCat, brand:'', price:'' };
+    sel[key] = { name, cat: curCat, price: '' };
     card.classList.add('sel');
     card.classList.add('bounce');
-    setTimeout(()=>card.classList.remove('bounce'),260);
-    playSelect();
-    addXP(10);
-    // Combo
-    clearTimeout(S.comboT);
-    S.combo++;
-    if (S.combo >= 3) showCombo(S.combo);
-    S.comboT = setTimeout(()=>{ S.combo=0; }, 1500);
+    setTimeout(()=>card.classList.remove('bounce'), 240);
+    sndOn();
   }
-  updateDoneCount();
-};
-
-window.updateField = (inp, field) => {
-  const key = inp.closest('.prod-card').dataset.key;
-  if (S.sel[key]) S.sel[key][field] = inp.value;
-};
-
-function updateDoneCount() {
-  const cat = S.curCat;
-  const n = PRODUCTS[cat].filter(p => S.sel[cat+':'+p]).length;
-  document.getElementById('done-count').textContent = n;
+  // Update count header
+  const n = catSelCount(curCat);
+  document.getElementById('prods-count').textContent = n ? n+' selecionados' : '';
+  updateTotal();
+  scheduleSave();
 }
 
-function showCombo(n) {
-  const el = document.getElementById('combo-toast');
-  el.textContent = `🔥 COMBO x${n}!`;
-  el.classList.remove('hide'); el.classList.add('show');
-  playTone(784,.08,'square',.12); playTone(1047,.08,'square',.1);
-  setTimeout(()=>{ el.classList.remove('show'); el.classList.add('hide'); },900);
+/* ── Navigation ── */
+function goTo(id) {
+  document.querySelectorAll('.screen').forEach(s => {
+    if (s.id===id) { s.classList.remove('hidden','out'); }
+    else if (!s.classList.contains('hidden')) { s.classList.add('out'); setTimeout(()=>s.classList.add('hidden'),300); }
+  });
 }
 
-window.backToCats = () => {
-  playTone(350,.1);
-  const cat = S.curCat;
-  const prods = PRODUCTS[cat]||[];
-  const n = prods.filter(p=>S.sel[cat+':'+p]).length;
-  if (n > 0) { playCatDone(); addXP(50); }
-  showScreen('s-cats');
+document.getElementById('btn-back').addEventListener('click', () => {
+  sndNav();
   renderCats();
-};
+  updateTotal();
+  goTo('s-cats');
+});
 
-// ── Finish ──
-window.finishCatalog = () => {
-  const total = Object.keys(S.sel).length;
-  if (total === 0) { shake(document.querySelector('#s-cats .btn-main')); return; }
-  playFanfare();
-  showScreen('s-final');
-  // Animate counter
-  let c = 0;
-  const el = document.getElementById('final-num');
-  const t = setInterval(()=>{ c = Math.min(c+Math.ceil(total/20), total); el.textContent=c; if(c>=total) clearInterval(t); },40);
-  document.getElementById('final-sub').textContent = `${S.name} — ${S.store}`;
-  // Category badges
-  const badges = CATS.filter(cat=>PRODUCTS[cat.id].some(p=>S.sel[cat.id+':'+p]));
-  document.getElementById('final-cats').innerHTML = badges.map(c=>`<span class="final-cat-badge">${c.icon} ${c.name}</span>`).join('');
-  setTimeout(launchConfetti, 300);
-};
-
-// ── Confetti ──
-function launchConfetti() {
-  const colors = ['#F5C842','#ff6b6b','#48cfad','#a29bfe','#fd79a8','#fff'];
-  for (let i=0;i<60;i++) {
-    setTimeout(()=>{
-      const d = document.createElement('div');
-      d.className = 'confetti-piece';
-      d.style.cssText = `left:${Math.random()*100}vw;background:${colors[Math.floor(Math.random()*colors.length)]};
-        width:${6+Math.random()*6}px;height:${6+Math.random()*6}px;
-        animation-duration:${2+Math.random()*1.5}s;animation-delay:${Math.random()*.5}s;
-        border-radius:${Math.random()>.5?'50%':'2px'}`;
-      document.body.appendChild(d);
-      setTimeout(()=>d.remove(), 3500);
-    }, i*30);
-  }
-}
-
-// ── Submit ──
-window.submitCatalog = async () => {
-  const btn = document.getElementById('btn-submit');
-  btn.disabled = true; btn.textContent = 'Enviando…';
-  const items = Object.entries(S.sel).map(([key,v])=>({
-    category: v.cat,
-    name: v.name,
-    brand: v.brand || '',
-    price: v.price ? parseFloat(v.price) : null,
-  }));
-  try {
-    await addDoc(collection(db,'catalogs'),{
-      respondent: S.name,
-      store: S.store,
-      xp: S.xp,
-      totalProducts: items.length,
-      items,
-      submittedAt: serverTimestamp(),
-    });
-    playFanfare();
-    btn.textContent = '✓ Enviado com sucesso!';
-    btn.style.background = '#22c55e';
-    launchConfetti();
-  } catch(err) {
-    console.error(err);
-    btn.disabled = false; btn.textContent = 'Tentar novamente';
-  }
-};
+/* ── Boot ── */
+loadState();
 </script>
 </body>
 </html>
