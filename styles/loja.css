@@ -304,6 +304,22 @@ html, body {
   font-weight: 800;
   margin-bottom: 2px;
 }
+
+/* Banner full-width (arte horizontal) */
+.banner-art {
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  width: 100%;
+  aspect-ratio: 16 / 7;
+  background: var(--c-purple-900);
+}
+.banner-art img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
 .banner-card {
   background: linear-gradient(135deg, #1A0A4A 0%, #3D1A8A 55%, #5222B0 100%);
   border-radius: var(--r-lg);

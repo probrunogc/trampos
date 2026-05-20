@@ -349,8 +349,18 @@ function renderHome() {
       ${bannerProds.length > 0 ? `
         <div class="banner-wrap">
           <div class="banner-track" id="banner-track">
-            ${bannerProds.map((p, i) => {
-              const img = getProductImages(p)[0] || '';
+            ${bannerProds.map((p) => {
+              const imgs = getProductImages(p);
+              const arteImg = imgs.length >= 3 ? imgs[2] : null;
+              const cardImg = imgs[0] || '';
+              if (arteImg) {
+                return `
+                  <div class="banner-slide" data-pid="${esc(p.id)}">
+                    <div class="banner-art">
+                      <img src="${esc(arteImg)}" alt="${esc(p.name)}" />
+                    </div>
+                  </div>`;
+              }
               return `
                 <div class="banner-slide" data-pid="${esc(p.id)}">
                   <div class="banner-card">
@@ -361,7 +371,7 @@ function renderHome() {
                       <p>${time} · ${fee === 0 ? 'Grátis' : brl(fee)}</p>
                     </div>
                     <div class="banner-img-wrap">
-                      ${img ? `<img src="${esc(img)}" alt="" />` : ''}
+                      ${cardImg ? `<img src="${esc(cardImg)}" alt="" />` : ''}
                     </div>
                   </div>
                 </div>`;
