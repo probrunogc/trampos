@@ -178,6 +178,13 @@
 .app-shell.sidebar-collapsed {
   grid-template-columns: 72px 1fr;
 }
+.app-shell.kiosk-mode {
+  grid-template-columns: 1fr;
+}
+.app-shell.kiosk-mode .sidebar,
+.app-shell.kiosk-mode #btn-sidebar-toggle {
+  display: none;
+}
 
 /* === SIDEBAR === */
 .sidebar {

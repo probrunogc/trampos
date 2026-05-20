@@ -164,6 +164,7 @@ function showApp(user) {
   $('#screen-login').classList.add('hidden');
   $('#screen-bootstrap').classList.add('hidden');
   $('#app-shell').classList.remove('hidden');
+  if (localStorage.getItem('_km')) $('#app-shell').classList.add('kiosk-mode');
 
   // Avatar + chip
   const initial = (user.name || user.email || '?').trim().charAt(0).toUpperCase();
