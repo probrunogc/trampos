@@ -54,6 +54,7 @@ function buildFilters(catId, prods) {
 /* ─── App state ──────────────────────────────────────────────── */
 const S = {
   products:  [],
+  banners:   [],
   settings:  {},
   cart:      [],
   view:      'home',
@@ -137,6 +138,14 @@ async function loadProducts() {
     console.error('loadProducts:', e);
     S.products = [];
   }
+}
+
+async function loadBanners() {
+  try {
+    const snap = await getDocs(query(collection(db, 'banners'), orderBy('order')));
+    S.banners = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+      .filter(b => b.active !== false);
+  } catch { S.banners = []; }
 }
 
 async function loadSettings() {
@@ -320,7 +329,7 @@ function renderHome() {
   const time   = cfg.lojaDeliveryTime || '30–45 min';
   const activeCats = CATS.filter(c => S.products.some(p => p.category === c.id));
   const featured    = S.products.slice(0, 6);
-  const bannerProds = S.products.filter(p => p.bannerImage || getProductImages(p).length > 0).slice(0, 6);
+  const banners     = S.banners; // already filtered to active, sorted by order
 
   return `
     <div class="home-header">
@@ -346,40 +355,19 @@ function renderHome() {
     </div>
 
     <div class="banners">
-      ${bannerProds.length > 0 ? `
+      ${banners.length > 0 ? `
         <div class="banner-wrap">
           <div class="banner-track" id="banner-track">
-            ${bannerProds.map((p) => {
-              const imgs = getProductImages(p);
-              const arteImg = p.bannerImage || null;
-              const cardImg = imgs[0] || '';
-              if (arteImg) {
-                return `
-                  <div class="banner-slide" data-pid="${esc(p.id)}">
-                    <div class="banner-art">
-                      <img src="${esc(arteImg)}" alt="${esc(p.name)}" />
-                    </div>
-                  </div>`;
-              }
-              return `
-                <div class="banner-slide" data-pid="${esc(p.id)}">
-                  <div class="banner-card">
-                    <div class="banner-text">
-                      <span class="banner-tag">Delivery rápido</span>
-                      <h3>${esc(p.name)}</h3>
-                      <p class="banner-price-tag">${brl(p.price)}</p>
-                      <p>${time} · ${fee === 0 ? 'Grátis' : brl(fee)}</p>
-                    </div>
-                    <div class="banner-img-wrap">
-                      ${cardImg ? `<img src="${esc(cardImg)}" alt="" />` : ''}
-                    </div>
-                  </div>
-                </div>`;
-            }).join('')}
+            ${banners.map(b => `
+              <div class="banner-slide" data-pid="${esc(b.productId || '')}">
+                <div class="banner-art">
+                  <img src="${esc(b.imageUrl)}" alt="${esc(b.title || '')}" />
+                </div>
+              </div>`).join('')}
           </div>
-          ${bannerProds.length > 1 ? `
+          ${banners.length > 1 ? `
             <div class="banner-dots" id="banner-dots">
-              ${bannerProds.map((_, i) => `<span class="banner-dot${i === 0 ? ' active' : ''}"></span>`).join('')}
+              ${banners.map((_, i) => `<span class="banner-dot${i === 0 ? ' active' : ''}"></span>`).join('')}
             </div>
           ` : ''}
         </div>
@@ -1088,7 +1076,7 @@ function wireSuccess(c) {
 /* ─── Init ───────────────────────────────────────────────────── */
 async function init() {
   loadCart();
-  await Promise.all([loadProducts(), loadSettings()]);
+  await Promise.all([loadProducts(), loadBanners(), loadSettings()]);
 
   const splash = document.getElementById('splash');
   const app    = document.getElementById('app');

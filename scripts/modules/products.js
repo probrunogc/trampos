@@ -267,14 +267,11 @@ async function openForm(id = null) {
   const isEdit = !!id;
   const p = isEdit ? state.list.find(x => x.id === id) : {};
 
-  const existingImgs    = Array.isArray(p?.images) ? p.images.filter(Boolean) : (p?.image ? [p.image] : []);
-  const existingBanner  = p?.bannerImage || '';
+  const existingImgs = Array.isArray(p?.images) ? p.images.filter(Boolean) : (p?.image ? [p.image] : []);
 
-  // Each image: { url, file (processed Blob), blobUrl (preview), isBanner, processing, status }
+  // Each image: { url, file (processed Blob), blobUrl (preview), processing, status }
   let images = existingImgs.map(url => ({
-    url, file: null, blobUrl: null,
-    isBanner: url === existingBanner,
-    processing: false, status: '',
+    url, file: null, blobUrl: null, processing: false, status: '',
   }));
 
   const form = el('form', { autocomplete: 'off' });
@@ -368,7 +365,7 @@ async function openForm(id = null) {
           const src = img.blobUrl || img.url;
           const busy = img.processing;
           return `
-            <div class="img-free-card${img.isBanner ? ' is-banner' : ''}">
+            <div class="img-free-card">
               <div class="img-free-preview">
                 <img src="${fmt.escape(src)}" alt="" />
                 ${busy ? `
@@ -376,11 +373,9 @@ async function openForm(id = null) {
                     <div class="img-slot-spinner"></div>
                     <span class="img-slot-status-text">${fmt.escape(img.status)}</span>
                   </div>` : ''}
-                ${img.isBanner ? '<span class="img-banner-badge">Banner</span>' : ''}
               </div>
               <div class="img-free-actions">
                 <button type="button" class="img-action-btn" data-ajust="${i}" ${busy ? 'disabled' : ''} title="Remove fundo e corta quadrado">Ajustar</button>
-                <button type="button" class="img-action-btn${img.isBanner ? ' is-active' : ''}" data-banner="${i}" title="${img.isBanner ? 'Remover do banner' : 'Usar no banner'}">★</button>
                 <button type="button" class="img-action-clear" data-del="${i}" title="Remover">✕</button>
               </div>
             </div>`;
@@ -402,16 +397,6 @@ async function openForm(id = null) {
       btn.onclick = () => ajustarImage(+btn.dataset.ajust);
     });
 
-    wrap.querySelectorAll('[data-banner]').forEach(btn => {
-      btn.onclick = () => {
-        const i = +btn.dataset.banner;
-        const was = images[i].isBanner;
-        images.forEach(img => img.isBanner = false);
-        images[i].isBanner = !was;
-        renderImages();
-      };
-    });
-
     wrap.querySelectorAll('[data-del]').forEach(btn => {
       btn.onclick = () => {
         const i = +btn.dataset.del;
@@ -426,7 +411,7 @@ async function openForm(id = null) {
   /* ── Add file ───────────────────────────────────────────── */
   function addFile(file) {
     const blobUrl = URL.createObjectURL(file);
-    images.push({ url: '', file, blobUrl, isBanner: false, processing: false, status: '' });
+    images.push({ url: '', file, blobUrl, processing: false, status: '' });
     renderImages();
   }
 
@@ -498,20 +483,17 @@ async function openForm(id = null) {
     saveBtn.textContent = 'Salvando…';
     try {
       // Upload new/processed blobs; keep existing URLs as-is
-      const finalImages = [];
+      const finalUrls = [];
       for (const img of images) {
         if (img.file) {
           const ext = img.file.type === 'image/jpeg' ? 'jpg' : 'png';
           const url = await uploadFile(img.file, ext);
           if (img.blobUrl) URL.revokeObjectURL(img.blobUrl);
-          finalImages.push({ url, isBanner: img.isBanner });
+          finalUrls.push(url);
         } else if (img.url) {
-          finalImages.push({ url: img.url, isBanner: img.isBanner });
+          finalUrls.push(img.url);
         }
       }
-
-      const finalUrls   = finalImages.map(x => x.url);
-      const bannerEntry = finalImages.find(x => x.isBanner);
 
       const fd = Object.fromEntries(new FormData(form));
       const payload = {
@@ -522,7 +504,6 @@ async function openForm(id = null) {
         sku:         fd.sku.trim(),
         images:      finalUrls,
         image:       finalUrls[0] || '',
-        bannerImage: bannerEntry?.url || '',
         teor:        fd.teor.trim(),
         origem:      fd.origem.trim(),
         description: fd.description.trim(),
