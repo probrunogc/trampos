@@ -7,10 +7,10 @@
       "**/.*",
       "**/node_modules/**",
       "README.md",
-      "*.bat",
       ".firebaserc"
     ],
     "rewrites": [
+      { "source": "/instalar", "destination": "/instalar.html" },
       { "source": "/loja",    "destination": "/loja.html" },
       { "source": "/loja/**", "destination": "/loja.html" },
       { "source": "**",       "destination": "/index.html" }
@@ -20,6 +20,13 @@
         "source": "**/*.@(js|css|svg)",
         "headers": [
           { "key": "Cache-Control", "value": "public, max-age=3600" }
+        ]
+      },
+      {
+        "source": "**/*.bat",
+        "headers": [
+          { "key": "Content-Type",        "value": "application/octet-stream" },
+          { "key": "Content-Disposition", "value": "attachment" }
         ]
       },
       {
