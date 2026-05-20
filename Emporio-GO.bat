@@ -313,7 +313,7 @@ REM  MODO QUIOSQUE — execucao normal via atalho (/launch)
 REM ============================================================
 :kiosk
 
-set "URL=https://adegas-pf.web.app#/sales"
+set "URL=https://adegas-pf.web.app/kiosk.html"
 set "PROFILE=%LOCALAPPDATA%\EmporioGO\ChromeProfile"
 
 set "CHROME="

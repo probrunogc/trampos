@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Empório GO</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: radial-gradient(ellipse at 60% 0%, #1a2f50 0%, #0d1b2a 55%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      color: #fff;
+    }
+
+    .card {
+      background: #152233;
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 20px;
+      padding: 44px 40px 36px;
+      width: 360px;
+      text-align: center;
+      box-shadow: 0 24px 64px rgba(0,0,0,0.5);
+    }
+
+    .logo { width: 80px; margin-bottom: 18px; }
+    .brand { font-size: 26px; font-weight: 800; letter-spacing: 2px; color: #e8c44a; }
+    .brand-sub { font-size: 13px; color: #e8c44a; letter-spacing: 4px; margin-top: 2px; }
+    .since { font-size: 11px; color: #5577aa; letter-spacing: 2px; margin-top: 4px; margin-bottom: 32px; }
+
+    .status {
+      color: #8899aa;
+      font-size: 14px;
+      padding: 24px 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+    .spinner {
+      width: 18px; height: 18px;
+      border: 2px solid rgba(255,255,255,0.15);
+      border-top-color: #e8c44a;
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    #form { display: none; }
+
+    .field { margin-bottom: 14px; text-align: left; }
+    .field-label {
+      display: block; font-size: 11px; font-weight: 600;
+      text-transform: uppercase; color: #6688aa;
+      letter-spacing: .6px; margin-bottom: 7px;
+    }
+    .field input {
+      width: 100%;
+      background: #0d1b2a;
+      border: 1px solid rgba(255,255,255,0.09);
+      border-radius: 10px;
+      padding: 12px 15px;
+      color: #fff;
+      font-size: 15px;
+      outline: none;
+      transition: border-color .15s;
+    }
+    .field input:focus { border-color: #e8c44a; }
+
+    .save-row {
+      display: flex; align-items: center; gap: 10px;
+      margin: 18px 0 20px; cursor: pointer;
+    }
+    .save-row input[type="checkbox"] {
+      width: 16px; height: 16px; accent-color: #e8c44a; cursor: pointer; flex-shrink: 0;
+    }
+    .save-row span { font-size: 13px; color: #8899bb; text-align: left; line-height: 1.4; }
+
+    .btn {
+      width: 100%; padding: 14px;
+      background: #e8c44a; color: #0d1b2a;
+      border: none; border-radius: 10px;
+      font-size: 15px; font-weight: 800;
+      letter-spacing: .5px; cursor: pointer;
+      transition: background .15s, transform .1s;
+    }
+    .btn:hover:not(:disabled) { background: #f5d45a; transform: translateY(-1px); }
+    .btn:disabled { opacity: .55; cursor: default; transform: none; }
+
+    .err {
+      color: #ff7070; font-size: 13px;
+      margin-top: 14px; min-height: 18px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <img class="logo" src="./assets/logo.svg" alt="" onerror="this.style.display='none'">
+    <div class="brand">EMPÓRIO</div>
+    <div class="brand-sub">GO</div>
+    <div class="since">★ SINCE 2025 ★</div>
+
+    <div id="status" class="status">
+      <div class="spinner"></div>
+      <span>Iniciando quiosque…</span>
+    </div>
+
+    <div id="form">
+      <div class="field">
+        <label class="field-label" for="email">E-mail</label>
+        <input id="email" type="email" placeholder="seu@email.com" autocomplete="username">
+      </div>
+      <div class="field">
+        <label class="field-label" for="pass">Senha</label>
+        <input id="pass" type="password" placeholder="••••••••" autocomplete="current-password">
+      </div>
+
+      <label class="save-row">
+        <input id="save" type="checkbox" checked>
+        <span>Lembrar neste quiosque — não pedir login novamente</span>
+      </label>
+
+      <button class="btn" id="btn-login">Entrar</button>
+      <div class="err" id="err"></div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp }
+      from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js';
+    import { getAuth, signInWithEmailAndPassword, onAuthStateChanged }
+      from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js';
+    import { firebaseConfig }
+      from './scripts/firebase-config.js';
+
+    const app  = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const KEY  = '_kk';
+
+    const goSales  = () => { location.href = './index.html#/sales'; };
+    const showForm = () => {
+      document.getElementById('status').style.display = 'none';
+      document.getElementById('form').style.display   = 'block';
+      document.getElementById('email').focus();
+    };
+
+    async function tryAutoLogin() {
+      const raw = localStorage.getItem(KEY);
+      if (!raw) return false;
+      try {
+        const { e, p } = JSON.parse(atob(raw));
+        await signInWithEmailAndPassword(auth, e, p);
+        return true;
+      } catch {
+        localStorage.removeItem(KEY);
+        return false;
+      }
+    }
+
+    onAuthStateChanged(auth, async user => {
+      if (user) { goSales(); return; }
+      const ok = await tryAutoLogin();
+      if (!ok) showForm();
+    });
+
+    async function doLogin() {
+      const email = document.getElementById('email').value.trim();
+      const pass  = document.getElementById('pass').value;
+      const save  = document.getElementById('save').checked;
+      const btn   = document.getElementById('btn-login');
+      const err   = document.getElementById('err');
+      if (!email || !pass) { err.textContent = 'Preencha e-mail e senha.'; return; }
+      btn.disabled = true; btn.textContent = 'Entrando…'; err.textContent = '';
+      try {
+        await signInWithEmailAndPassword(auth, email, pass);
+        if (save) localStorage.setItem(KEY, btoa(JSON.stringify({ e: email, p: pass })));
+        goSales();
+      } catch {
+        err.textContent = 'E-mail ou senha incorretos.';
+        btn.disabled = false; btn.textContent = 'Entrar';
+      }
+    }
+
+    document.getElementById('btn-login').onclick = doLogin;
+    document.getElementById('pass').addEventListener('keydown', e => {
+      if (e.key === 'Enter') doLogin();
+    });
+  </script>
+</body>
+</html>
