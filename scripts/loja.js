@@ -144,11 +144,11 @@ async function loadBanners() {
   try {
     const snap = await getDocs(query(
       collection(db, 'settings'),
-      where('_type', '==', 'banner'),
-      orderBy('order')
+      where('_type', '==', 'banner')
     ));
     S.banners = snap.docs.map(d => ({ id: d.id, ...d.data() }))
-      .filter(b => b.active !== false);
+      .filter(b => b.active !== false)
+      .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
   } catch { S.banners = []; }
 }
 

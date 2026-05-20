@@ -604,7 +604,7 @@ html, body {
 }
 .product-hero-img {
   width: 100%;
-  aspect-ratio: 4 / 3;
+  aspect-ratio: 1;
   overflow: hidden;
   display: flex;
   align-items: center;
