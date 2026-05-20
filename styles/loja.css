@@ -611,7 +611,7 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 20px 28px;
+  padding: 28px 36px;
   box-sizing: border-box;
 }
 .product-hero-img .prod-img {

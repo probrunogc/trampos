@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Atualizar Produtos — Empório GO</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { min-height: 100vh; display: flex; align-items: center; justify-content: center;
+      background: #0f0f0f; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #e8e0d0; padding: 24px; }
+    .card { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 12px; padding: 32px; width: 100%; max-width: 520px; }
+    h1 { font-size: 1.2rem; margin-bottom: 6px; color: #d4a843; }
+    p.sub { font-size: 0.82rem; color: #888; margin-bottom: 24px; line-height: 1.5; }
+    .field { margin-bottom: 14px; }
+    label { display: block; font-size: 0.78rem; color: #aaa; margin-bottom: 5px; }
+    input { width: 100%; padding: 10px 14px; background: #111; border: 1px solid #333;
+      border-radius: 8px; color: #e8e0d0; font-size: 0.9rem; outline: none; }
+    input:focus { border-color: #d4a843; }
+    button { width: 100%; padding: 12px; background: #d4a843; color: #0f0f0f;
+      border: none; border-radius: 8px; font-size: 1rem; font-weight: 700; cursor: pointer; margin-top: 8px; }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    .log { margin-top: 16px; background: #111; border: 1px solid #2a2a2a; border-radius: 8px;
+      padding: 12px; max-height: 320px; overflow-y: auto; font-size: 0.78rem; color: #888; display: none; }
+    .log p { margin-bottom: 4px; }
+    .log p.ok { color: #6fcf6f; }
+    .log p.skip { color: #aaa; }
+    .log p.err { color: #cf6f6f; }
+  </style>
+</head>
+<body>
+<div class="card">
+  <h1>Atualizar descrições dos produtos</h1>
+  <p class="sub">Busca todos os produtos no Firestore e preenche descrição, teor alcoólico e origem para os que ainda não têm. Informe o e-mail e senha do admin.</p>
+  <div class="field"><label>E-mail do admin</label><input id="email" type="email" placeholder="admin@emporio.com" /></div>
+  <div class="field"><label>Senha</label><input id="pass" type="password" placeholder="••••••••" /></div>
+  <button id="btn">Atualizar produtos</button>
+  <div class="log" id="log"></div>
+</div>
+
+<script type="module">
+import { initializeApp, getApps, getApp } from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js';
+import { getAuth, signInWithEmailAndPassword } from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js';
+import { getFirestore, collection, getDocs, doc, updateDoc } from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js';
+import { firebaseConfig } from './scripts/firebase-config.js';
+
+const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db   = getFirestore(app);
+
+/* ── Base de conhecimento de produtos ──────────────────────────────── */
+const INFO = [
+  /* ── CERVEJAS ── */
+  { match: /brahma.*lata|brahma.*chopp.*350/i,
+    description: 'A cerveja favorita dos brasileiros. Brahma Chopp é uma Pilsen encorpada, produzida com lúpulo importado e malte selecionado, que garante sabor suave, espuma cremosa e frescor incomparável. Perfeita gelada, no churrasco ou com os amigos.',
+    teor: '4,8% vol', origem: 'Brasil' },
+
+  { match: /brahma.*litr[aã]o|brahma.*1l|brahma.*1\.0/i,
+    description: 'Brahma Chopp em tamanho família. O mesmo sabor encorpado e refrescante da Pilsen mais amada do Brasil, agora no Litrão para dividir com mais gente. Vai bem em qualquer reunião.',
+    teor: '4,8% vol', origem: 'Brasil' },
+
+  { match: /brahma.*duplo|brahma.*double/i,
+    description: 'Brahma Duplo Malte é uma cerveja premium com maior teor de malte, proporcionando corpo mais encorpado, sabor maltado mais intenso e cor dourada brilhante. Para quem gosta de mais sabor.',
+    teor: '5,4% vol', origem: 'Brasil' },
+
+  { match: /brahma/i,
+    description: 'Cerveja Brahma, produzida com ingredientes selecionados e fermentação lenta. Sabor suave e refrescante, com espuma cremosa característica. Uma das cervejas mais tradicionais do Brasil.',
+    teor: '4,8% vol', origem: 'Brasil' },
+
+  { match: /antarctica.*pilsen|antarctica.*lata|antarctica.*350/i,
+    description: 'Desde 1885 refrescando o Brasil. Antarctica Pilsen é uma cerveja lager clara, leve e refrescante, com suave amargor e aroma maltado. Tradição em cada gole, perfeita para qualquer momento.',
+    teor: '4,7% vol', origem: 'Brasil' },
+
+  { match: /antarctica.*litr[aã]o|antarctica.*1l/i,
+    description: 'Antarctica Pilsen no Litrão — a mesma leveza e tradição de sempre em dose maior. Ideal para compartilhar com amigos no churrasco ou em casa. Bem gelada é tudo de bom.',
+    teor: '4,7% vol', origem: 'Brasil' },
+
+  { match: /antarctica/i,
+    description: 'Cerveja Antarctica, uma das mais tradicionais do Brasil. Sabor leve e refrescante, com equilíbrio perfeito entre malte e lúpulo. Mais de 130 anos de história e qualidade.',
+    teor: '4,7% vol', origem: 'Brasil' },
+
+  { match: /heineken.*lata|heineken.*350/i,
+    description: 'Heineken é uma Lager holandesa de prestígio mundial, com sabor suave, levemente amargo e aroma floral característico. Produzida com a mesma receita desde 1873. Pura sofisticação.',
+    teor: '5,0% vol', origem: 'Holanda' },
+
+  { match: /heineken.*litr[aã]o|heineken.*1l/i,
+    description: 'Heineken no Litrão traz o mesmo sabor premium e refinado da lager mais famosa do mundo em tamanho maior. Para quem não abre mão da qualidade quando a festa é grande.',
+    teor: '5,0% vol', origem: 'Holanda' },
+
+  { match: /heineken/i,
+    description: 'A cerveja premium holandesa que conquistou o mundo. Heineken tem sabor suave, levemente amargo e aroma floral característico. Símbolo de qualidade e sofisticação desde 1873.',
+    teor: '5,0% vol', origem: 'Holanda' },
+
+  { match: /skol/i,
+    description: 'Skol é a cerveja que "desce redondo". Pilsen leve, refrescante e com baixo amargor, ideal para o calor. Versátil e popular em todo o Brasil há décadas.',
+    teor: '4,7% vol', origem: 'Brasil' },
+
+  { match: /itaipava/i,
+    description: 'Itaipava é uma cerveja leve, suave e muito refrescante, produzida na Serra Fluminense. Com preço acessível e sabor agradável, é ótima pedida para o dia a dia.',
+    teor: '4,3% vol', origem: 'Brasil' },
+
+  { match: /budweiser|bud\b/i,
+    description: 'Budweiser é uma American Lager produzida com arroz e malte de cevada, resultando em sabor limpo, suave e muito refrescante. Uma das marcas de cerveja mais reconhecidas do planeta.',
+    teor: '5,0% vol', origem: 'EUA' },
+
+  { match: /corona/i,
+    description: 'Corona Extra é uma cerveja mexicana leve e tropical, conhecida pelo sabor suave com toque cítrico e pela icônica garrafa transparente. Sirva com uma rodela de limão para a experiência completa.',
+    teor: '4,6% vol', origem: 'México' },
+
+  { match: /stella\s*artois/i,
+    description: 'Stella Artois é uma Lager premium belga, com sabor encorpado, amargor elegante e final seco. Produzida com a melhor qualidade desde 1926. Requinte em cada taça.',
+    teor: '5,0% vol', origem: 'Bélgica' },
+
+  { match: /original|boh[eê]mia/i,
+    description: 'Cerveja premium com aroma maltado pronunciado, sabor encorpado e levemente caramelado. Para quem aprecia uma cerveja com personalidade e tradição artesanal.',
+    teor: '5,1% vol', origem: 'Brasil' },
+
+  /* ── DESTILADOS ── */
+  { match: /ballantine/i,
+    description: 'Ballantine\'s é um dos blended Scotch Whisky mais vendidos do mundo. Sabor suave e equilibrado, com notas de baunilha, mel e leve toque de frutas. Envelhecido em barris de carvalho americano. Excelente puro, com gelo ou em drinks clássicos.',
+    teor: '40% vol', origem: 'Escócia' },
+
+  { match: /jack\s*daniel/i,
+    description: 'O Tennessee Whiskey mais famoso do mundo. Jack Daniel\'s é filtrado gota a gota pelo carvão de bordo (charcoal mellowing), resultando em sabor inconfundível com notas de baunilha, mel e leve defumado. Sirva puro, com gelo ou no clássico Jack & Coke.',
+    teor: '40% vol', origem: 'EUA' },
+
+  { match: /johnnie\s*walker|red\s*label/i,
+    description: 'Johnnie Walker Red Label é o Scotch Whisky mais vendido do mundo. Blend vibrante com notas apimentadas, frutas vermelhas e malte defumado. Versátil e ideal para drinques e highballs.',
+    teor: '40% vol', origem: 'Escócia' },
+
+  { match: /black\s*label/i,
+    description: 'Johnnie Walker Black Label é um blend premium envelhecido por 12 anos. Complexo e suave, com notas de frutas maduras, baunilha e toque de fumaça. Um dos whiskies mais apreciados do mundo.',
+    teor: '40% vol', origem: 'Escócia' },
+
+  { match: /absolut/i,
+    description: 'Absolut é uma vodca sueca de qualidade premium, destilada de trigo de inverno. Sabor suave, limpo e cristalino, com leve toque de cereais. Base perfeita para os melhores drinks e coquetéis.',
+    teor: '40% vol', origem: 'Suécia' },
+
+  { match: /smirnoff/i,
+    description: 'Smirnoff é a vodca número 1 do mundo. Tripla destilada e filtrada 10 vezes em carvão ativado para máxima pureza. Sabor neutro e limpo, ideal para drinks, shots e coquetéis.',
+    teor: '37,5% vol', origem: 'Rússia' },
+
+  { match: /old\s*parr/i,
+    description: 'Old Parr é um Blended Scotch Whisky envelhecido no mínimo 12 anos. Com sabor rico, aveludado e notas de frutas, mel e amadeirado, é referência entre os whiskies premium.',
+    teor: '40% vol', origem: 'Escócia' },
+
+  { match: /jameson/i,
+    description: 'Jameson é o Irish Whiskey mais vendido do mundo. Tripla destilado, com sabor suave, notas de baunilha, mel e leve toque de especiarias. Equilibrado e acessível, ótimo puro ou no tradicional Jameson & Ginger.',
+    teor: '40% vol', origem: 'Irlanda' },
+
+  { match: /gin\b/i,
+    description: 'Gin premium elaborado com seleção de botânicos cuidadosamente escolhidos. Aroma floral e cítrico, com notas de zimbro e especiarias. Ideal para o clássico Gin Tônica ou drinks modernos.',
+    teor: '37,5% vol', origem: 'Importado' },
+
+  { match: /rum\b|bacardi/i,
+    description: 'Rum destilado de cana-de-açúcar, com sabor suave e levemente adocicado. Versátil e perfeito para drinks tropicais como Mojito, Cuba Livre e Daiquiri.',
+    teor: '37,5% vol', origem: 'Importado' },
+
+  { match: /vodka\b/i,
+    description: 'Vodca destilada e filtrada para máxima pureza e suavidade. Sabor neutro e limpo, perfeita como base para drinks, shots gelados ou pura.',
+    teor: '40% vol', origem: 'Importado' },
+
+  { match: /cachaça|pitu|51\b|velho\s*barreiro/i,
+    description: 'Cachaça destilada de cana-de-açúcar fresca. Sabor marcante e característico, ideal para a famosa Caipirinha brasileira ou pura gelada.',
+    teor: '38% vol', origem: 'Brasil' },
+
+  /* ── ENERGÉTICOS ── */
+  { match: /baly/i,
+    description: 'Baly Energia é o energético que não poupa! Com 2000mg de taurina, 80mg de cafeína, B3, B5, B6 e B12 por lata. Sabor refrescante que dá um gás quando você mais precisa. Zero açúcar disponível.',
+    teor: '0% vol', origem: 'Brasil' },
+
+  { match: /red\s*bull/i,
+    description: 'Red Bull Energy Drink é a bebida energética original, criada na Áustria em 1987. Com taurina, cafeína e vitaminas do complexo B, revitaliza corpo e mente para os momentos mais intensos.',
+    teor: '0% vol', origem: 'Áustria' },
+
+  { match: /monster/i,
+    description: 'Monster Energy é a bebida energética preferida dos esportistas e gamers. Blend exclusivo com cafeína, taurina, ginseng e vitaminas B. Fórmula potente para liberar a fera que tem dentro de você.',
+    teor: '0% vol', origem: 'EUA' },
+
+  { match: /tnx|thunder/i,
+    description: 'Bebida energética com cafeína e taurina para dar aquele impulso de energia quando você precisa. Sabor refrescante e preço acessível.',
+    teor: '0% vol', origem: 'Brasil' },
+
+  /* ── REFRIGERANTES ── */
+  { match: /coca[\s\-]?cola|coca\b/i,
+    description: 'Coca-Cola é o refrigerante mais amado do mundo. Sabor inconfundível, doce e levemente caramelado, com gás na medida certa. Perfeita gelada, com gelo ou como base para drinks.',
+    teor: '0% vol', origem: 'Brasil' },
+
+  { match: /pepsi/i,
+    description: 'Pepsi é um refrigerante de cola com sabor levemente mais adocicado e refrescante. Ótima pedida para acompanhar refeições ou para drinks como Pepsi + Whisky.',
+    teor: '0% vol', origem: 'Brasil' },
+
+  { match: /guaraná\s*antártica|guaraná\s*antarctica/i,
+    description: 'Guaraná Antarctica é o refrigerante de guaraná mais querido do Brasil. Sabor frutado e refrescante extraído da fruta amazônica, com leveza e um toque único que só o guaraná tem.',
+    teor: '0% vol', origem: 'Brasil' },
+
+  { match: /schweppes|tônica|tonica/i,
+    description: 'Schweppes Água Tônica premium com gosto levemente amargo e refrescante. A parceira indispensável do Gin Tônica e de outros drinks sofisticados.',
+    teor: '0% vol', origem: 'Brasil' },
+
+  /* ── VINHOS ── */
+  { match: /vinho.*tinto|tinto.*vinho/i,
+    description: 'Vinho tinto de cor rubi intensa, com aroma frutado e notas de ameixa, cereja e toque amadeirado. Sabor encorpado e equilibrado, com taninos suaves e final longo. Ótimo com carnes e massas.',
+    teor: '12,5% vol', origem: 'Importado' },
+
+  { match: /vinho.*branco|branco.*vinho/i,
+    description: 'Vinho branco de cor amarelo-palha com reflexos dourados. Aroma fresco com notas de frutas tropicais e cítricas. Na boca é leve, fresco e com acidez equilibrada. Perfeito com peixes, frutos do mar e queijos.',
+    teor: '12% vol', origem: 'Importado' },
+
+  { match: /vinho.*ros[eé]|ros[eé].*vinho/i,
+    description: 'Vinho rosé de cor salmão com reflexos framboesa. Aroma floral e de frutas vermelhas. Na boca é fresco, leve e levemente frutado. Versátil, combina com aperitivos, saladas e carnes brancas.',
+    teor: '12% vol', origem: 'Importado' },
+
+  { match: /espumante|prosecco|champagne/i,
+    description: 'Espumante de cor amarelo-palha com perlage fino e persistente. Aroma fresco com notas de maçã verde, limão e brioche. Borbulhas delicadas e sabor harmonioso. Ideal para brindes e momentos especiais.',
+    teor: '11,5% vol', origem: 'Importado' },
+
+  /* ── ÁGUA ── */
+  { match: /água\s*crystal|crystal/i,
+    description: 'Água mineral Crystal, pura e refrescante. Extraída de fontes naturais, rica em minerais essenciais. Sem gás ou com gás, perfeita para hidratar ao longo do dia.',
+    teor: '0% vol', origem: 'Brasil' },
+
+  { match: /água\s*bonafont|bonafont/i,
+    description: 'Água Bonafont, leve e naturalmente pura. Com baixo teor de sódio e minerais equilibrados. Ideal para quem busca hidratação saudável e saborosa no dia a dia.',
+    teor: '0% vol', origem: 'Brasil' },
+
+  { match: /água\b/i,
+    description: 'Água mineral natural, pura e refrescante. Extraída de fontes selecionadas e envasada com todo cuidado para garantir qualidade e pureza em cada gole.',
+    teor: '0% vol', origem: 'Brasil' },
+
+  /* ── GELO ── */
+  { match: /gelo/i,
+    description: 'Gelo em cubo de alta qualidade, fabricado com água filtrada e purificada. Ideal para drinks, caipirinhas, coquetéis e para manter suas bebidas sempre geladas.',
+    teor: '0% vol', origem: 'Brasil' },
+
+  /* ── CARVÃO ── */
+  { match: /carv[aã]o/i,
+    description: 'Carvão vegetal de alta qualidade para churrasco. Brasa uniforme, baixa fumaça e longa duração. Ideal para assar carnes com aquele sabor inconfundível de churrasquinho.',
+    teor: '—', origem: 'Brasil' },
+];
+
+function lookup(name, brand) {
+  const text = `${name || ''} ${brand || ''}`;
+  for (const entry of INFO) {
+    if (entry.match.test(text)) return entry;
+  }
+  return null;
+}
+
+document.getElementById('btn').onclick = async () => {
+  const email = document.getElementById('email').value.trim();
+  const pass  = document.getElementById('pass').value;
+  const log   = document.getElementById('log');
+  const btn   = document.getElementById('btn');
+
+  log.style.display = 'block';
+  log.innerHTML = '';
+  btn.disabled = true;
+
+  const addLog = (msg, cls = '') => {
+    const p = document.createElement('p');
+    if (cls) p.className = cls;
+    p.textContent = msg;
+    log.appendChild(p);
+    log.scrollTop = log.scrollHeight;
+  };
+
+  try {
+    addLog('Autenticando…');
+    await signInWithEmailAndPassword(auth, email, pass);
+    addLog('Autenticado!', 'ok');
+
+    addLog('Buscando produtos…');
+    const snap = await getDocs(collection(db, 'products'));
+    addLog(`${snap.size} produto(s) encontrado(s).`);
+
+    let updated = 0, skipped = 0;
+    for (const docSnap of snap.docs) {
+      const p = docSnap.data();
+      const info = lookup(p.name, p.brand);
+      if (!info) {
+        addLog(`⚠ Sem dados para: ${p.name}`, 'skip');
+        skipped++;
+        continue;
+      }
+      const patch = {};
+      if (!p.description) patch.description = info.description;
+      if (!p.teor)        patch.teor        = info.teor;
+      if (!p.origem)      patch.origem      = info.origem;
+      if (Object.keys(patch).length === 0) {
+        addLog(`↷ Já preenchido: ${p.name}`, 'skip');
+        skipped++;
+        continue;
+      }
+      await updateDoc(doc(db, 'products', docSnap.id), patch);
+      addLog(`✔ Atualizado: ${p.name}`, 'ok');
+      updated++;
+    }
+    addLog(`\nPronto! ${updated} atualizado(s), ${skipped} ignorado(s).`, 'ok');
+  } catch (err) {
+    addLog(`Erro: ${err.message}`, 'err');
+  }
+  btn.disabled = false;
+};
+</script>
+</body>
+</html>
