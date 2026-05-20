@@ -47,8 +47,12 @@ async function loadBgRemover() {
     const CDN = 'https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.4.5/dist/browser/index.js';
     const mod = await import(CDN);
     _removeBg = mod.removeBackground ?? mod.default?.removeBackground ?? null;
+    if (!_removeBg) console.warn('[bg-removal] export não encontrado no módulo CDN');
     return _removeBg;
-  } catch { return null; }
+  } catch (err) {
+    console.error('[bg-removal] falha ao carregar CDN:', err);
+    return null;
+  }
 }
 
 function squareCrop(blob, size = 600) {
@@ -85,7 +89,13 @@ async function processProductImage(file, onStatus) {
           if (key === 'compute:inference') onStatus(`Processando ${Math.round(cur / tot * 100)}%`);
         },
       });
-    } catch { result = file; }
+    } catch (err) {
+      console.error('[bg-removal] falha no processamento:', err);
+      ui.toast('Remoção de fundo falhou — imagem enviada sem ajuste.', 'warning');
+      result = file;
+    }
+  } else {
+    ui.toast('IA de remoção de fundo indisponível. Verifique o console.', 'warning');
   }
   onStatus('Ajustando tamanho…');
   const cropped = await squareCrop(result instanceof Blob ? result : file, 600);
@@ -442,9 +452,10 @@ async function openForm(id = null) {
     }
   }, 'Cancelar');
 
-  const saveBtn = el('button', { class: 'btn btn-primary', type: 'submit' },
-    isEdit ? 'Salvar' : 'Cadastrar');
-  form.appendChild(el('div', { class: 'hidden' }, saveBtn));
+  // type="button" + requestSubmit() porque o modal move o botão pra fora do <form>
+  const saveBtn = el('button', { class: 'btn btn-primary', type: 'button',
+    onClick: () => form.requestSubmit(),
+  }, isEdit ? 'Salvar' : 'Cadastrar');
 
   /* ── Submit ──────────────────────────────────────────────── */
   form.onsubmit = async e => {
