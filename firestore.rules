@@ -82,6 +82,12 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    // === CATÁLOGOS DE FORNECEDORES ===
+    match /catalogs/{id} {
+      allow create: if true;    // fornecedores externos enviam sem auth
+      allow read, update, delete: if isAdmin();
+    }
+
     // === ENTREGADORES ===
     match /deliverers/{id} {
       allow read:   if isAuthed();
