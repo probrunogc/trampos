@@ -29,7 +29,7 @@ async function getStorage() {
 async function uploadBanner(blob) {
   const { ref, uploadBytes, getDownloadURL } = await import('https://www.gstatic.com/firebasejs/10.13.2/firebase-storage.js');
   const storage = await getStorage();
-  const path = `banners/${Date.now()}_${Math.random().toString(36).slice(2)}.jpg`;
+  const path = `products/${Date.now()}_${Math.random().toString(36).slice(2)}.jpg`;
   const r = ref(storage, path);
   await uploadBytes(r, blob);
   return getDownloadURL(r);

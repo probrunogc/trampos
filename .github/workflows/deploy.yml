@@ -11,12 +11,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Deploy hosting, Firestore rules e Storage rules
-        env:
-          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+
+      - name: Deploy hosting + Firestore rules + Storage rules
         run: |
-          printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > /tmp/sa.json
-          export GOOGLE_APPLICATION_CREDENTIALS=/tmp/sa.json
           npx firebase-tools@latest deploy \
             --project adegas-pf \
             --non-interactive
