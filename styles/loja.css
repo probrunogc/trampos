@@ -266,6 +266,46 @@ html, body {
 
 /* ─── Banners ────────────────────────────────────────────────── */
 .banners { padding: 14px 16px 0; }
+.banner-carousel {
+  display: grid;
+  border-radius: var(--r-lg);
+  overflow: hidden;
+}
+.banner-slide {
+  grid-row: 1;
+  grid-column: 1;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .5s ease;
+  cursor: pointer;
+}
+.banner-slide.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+.banner-dots {
+  display: flex;
+  justify-content: center;
+  gap: 5px;
+  margin-top: 8px;
+}
+.banner-dot {
+  width: 5px; height: 5px;
+  border-radius: 3px;
+  background: rgba(26,10,74,0.18);
+  transition: all .22s;
+  cursor: pointer;
+}
+.banner-dot.active {
+  background: var(--c-purple-700);
+  width: 16px;
+}
+.banner-price-tag {
+  color: var(--c-yellow);
+  font-size: .88rem;
+  font-weight: 800;
+  margin-bottom: 2px;
+}
 .banner-card {
   background: linear-gradient(135deg, #1A0A4A 0%, #3D1A8A 55%, #5222B0 100%);
   border-radius: var(--r-lg);
