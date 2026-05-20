@@ -41,16 +41,36 @@ async function uploadFile(blob, ext = 'png') {
 /* ── Image processing ───────────────────────────────────────── */
 let _removeBg = null;
 
+function showDebugModal(title, detail) {
+  const pre = document.createElement('pre');
+  pre.style.cssText = 'white-space:pre-wrap;word-break:break-all;font-size:0.72rem;line-height:1.5;user-select:text;-webkit-user-select:text;max-height:260px;overflow-y:auto;background:rgba(0,0,0,0.3);padding:10px;border-radius:6px;color:#f8b;';
+  pre.textContent = detail;
+  const hint = document.createElement('p');
+  hint.style.cssText = 'font-size:0.75rem;color:var(--text-3);margin-top:8px;';
+  hint.textContent = 'Segure o texto acima para selecionar e copiar.';
+  const wrap = document.createElement('div');
+  wrap.appendChild(pre);
+  wrap.appendChild(hint);
+  ui.modal({ title: `⚠ ${title}`, body: wrap, narrow: true,
+    footer: [Object.assign(document.createElement('button'), {
+      className: 'btn btn-ghost', type: 'button', textContent: 'Fechar',
+      onclick: () => ui.closeModal(false),
+    })],
+  });
+}
+
 async function loadBgRemover() {
   if (_removeBg) return _removeBg;
   try {
     const CDN = 'https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.4.5/dist/browser/index.js';
     const mod = await import(CDN);
     _removeBg = mod.removeBackground ?? mod.default?.removeBackground ?? null;
-    if (!_removeBg) console.warn('[bg-removal] export não encontrado no módulo CDN');
+    if (!_removeBg) {
+      showDebugModal('bg-removal: export não encontrado', `Chaves do módulo: ${Object.keys(mod).join(', ')}`);
+    }
     return _removeBg;
   } catch (err) {
-    console.error('[bg-removal] falha ao carregar CDN:', err);
+    showDebugModal('bg-removal: falha ao carregar CDN', String(err?.stack || err));
     return null;
   }
 }
@@ -90,12 +110,11 @@ async function processProductImage(file, onStatus) {
         },
       });
     } catch (err) {
-      console.error('[bg-removal] falha no processamento:', err);
-      ui.toast('Remoção de fundo falhou — imagem enviada sem ajuste.', 'warning');
+      showDebugModal('bg-removal: falha no processamento', String(err?.stack || err));
       result = file;
     }
   } else {
-    ui.toast('IA de remoção de fundo indisponível. Verifique o console.', 'warning');
+    ui.toast('IA de remoção de fundo indisponível (CDN falhou).', 'warning');
   }
   onStatus('Ajustando tamanho…');
   const cropped = await squareCrop(result instanceof Blob ? result : file, 600);
