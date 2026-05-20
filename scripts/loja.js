@@ -1066,18 +1066,64 @@ function wireSuccess(c) {
 }
 
 /* ─── Init ───────────────────────────────────────────────────── */
+function renderSkeleton() {
+  return `
+    <div class="home-header">
+      <div class="home-header-row">
+        <div class="home-logo-row">
+          <img src="assets/logo.png" alt="" />
+          <div><span class="brand-sub">Delivery de bebidas</span></div>
+        </div>
+        <div class="store-status">
+          <div class="store-status-dot"></div><span>Aberto</span>
+        </div>
+      </div>
+      <div class="search-bar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input type="search" placeholder="Buscar bebidas…" disabled />
+      </div>
+    </div>
+    <div class="skel-banner skel-pulse"></div>
+    <div class="skel-cats-row">
+      ${[1,2,3,4].map(() => `<div class="skel-cat skel-pulse"></div>`).join('')}
+    </div>
+    <div class="skel-section-title skel-pulse"></div>
+    <div class="skel-products-grid">
+      ${[1,2,3,4,5,6].map(() => `
+        <div class="skel-card skel-pulse">
+          <div class="skel-card-img"></div>
+          <div class="skel-card-line skel-pulse"></div>
+          <div class="skel-card-line short skel-pulse"></div>
+        </div>`).join('')}
+    </div>
+  `;
+}
+
 async function init() {
   loadCart();
-  await Promise.all([loadProducts(), loadBanners(), loadSettings()]);
 
+  // Mostra o app shell com skeleton imediatamente
   const splash = document.getElementById('splash');
   const app    = document.getElementById('app');
-  splash.style.transition = 'opacity .4s';
+  splash.style.transition = 'opacity .25s';
   splash.style.opacity    = '0';
-  setTimeout(() => splash.remove(), 420);
+  setTimeout(() => splash.remove(), 280);
   app.classList.remove('hidden');
-
   renderBottomNav();
+
+  const root = document.getElementById('view-root');
+  const skelDiv = document.createElement('div');
+  skelDiv.className = 'view-page';
+  skelDiv.id = 'current-view';
+  skelDiv.innerHTML = renderSkeleton();
+  root.appendChild(skelDiv);
+
+  // Carrega dados em paralelo
+  await Promise.all([loadProducts(), loadBanners(), loadSettings()]);
+
+  // Substitui skeleton pelo conteúdo real com fade suave
   go('home');
 }
 

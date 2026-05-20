@@ -1059,3 +1059,70 @@ html, body {
 .prod-img .prod-art-svg,
 .prod-img img { width: 100%; height: 100%; object-fit: contain; display: block; }
 .prod-art-svg { padding: 6%; }
+
+/* ─── Skeleton / Shimmer ─────────────────────────────────────── */
+@keyframes shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position:  400px 0; }
+}
+.skel-pulse {
+  background: linear-gradient(
+    90deg,
+    rgba(255,255,255,0.05) 25%,
+    rgba(255,255,255,0.13) 50%,
+    rgba(255,255,255,0.05) 75%
+  );
+  background-size: 800px 100%;
+  animation: shimmer 1.4s infinite linear;
+  border-radius: 12px;
+}
+.skel-banner {
+  margin: 10px 16px;
+  height: 180px;
+  border-radius: 16px;
+}
+.skel-cats-row {
+  display: flex;
+  gap: 10px;
+  padding: 14px 16px 4px;
+  overflow: hidden;
+}
+.skel-cat {
+  flex-shrink: 0;
+  width: 72px;
+  height: 88px;
+  border-radius: 14px;
+}
+.skel-section-title {
+  width: 120px;
+  height: 18px;
+  margin: 16px 16px 12px;
+  border-radius: 8px;
+}
+.skel-products-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  padding: 0 16px 24px;
+}
+.skel-card {
+  border-radius: 14px;
+  overflow: hidden;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.06);
+}
+.skel-card-img {
+  width: 100%;
+  height: 130px;
+  background: rgba(255,255,255,0.06);
+}
+.skel-card-line {
+  height: 12px;
+  margin: 10px 10px 6px;
+  border-radius: 6px;
+}
+.skel-card-line.short {
+  width: 55%;
+  height: 10px;
+  margin: 0 10px 12px;
+}
