@@ -297,7 +297,7 @@ echo  ^|   [OK]  Cervejas: geladas e prontas                        ^|
 echo  ^|   [OK]  Ressaca: inevitavel (recurso, nao bug)             ^|
 echo  ^|                                                            ^|
 echo  ^|   Para sair do quiosque:  Alt + F4                         ^|
-echo  ^|   Para reinstalar:  rode este arquivo novamente            ^|
+echo  ^|   Para reinstalar:  delete a pasta EmporioGO em AppData      ^|
 echo  ^|                                                            ^|
 echo  +============================================================+
 echo.
@@ -332,11 +332,11 @@ if not defined CHROME (
 
 start "" "%CHROME%" ^
  --kiosk ^
- --new-window ^
  --no-first-run ^
  --no-default-browser-check ^
  --disable-pinch ^
  --disable-translate ^
+ --disable-infobars ^
  --disable-session-crashed-bubble ^
  --noerrdialogs ^
  --disable-features=TranslateUI ^
