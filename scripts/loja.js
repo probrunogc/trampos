@@ -17,19 +17,39 @@ const db    = getFirestore(fbApp);
 
 /* ─── Categories definition ─────────────────────────────────── */
 const CATS = [
-  { id: 'Cerveja',      label: 'Cervejas',      emoji: '🍺' },
-  { id: 'Destilado',    label: 'Destilados',     emoji: '🥃' },
-  { id: 'Energético',   label: 'Energéticos',    emoji: '⚡' },
-  { id: 'Refrigerante', label: 'Refrigerantes',  emoji: '🥤' },
-  { id: 'Água',         label: 'Águas',          emoji: '💧' },
-  { id: 'Vinho',        label: 'Vinhos',         emoji: '🍷' },
-  { id: 'Gelo',         label: 'Gelo',           emoji: '🧊' },
-  { id: 'Carvão',       label: 'Carvão',         emoji: '🔥' },
-  { id: 'Dose',         label: 'Doses',          emoji: '🍸' },
-  { id: 'Combo',        label: 'Combos',         emoji: '🎁' },
-  { id: 'Conveniência', label: 'Conveniência',   emoji: '🛍️' },
-  { id: 'Outros',       label: 'Outros',         emoji: '🛒' },
+  { id: 'Cerveja',      label: 'Cervejas',      emoji: '🍺', color: '#F5A623' },
+  { id: 'Destilado',    label: 'Destilados',     emoji: '🥃', color: '#8B5CF6' },
+  { id: 'Energético',   label: 'Energéticos',    emoji: '⚡', color: '#EF4444' },
+  { id: 'Refrigerante', label: 'Refrigerantes',  emoji: '🥤', color: '#06B6D4' },
+  { id: 'Água',         label: 'Águas',          emoji: '💧', color: '#3B82F6' },
+  { id: 'Vinho',        label: 'Vinhos',         emoji: '🍷', color: '#7C3AED' },
+  { id: 'Gelo',         label: 'Gelo',           emoji: '🧊', color: '#93C5FD' },
+  { id: 'Carvão',       label: 'Carvão',         emoji: '🔥', color: '#374151' },
+  { id: 'Dose',         label: 'Doses',          emoji: '🍸', color: '#EC4899' },
+  { id: 'Combo',        label: 'Combos',         emoji: '🎁', color: '#10B981' },
+  { id: 'Conveniência', label: 'Conveniência',   emoji: '🛍️', color: '#F59E0B' },
+  { id: 'Outros',       label: 'Outros',         emoji: '🛒', color: '#6B7280' },
 ];
+
+function catThumb(catId) {
+  const prod = S.products.find(p => p.category === catId && p.image);
+  if (prod?.image) return `<img src="${esc(prod.image)}" alt="" loading="lazy" />`;
+  const cat = CATS.find(c => c.id === catId);
+  return `<span class="cat-thumb-letter" style="background:${cat?.color || '#8B5CF6'}">${(catId[0] || '?').toUpperCase()}</span>`;
+}
+
+function buildFilters(catId, prods) {
+  const fs = [{ id: 'all', label: 'Todos' }];
+  if (catId === 'Cerveja') {
+    if (prods.some(p => /lata/i.test(p.name)))               fs.push({ id: 'lata',    label: 'Latas' });
+    if (prods.some(p => /garrafa|long.?neck/i.test(p.name))) fs.push({ id: 'garrafa', label: 'Garrafas' });
+  } else {
+    const brands = [...new Set(prods.map(p => p.brand).filter(Boolean))];
+    if (brands.length > 1 && brands.length <= 4)
+      brands.forEach(b => fs.push({ id: b.toLowerCase().replace(/[^a-z0-9]/g, ''), label: b }));
+  }
+  return fs.length > 1 ? fs : [];
+}
 
 /* ─── App state ──────────────────────────────────────────────── */
 const S = {
@@ -293,6 +313,7 @@ function renderHome() {
   const time   = cfg.lojaDeliveryTime || '30–45 min';
   const activeCats = CATS.filter(c => S.products.some(p => p.category === c.id));
   const featured   = S.products.slice(0, 6);
+  const bannerProd = S.products.find(p => p.image);
 
   return `
     <div class="home-header">
@@ -320,10 +341,13 @@ function renderHome() {
     <div class="banners">
       <div class="banner-card">
         <div class="banner-text">
-          <h3>🔥 Promoções do dia</h3>
-          <p>Cerveja gelada, entrega rápida</p>
+          <span class="banner-tag">Delivery rápido</span>
+          <h3>Bebidas geladas<br>na sua porta</h3>
+          <p>${time} · ${fee === 0 ? 'Grátis' : brl(fee)}</p>
         </div>
-        <div class="banner-emoji">🍺</div>
+        <div class="banner-img-wrap">
+          ${bannerProd?.image ? `<img src="${esc(bannerProd.image)}" alt="" />` : ''}
+        </div>
       </div>
     </div>
 
@@ -346,7 +370,7 @@ function renderHome() {
     <div class="cat-scroll" id="cat-scroll">
       ${activeCats.map(c => `
         <button class="cat-chip" data-catid="${esc(c.id)}">
-          <div class="cat-chip-icon">${c.emoji}</div>
+          <div class="cat-chip-icon">${catThumb(c.id)}</div>
           <span>${c.label}</span>
         </button>
       `).join('')}
@@ -379,7 +403,7 @@ function renderCategories() {
         const n = S.products.filter(p => p.category === c.id).length;
         return `
           <div class="cat-card" data-catid="${esc(c.id)}">
-            <div class="cat-card-icon">${c.emoji}</div>
+            <div class="cat-card-icon">${catThumb(c.id)}</div>
             <div class="cat-card-info">
               <h4>${c.label}</h4>
               <p>${n} produto${n !== 1 ? 's' : ''}</p>
@@ -392,8 +416,9 @@ function renderCategories() {
 
 /* PRODUCT LIST */
 function renderProductList(catId) {
-  const cat   = CATS.find(c => c.id === catId) || { label: catId, emoji: '🛒' };
-  const prods = S.products.filter(p => p.category === catId);
+  const cat     = CATS.find(c => c.id === catId) || { label: catId };
+  const prods   = S.products.filter(p => p.category === catId);
+  const filters = buildFilters(catId, prods);
   return `
     <div class="view-header">
       <button class="btn-back" id="btn-back">
@@ -402,14 +427,23 @@ function renderProductList(catId) {
         </svg>
       </button>
       <div class="view-header-title">
-        <h2>${cat.emoji} ${cat.label}</h2>
+        <h2>${esc(cat.label)}</h2>
         <p>${prods.length} produto${prods.length !== 1 ? 's' : ''}</p>
       </div>
     </div>
+    ${filters.length > 0 ? `
+      <div class="filter-chips">
+        ${filters.map((f, i) => `<button class="filter-chip${i === 0 ? ' active' : ''}" data-fid="${esc(f.id)}">${esc(f.label)}</button>`).join('')}
+      </div>
+    ` : ''}
     ${prods.length > 0
-      ? `<div class="products-grid">${prods.map(renderProductCard).join('')}</div>`
+      ? `<div class="products-grid" id="prod-list-grid">${prods.map(renderProductCard).join('')}</div>`
       : `<div class="empty-state">
-           <div class="empty-state-icon">${cat.emoji}</div>
+           <div class="empty-state-icon">
+             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+               <path d="M6 2 3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/>
+             </svg>
+           </div>
            <h4>Sem produtos disponíveis</h4>
            <p>Esta categoria não tem produtos no momento.</p>
          </div>`
@@ -454,7 +488,7 @@ function renderProductDetail(p) {
       <div class="product-hero-img">${productImage(p)}</div>
     </div>
     <div class="product-detail-body">
-      <span class="product-category-chip">${cat.emoji} ${cat.label}</span>
+      <span class="product-category-chip">${esc(cat.label)}</span>
       <h2 class="product-detail-name">${esc(p.name)}</h2>
       ${p.brand ? `<p class="product-detail-brand">${esc(p.brand)}</p>` : ''}
       <div class="product-detail-price">${brl(p.price)}</div>
@@ -499,7 +533,12 @@ function renderCart() {
     </div>
     ${S.cart.length === 0 ? `
       <div class="empty-state" style="margin-top:40px">
-        <div class="empty-state-icon">🛒</div>
+        <div class="empty-state-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
+            <path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/>
+          </svg>
+        </div>
         <h4>Carrinho vazio</h4>
         <p>Adicione produtos para fazer seu pedido.</p>
       </div>
@@ -558,10 +597,10 @@ function renderCheckout() {
   const total = cartTotal() + fee;
   const enabledPays = S.settings.lojaPayments || ['pix', 'credito', 'debito', 'dinheiro'];
   const PAY_OPTS = [
-    { id: 'pix',      label: 'PIX',     icon: '📱' },
-    { id: 'credito',  label: 'Crédito', icon: '💳' },
-    { id: 'debito',   label: 'Débito',  icon: '💳' },
-    { id: 'dinheiro', label: 'Dinheiro',icon: '💵' },
+    { id: 'pix',      label: 'PIX',     icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="5" y="5" width="3" height="3"/><rect x="16" y="5" width="3" height="3"/><rect x="5" y="16" width="3" height="3"/><path d="M14 14h3v3M14 17v3h3M17 14h3M20 17v3"/></svg>` },
+    { id: 'credito',  label: 'Crédito', icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>` },
+    { id: 'debito',   label: 'Débito',  icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/><line x1="5" y1="15" x2="9" y2="15"/></svg>` },
+    { id: 'dinheiro', label: 'Dinheiro',icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></svg>` },
   ].filter(p => enabledPays.includes(p.id));
 
   return `
@@ -645,7 +684,12 @@ function renderSuccess() {
   const phone = getWAPhone();
   return `
     <div class="success-view">
-      <div class="success-icon">✅</div>
+      <div class="success-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="var(--c-green)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="42" height="42">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+          <polyline points="22 4 12 14.01 9 11.01"/>
+        </svg>
+      </div>
       <h2 class="success-title">Pedido confirmado!</h2>
       <p class="success-sub">Recebemos o seu pedido. Entraremos em contato pelo WhatsApp para confirmar a entrega.</p>
       ${S.lastOrderId ? `<div class="success-order-id"># ${S.lastOrderId.slice(-6).toUpperCase()}</div>` : ''}
@@ -672,7 +716,7 @@ function wireView(view, params, c) {
 
   if (view === 'home')       wireHome(c);
   if (view === 'categories') wireCats(c);
-  if (view === 'products')   wireProductCards(c);
+  if (view === 'products')   wireProductList(c, params.catId);
   if (view === 'product')    wireProductDetail(c, params.product);
   if (view === 'cart')       wireCart(c);
   if (view === 'checkout')   wireCheckout(c);
@@ -738,6 +782,33 @@ function wireProductCards(c) {
       setTimeout(() => { btn.textContent = orig; btn.style.cssText = ''; }, 1200);
     });
   });
+}
+
+function wireProductList(c, catId) {
+  const prods = S.products.filter(p => p.category === catId);
+  const grid  = c.querySelector('#prod-list-grid');
+
+  c.querySelectorAll('.filter-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      c.querySelectorAll('.filter-chip').forEach(ch => ch.classList.remove('active'));
+      chip.classList.add('active');
+      const fid = chip.dataset.fid;
+      let filtered = prods;
+      if (fid !== 'all') {
+        if      (fid === 'lata')    filtered = prods.filter(p => /lata/i.test(p.name));
+        else if (fid === 'garrafa') filtered = prods.filter(p => /garrafa|long.?neck/i.test(p.name));
+        else    filtered = prods.filter(p => (p.brand || '').toLowerCase().replace(/[^a-z0-9]/g, '') === fid);
+      }
+      if (grid) {
+        grid.innerHTML = filtered.length > 0
+          ? filtered.map(renderProductCard).join('')
+          : `<div style="grid-column:span 2;padding:32px;text-align:center;color:var(--text-secondary)">Nenhum produto encontrado.</div>`;
+        wireProductCards(grid);
+      }
+    });
+  });
+
+  if (grid) wireProductCards(grid);
 }
 
 function wireProductDetail(c, product) {
