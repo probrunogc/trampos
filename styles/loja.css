@@ -604,8 +604,11 @@ html, body {
 }
 .product-hero-img {
   width: 100%;
-  aspect-ratio: 1;
+  aspect-ratio: 4 / 3;
   overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 .product-hero-img .prod-img {
   width: 100%; height: 100%;
@@ -615,10 +618,10 @@ html, body {
   box-shadow: none;
   overflow: hidden;
 }
-.product-hero-img .prod-art-svg { width: 60%; height: 60%; margin: auto; display: block; }
+.product-hero-img .prod-art-svg { width: 55%; height: 55%; margin: auto; display: block; }
 .product-hero-img .prod-img img {
   width: 100%; height: 100%;
-  object-fit: cover;
+  object-fit: contain;
   display: block;
 }
 .product-detail-body {
@@ -663,8 +666,11 @@ html, body {
   flex: 0 0 100%;
   scroll-snap-align: start;
   width: 100%;
-  aspect-ratio: 1;
+  aspect-ratio: 4 / 3;
   overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 .carousel-dots {
   display: flex;
