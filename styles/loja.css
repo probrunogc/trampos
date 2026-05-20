@@ -204,22 +204,15 @@ html, body {
 }
 .home-logo-row { display: flex; align-items: center; gap: 10px; }
 .home-logo-row img {
-  width: 40px; height: 40px;
+  width: 56px; height: 56px;
   object-fit: contain;
-  border-radius: 10px;
-}
-.home-logo-row .brand-text {
-  font-size: .95rem;
-  font-weight: 800;
-  letter-spacing: .5px;
-  display: block;
+  border-radius: 12px;
 }
 .home-logo-row .brand-sub {
   display: block;
-  font-size: .68rem;
-  opacity: .55;
-  font-weight: 500;
-  margin-top: -1px;
+  font-size: .82rem;
+  opacity: .85;
+  font-weight: 600;
 }
 .store-status {
   display: flex;

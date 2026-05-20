@@ -341,7 +341,6 @@ function renderHome() {
         <div class="home-logo-row">
           <img src="assets/logo.png" alt="" />
           <div>
-            <span class="brand-text">EMPÓRIO GO</span>
             <span class="brand-sub">Delivery de bebidas</span>
           </div>
         </div>
@@ -387,17 +386,6 @@ function renderHome() {
       `}
     </div>
 
-    <div class="delivery-bar">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <rect x="1" y="3" width="15" height="13" rx="1"/>
-        <path d="M16 8h4l3 5v3h-7V8z"/>
-        <circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>
-      </svg>
-      <div class="delivery-bar-info">
-        <h4>${fee === 0 ? 'Entrega grátis' : 'Entrega ' + brl(fee)} · ${time}</h4>
-        <p>${cfg.address || 'Presidente Figueiredo — AM'}</p>
-      </div>
-    </div>
 
     <div class="section-header">
       <h3>Categorias</h3>
