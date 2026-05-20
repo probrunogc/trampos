@@ -265,7 +265,7 @@ html, body {
 .search-bar input::placeholder { color: rgba(255,255,255,0.4); }
 
 /* ─── Banners ────────────────────────────────────────────────── */
-.banners { padding: 14px 0 0; }
+.banners { padding: 14px 16px 0; }
 .banner-wrap { position: relative; }
 .banner-track {
   display: flex;
@@ -304,13 +304,15 @@ html, body {
   margin-bottom: 2px;
 }
 
-/* Banner full-width (arte horizontal) */
+/* Banner card (arte horizontal) */
 .banner-art {
   overflow: hidden;
   width: 100%;
   aspect-ratio: 16 / 7;
   background: var(--c-purple-900);
   position: relative;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.22);
 }
 .banner-art img {
   position: absolute;
@@ -609,6 +611,8 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 20px 28px;
+  box-sizing: border-box;
 }
 .product-hero-img .prod-img {
   width: 100%; height: 100%;
