@@ -265,7 +265,7 @@ html, body {
 .search-bar input::placeholder { color: rgba(255,255,255,0.4); }
 
 /* ─── Banners ────────────────────────────────────────────────── */
-.banners { padding: 14px 16px 0; }
+.banners { padding: 14px 0 0; }
 .banner-wrap { position: relative; }
 .banner-track {
   display: flex;
@@ -273,7 +273,6 @@ html, body {
   scroll-snap-type: x mandatory;
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
-  border-radius: var(--r-lg);
 }
 .banner-track::-webkit-scrollbar { display: none; }
 .banner-slide {
@@ -307,22 +306,24 @@ html, body {
 
 /* Banner full-width (arte horizontal) */
 .banner-art {
-  border-radius: var(--r-lg);
   overflow: hidden;
   width: 100%;
   aspect-ratio: 16 / 7;
   background: var(--c-purple-900);
+  position: relative;
 }
 .banner-art img {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: center;
   display: block;
 }
 
 .banner-card {
   background: linear-gradient(135deg, #1A0A4A 0%, #3D1A8A 55%, #5222B0 100%);
-  border-radius: var(--r-lg);
   padding: 20px 0 0 20px;
   display: flex;
   align-items: flex-end;

@@ -115,11 +115,13 @@ function squareCrop(blob, size = 600) {
       const canvas = document.createElement('canvas');
       canvas.width = size; canvas.height = size;
       const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, size, size);
       const scale = Math.min(size / img.width, size / img.height) * 0.88;
       const w = img.width * scale, h = img.height * scale;
       ctx.drawImage(img, (size - w) / 2, (size - h) / 2, w, h);
       URL.revokeObjectURL(url);
-      canvas.toBlob(b => resolve(b || blob), 'image/png');
+      canvas.toBlob(b => resolve(b || blob), 'image/jpeg', 0.92);
     };
     img.onerror = () => { URL.revokeObjectURL(url); resolve(blob); };
     img.src = url;
