@@ -1,7 +1,7 @@
 @echo off
-title Emporio das Bebidas - Instalador do Quiosque
+title Emporio GO - Instalador do Quiosque
 REM ============================================================
-REM  Instala o sistema como QUIOSQUE neste computador:
+REM  Instala o Emporio GO como QUIOSQUE neste computador:
 REM   - Cria atalho na Area de Trabalho
 REM   - Faz abrir junto com o Windows (inicializacao)
 REM  Rode este arquivo UMA vez. Mantenha o Emporio-Quiosque.bat
@@ -9,10 +9,12 @@ REM  na mesma pasta ao executar.
 REM ============================================================
 
 echo.
-echo  Instalando o Quiosque do Emporio das Bebidas...
+echo  ============================================
+echo    EMPORIO GO - Instalador do Quiosque
+echo  ============================================
 echo.
 
-set "DEST=%LOCALAPPDATA%\EmporioQuiosque"
+set "DEST=%LOCALAPPDATA%\EmporioGO"
 if not exist "%DEST%" mkdir "%DEST%"
 
 REM ---- Copia o lancador para um local fixo ----
@@ -27,23 +29,28 @@ set "LAUNCHER=%DEST%\Emporio-Quiosque.bat"
 set "DESKTOP=%USERPROFILE%\Desktop"
 set "STARTUP=%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup"
 
+REM ---- Remove atalhos antigos (Emporio das Bebidas) se existirem ----
+if exist "%DESKTOP%\Emporio das Bebidas.lnk" del /Q "%DESKTOP%\Emporio das Bebidas.lnk"
+if exist "%STARTUP%\Emporio das Bebidas.lnk" del /Q "%STARTUP%\Emporio das Bebidas.lnk"
+
 REM ---- Atalho na Area de Trabalho ----
-powershell -NoProfile -Command "$w=New-Object -ComObject WScript.Shell;$s=$w.CreateShortcut('%DESKTOP%\Emporio das Bebidas.lnk');$s.TargetPath='%LAUNCHER%';$s.WorkingDirectory='%DEST%';$s.WindowStyle=7;$s.Description='Emporio das Bebidas - Caixa';$s.Save()"
+powershell -NoProfile -Command "$w=New-Object -ComObject WScript.Shell;$s=$w.CreateShortcut('%DESKTOP%\Emporio GO.lnk');$s.TargetPath='%LAUNCHER%';$s.WorkingDirectory='%DEST%';$s.WindowStyle=7;$s.Description='Emporio GO - Caixa';$s.Save()"
 
 REM ---- Atalho na Inicializacao do Windows ----
-powershell -NoProfile -Command "$w=New-Object -ComObject WScript.Shell;$s=$w.CreateShortcut('%STARTUP%\Emporio das Bebidas.lnk');$s.TargetPath='%LAUNCHER%';$s.WorkingDirectory='%DEST%';$s.WindowStyle=7;$s.Description='Emporio das Bebidas - Caixa';$s.Save()"
+powershell -NoProfile -Command "$w=New-Object -ComObject WScript.Shell;$s=$w.CreateShortcut('%STARTUP%\Emporio GO.lnk');$s.TargetPath='%LAUNCHER%';$s.WorkingDirectory='%DEST%';$s.WindowStyle=7;$s.Description='Emporio GO - Caixa';$s.Save()"
 
 echo.
 echo  ====================================================
-echo    QUIOSQUE INSTALADO COM SUCESSO
+echo    QUIOSQUE INSTALADO COM SUCESSO!
 echo.
-echo    - Atalho criado na Area de Trabalho
+echo    - Atalho "Emporio GO" criado na Area de Trabalho
 echo    - O sistema abre sozinho quando o Windows ligar
 echo.
 echo    Para sair do modo quiosque: Alt + F4
+echo    Para reinstalar: rode este arquivo novamente
 echo  ====================================================
 echo.
-echo  Pressione uma tecla para abrir o sistema agora...
+echo  Pressione qualquer tecla para abrir o sistema agora...
 pause >nul
 start "" "%LAUNCHER%"
 exit /b 0
