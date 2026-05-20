@@ -591,8 +591,7 @@ html, body {
 /* ─── Product detail ─────────────────────────────────────────── */
 .product-detail-hero {
   background: #ffffff;
-  padding: calc(var(--safe-top) + 14px) 16px 0;
-  min-height: 300px;
+  padding-top: calc(var(--safe-top) + 14px);
   display: flex;
   flex-direction: column;
 }
@@ -600,36 +599,35 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 8px;
+  padding: 0 16px;
+  margin-bottom: 4px;
 }
 .product-hero-img {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 8px 10px 36px;
+  width: 100%;
+  aspect-ratio: 1;
+  overflow: hidden;
 }
 .product-hero-img .prod-img {
-  width: 260px; height: 260px;
+  width: 100%; height: 100%;
   background: transparent;
   border-radius: 0;
   border: none;
   box-shadow: none;
-  overflow: visible;
+  overflow: hidden;
 }
-.product-hero-img .prod-art-svg { width: 210px; height: 210px; }
+.product-hero-img .prod-art-svg { width: 60%; height: 60%; margin: auto; display: block; }
 .product-hero-img .prod-img img {
   width: 100%; height: 100%;
-  object-fit: contain;
-  padding: 0;
-  filter: drop-shadow(0 6px 18px rgba(0,0,0,0.14));
+  object-fit: cover;
+  display: block;
 }
 .product-detail-body {
   background: var(--bg-card);
   border-radius: var(--r-xl) var(--r-xl) 0 0;
-  margin-top: -28px;
-  padding: 24px 16px 24px;
-  flex: 1;
+  margin-top: -20px;
+  padding: 22px 16px 32px;
+  position: relative;
+  z-index: 1;
 }
 .product-category-chip {
   display: inline-block;
@@ -649,14 +647,12 @@ html, body {
 .product-detail-desc   { font-size: .95rem; color: var(--text-secondary); line-height: 1.55; margin-top: 10px; }
 /* ─── Product detail carousel ─────────────────────────────── */
 .product-carousel {
-  flex: 1;
+  width: 100%;
   display: flex;
   flex-direction: column;
-  min-height: 0;
 }
 .carousel-track {
   display: flex;
-  flex: 1;
   overflow-x: auto;
   scroll-snap-type: x mandatory;
   scrollbar-width: none;
@@ -666,9 +662,9 @@ html, body {
 .carousel-slide {
   flex: 0 0 100%;
   scroll-snap-align: start;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  width: 100%;
+  aspect-ratio: 1;
+  overflow: hidden;
 }
 .carousel-dots {
   display: flex;
