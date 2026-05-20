@@ -267,33 +267,63 @@ html, body {
 /* ─── Banners ────────────────────────────────────────────────── */
 .banners { padding: 14px 16px 0; }
 .banner-card {
-  background: linear-gradient(135deg, var(--c-purple-800), var(--c-purple-600));
+  background: linear-gradient(135deg, #1A0A4A 0%, #3D1A8A 55%, #5222B0 100%);
   border-radius: var(--r-lg);
-  padding: 18px 20px;
+  padding: 20px 0 0 20px;
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: space-between;
-  gap: 12px;
-  min-height: 96px;
+  gap: 0;
+  min-height: 120px;
   position: relative;
   overflow: hidden;
 }
 .banner-card::before {
   content: '';
   position: absolute;
-  top: -24px; right: -20px;
-  width: 110px; height: 110px;
+  top: -30px; right: 80px;
+  width: 130px; height: 130px;
   border-radius: 50%;
-  background: rgba(255,255,255,0.05);
+  background: rgba(255,255,255,0.04);
+}
+.banner-text {
+  padding-bottom: 20px;
+  flex: 1;
+}
+.banner-tag {
+  display: inline-block;
+  background: var(--c-yellow);
+  color: var(--text-on-yellow);
+  font-size: .6rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  padding: 3px 8px;
+  border-radius: var(--r-full);
+  margin-bottom: 7px;
 }
 .banner-text h3 {
-  color: var(--c-yellow);
-  font-size: 1.1rem;
+  color: white;
+  font-size: 1rem;
   font-weight: 800;
-  line-height: 1.2;
+  line-height: 1.3;
 }
-.banner-text p { color: rgba(255,255,255,0.7); font-size: .8rem; margin-top: 4px; }
-.banner-emoji { font-size: 3.2rem; line-height: 1; flex-shrink: 0; }
+.banner-text p { color: rgba(255,255,255,0.6); font-size: .75rem; margin-top: 5px; }
+.banner-img-wrap {
+  width: 120px;
+  height: 120px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  margin-right: -4px;
+}
+.banner-img-wrap img {
+  width: 110px;
+  height: 110px;
+  object-fit: contain;
+  filter: drop-shadow(0 6px 16px rgba(0,0,0,0.5));
+}
 
 /* ─── Section header ─────────────────────────────────────────── */
 .section-header {
@@ -359,6 +389,36 @@ html, body {
   width: 100%; height: 100%;
   display: flex; align-items: center; justify-content: center;
   font-size: 1.1rem; font-weight: 800; color: white;
+}
+
+/* ─── Filter chips (product list) ───────────────────────────── */
+.filter-chips {
+  display: flex;
+  overflow-x: auto;
+  gap: 8px;
+  padding: 10px 16px 4px;
+  scrollbar-width: none;
+}
+.filter-chips::-webkit-scrollbar { display: none; }
+.filter-chip {
+  white-space: nowrap;
+  padding: 6px 16px;
+  border-radius: var(--r-full);
+  border: 1.5px solid var(--border);
+  background: var(--bg-card);
+  font-size: .78rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-family: inherit;
+  transition: all .15s;
+  flex-shrink: 0;
+  box-shadow: var(--shadow-sm);
+}
+.filter-chip.active {
+  background: var(--c-purple-900);
+  border-color: var(--c-purple-900);
+  color: white;
 }
 
 /* ─── Category grid (categories page) ───────────────────────── */
@@ -775,7 +835,9 @@ html, body {
   background: var(--c-purple-100);
   border-color: var(--c-purple-600);
 }
-.payment-option-icon  { font-size: 1.4rem; line-height: 1; }
+.payment-option-icon  { font-size: 1.4rem; line-height: 1; color: var(--c-purple-700); }
+.payment-option-icon svg { width: 24px; height: 24px; }
+.payment-option.selected .payment-option-icon { color: var(--c-purple-600); }
 .payment-option-label { font-size: .76rem; font-weight: 700; color: var(--text-secondary); }
 .payment-option.selected .payment-option-label { color: var(--c-purple-800); }
 
@@ -819,7 +881,6 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 2.6rem;
 }
 .success-title { font-size: 1.35rem; font-weight: 900; color: var(--text-primary); }
 .success-sub   { font-size: .88rem; color: var(--text-secondary); line-height: 1.5; max-width: 280px; }
@@ -842,7 +903,8 @@ html, body {
   align-items: center;
   gap: 8px;
 }
-.empty-state-icon { font-size: 3rem; line-height: 1; }
+.empty-state-icon { font-size: 3rem; line-height: 1; color: var(--c-purple-200); }
+.empty-state-icon svg { width: 56px; height: 56px; opacity: 0.35; }
 .empty-state h4   { font-size: .96rem; font-weight: 700; color: var(--text-primary); }
 .empty-state p    { font-size: .83rem; color: var(--text-secondary); line-height: 1.5; }
 .loading-state    { padding: 40px 24px; text-align: center; color: var(--text-secondary); font-size: .88rem; }
