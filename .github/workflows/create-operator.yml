@@ -1,0 +1,40 @@
+name: Criar Operador de Quiosque
+
+on:
+  workflow_dispatch:
+    inputs:
+      name:
+        description: 'Nome do operador (ex: Rafael)'
+        required: true
+      email:
+        description: 'E-mail do operador'
+        required: true
+      pin:
+        description: 'PIN de 4 dígitos'
+        required: true
+      role:
+        description: 'Cargo'
+        required: false
+        default: 'Vendedor'
+
+jobs:
+  create:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install firebase-admin
+        run: npm install firebase-admin
+
+      - name: Create operator
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          OP_NAME: ${{ github.event.inputs.name }}
+          OP_EMAIL: ${{ github.event.inputs.email }}
+          OP_PIN: ${{ github.event.inputs.pin }}
+          OP_ROLE: ${{ github.event.inputs.role }}
+        run: node scripts/create-operator.mjs

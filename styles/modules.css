@@ -937,3 +937,111 @@
 [data-theme="light"] .rep-prod-rev,
 [data-theme="light"] .rep-dose-bar-qty,
 [data-theme="light"] .delivery-code { color: var(--gold-700); }
+
+/* =========================================================
+   KIOSK MODE — PDV overrides (bigger, bolder)
+   ========================================================= */
+.kiosk-mode .pdv-layout {
+  height: calc(100dvh - 64px - 28px);
+}
+.kiosk-mode .pdv-cart {
+  min-width: 420px;
+}
+
+/* Grid: cards um pouco maiores */
+.kiosk-mode .pdv-grid {
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: var(--sp-3);
+  padding: var(--sp-4);
+}
+
+/* Card: canvas sem padding, imagem borda a borda */
+.kiosk-mode .pdv-product {
+  padding: 0;
+  overflow: hidden;
+  flex-direction: column;
+}
+.kiosk-mode .pdv-product-img {
+  width: 100%;
+  height: 125px;
+  margin-bottom: 0;
+  border-radius: 0;
+  flex-shrink: 0; /* impede a imagem de encolher e cortar o texto */
+}
+
+/* Categoria removida do card — já existe no filtro de chips */
+.kiosk-mode .pdv-product-cat { display: none; }
+
+/* Nome como inscrição: centralizado e legível */
+.kiosk-mode .pdv-product-name {
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-align: center;
+  padding: 8px 10px 2px;
+  line-height: 1.25;
+  flex: 0;
+  letter-spacing: 0.01em;
+}
+
+/* Preço centrado em destaque */
+.kiosk-mode .pdv-product-price {
+  font-size: 1rem;
+  font-weight: 800;
+  text-align: center;
+  padding: 0 10px 10px;
+}
+
+/* Estoque: esconde quando normal, mostra só quando crítico */
+.kiosk-mode .pdv-product-stock { display: none; }
+.kiosk-mode .pdv-product-stock.low,
+.kiosk-mode .pdv-product-stock.zero {
+  display: block;
+  text-align: center;
+  font-size: 0.7rem;
+  padding-bottom: 8px;
+}
+
+/* Chips de categoria: tamanho equilibrado */
+.kiosk-mode .pdv-cat-chip {
+  font-size: 0.82rem;
+  padding: 6px 14px;
+}
+.kiosk-mode .pdv-search-bar input {
+  font-size: 1rem;
+  padding: 13px 14px 13px 44px;
+}
+
+/* Produtos: somente leitura no kiosk — oculta botões de edição/exclusão/criação */
+.kiosk-mode .page-header-actions,
+.kiosk-mode [data-edit],
+.kiosk-mode [data-del] { display: none !important; }
+
+/* Carrinho */
+.kiosk-mode .cart-item-name {
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+.kiosk-mode .cart-item-total {
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+.kiosk-mode .pdv-total-row.grand {
+  font-size: 1.5rem;
+  margin-top: var(--sp-3);
+  padding-top: var(--sp-3);
+}
+.kiosk-mode #pdv-finish {
+  padding: 16px;
+  font-size: 1.05rem;
+  letter-spacing: 0.06em;
+}
+.kiosk-mode .pdv-cart-head h3 {
+  font-size: 1rem;
+}
+.kiosk-mode .pdv-customer-name {
+  font-size: 1rem;
+}
+.kiosk-mode .cart-qty-btn {
+  width: 30px; height: 30px;
+  font-size: 1.1rem;
+}
