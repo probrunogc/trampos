@@ -3,11 +3,24 @@
  * Cadastra vendedores, entregadores e outros admins.
  *
  * Em DEMO_MODE: cria usuários no localStorage com senha em texto.
- * Em produção (Firebase): cria via Firebase Auth (precisa do Admin SDK no servidor,
- *  então aqui apenas gerencia o documento `users/{uid}` com o perfil/role
- *  — o usuário precisa ter sido criado antes no Firebase Authentication).
+ * Em produção: usa app Firebase secundário para criar Auth user sem encerrar
+ * a sessão do admin logado, depois salva perfil em users/{uid}.
  */
 import { db, fmt, ui, icon, el, clearNode, auth, isDemoMode } from '../core.js';
+import { firebaseConfig } from '../firebase-config.js';
+
+let _secApp = null;
+async function getSecondaryAuth() {
+  const [{ initializeApp, getApps }, { getAuth }] = await Promise.all([
+    import('https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js'),
+    import('https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js')
+  ]);
+  if (!_secApp) {
+    const existing = getApps().find(a => a.name === 'users-helper');
+    _secApp = existing || initializeApp(firebaseConfig, 'users-helper');
+  }
+  return getAuth(_secApp);
+}
 
 export const meta = {
   id: 'users',
@@ -35,14 +48,6 @@ export async function render(root) {
         <button class="btn btn-primary" id="btn-new">${icon('plus', { size: 16 })} <span>Novo usuário</span></button>
       </div>
     </div>
-    ${!isDemoMode() ? `
-      <div class="card" style="margin-bottom: var(--sp-4); border-left: 3px solid var(--gold-400)">
-        <strong class="text-gold">Modo Firebase ativo.</strong>
-        <p class="text-mute small" style="margin-top:6px">
-          Para criar um usuário, primeiro adicione o e-mail/senha em <strong>Firebase Console → Authentication</strong>.
-          Depois aqui você cadastra o perfil (nome + role) usando o UID gerado pelo Firebase.
-        </p>
-      </div>` : ''}
     <div class="table-wrap">
       <div class="table-toolbar">
         <div class="table-search">${icon('search')}<input id="search-input" type="search" placeholder="Buscar..." /></div>
@@ -129,20 +134,13 @@ async function openForm(id = null) {
         <input name="email" type="email" required ${isEdit ? 'readonly' : ''} value="${fmt.escape(u?.email || '')}" />
       </label>
     </div>
-    ${!isEdit && isDemoMode() ? `
+    ${!isEdit ? `
       <div class="field-row">
         <label class="field">
-          <span class="field-label">Senha (modo demo) *</span>
-          <input name="password" type="password" minlength="6" required />
-          <span class="field-hint">Mínimo 6 caracteres. Em produção, crie no Firebase Auth.</span>
+          <span class="field-label">Senha *</span>
+          <input name="password" type="password" minlength="6" required autocomplete="new-password" />
+          <span class="field-hint">Mínimo 6 caracteres.</span>
         </label>
-      </div>
-    ` : ''}
-    ${!isEdit && !isDemoMode() ? `
-      <div class="field">
-        <span class="field-label">UID do Firebase *</span>
-        <input name="uid" required placeholder="Cole aqui o UID criado no Firebase Authentication" />
-        <span class="field-hint">Crie o usuário em Firebase Console → Authentication → Users e cole o UID aqui.</span>
       </div>
     ` : ''}
 
@@ -191,9 +189,23 @@ async function openForm(id = null) {
           const created = await db.create('users', payload);
           state.list.push(created);
         } else {
-          const uid = fd.uid?.trim();
-          if (!uid) throw new Error('UID do Firebase é obrigatório');
-          const created = await db.createWithId('users', uid, payload);
+          const { createUserWithEmailAndPassword, signOut } =
+            await import('https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js');
+          const secAuth = await getSecondaryAuth();
+          let cred;
+          try {
+            cred = await createUserWithEmailAndPassword(secAuth, payload.email, fd.password);
+          } catch (err) {
+            const msgs = {
+              'auth/email-already-in-use': 'Este e-mail já está cadastrado no sistema.',
+              'auth/weak-password':        'Senha fraca — use pelo menos 6 caracteres.',
+              'auth/invalid-email':        'E-mail inválido.'
+            };
+            throw new Error(msgs[err.code] || err.message);
+          }
+          const newUid = cred.user.uid;
+          await signOut(secAuth);
+          const created = await db.createWithId('users', newUid, payload);
           state.list.push(created);
         }
         ui.toast('Usuário cadastrado.', 'success');
