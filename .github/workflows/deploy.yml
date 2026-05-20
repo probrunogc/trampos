@@ -1,4 +1,4 @@
-name: Deploy Firebase Hosting
+name: Deploy Firebase
 
 on:
   push:
@@ -11,9 +11,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: FirebaseExtended/action-hosting-deploy@v0
+      - name: Deploy Hosting
+        uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
           channelId: live
           projectId: adegas-pf
+
+      - name: Deploy Firestore + Storage Rules
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          echo "$FIREBASE_SERVICE_ACCOUNT" > /tmp/sa.json
+          GOOGLE_APPLICATION_CREDENTIALS=/tmp/sa.json npx firebase-tools@latest deploy --only firestore,storage --project adegas-pf

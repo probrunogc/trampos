@@ -73,12 +73,12 @@ export async function render(root) {
 
   document.getElementById('btn-new').onclick = () => openForm();
 
-  const [bannersData, productsData] = await Promise.all([
+  const [bannersRes, productsRes] = await Promise.allSettled([
     db.list('banners', { orderBy: 'order' }),
     db.list('products', { orderBy: 'name' }),
   ]);
-  state.list = bannersData;
-  state.products = productsData;
+  state.list     = bannersRes.status     === 'fulfilled' ? bannersRes.value     : [];
+  state.products = productsRes.status === 'fulfilled' ? productsRes.value : [];
   paint();
 }
 

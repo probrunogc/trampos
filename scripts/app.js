@@ -118,7 +118,8 @@ async function boot() {
     }
   };
 
-  // Sidebar toggle (mobile)
+  // Sidebar toggle
+  const closeSidebar = () => $('#app-shell').classList.remove('mobile-open');
   $('#btn-sidebar-toggle').onclick = () => {
     const shell = $('#app-shell');
     if (window.innerWidth <= 600) {
@@ -127,6 +128,7 @@ async function boot() {
       shell.classList.toggle('sidebar-collapsed');
     }
   };
+  $('#sidebar-overlay').onclick = closeSidebar;
 
   // Theme toggle
   initTheme();
