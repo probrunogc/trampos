@@ -220,15 +220,22 @@ function openWhatsApp(message) {
 
 /* ─── Image shimmer while loading ───────────────────────────── */
 function shimmerImages(container) {
-  container.querySelectorAll('.banner-art img, .prod-img img, .cat-chip-icon img').forEach(img => {
-    if (img.complete && img.naturalWidth) return; // já carregou
-    const wrap = img.closest('.banner-art, .prod-img, .cat-chip-icon');
+  container.querySelectorAll('.banner-art img, .product-card-img img, .cat-chip-icon img').forEach(img => {
+    if (img.complete && img.naturalWidth) return;
+
+    const imgWrap = img.closest('.banner-art, .product-card-img, .cat-chip-icon');
+    const card    = img.closest('.product-card');
+    const texts   = card ? card.querySelectorAll('.product-card-name, .product-card-brand, .product-card-price, .btn-add-card, .product-out-badge') : [];
+
     img.style.opacity = '0';
     img.style.transition = 'opacity .35s';
-    if (wrap) wrap.classList.add('img-loading');
+    if (imgWrap) imgWrap.classList.add('img-loading');
+    texts.forEach(el => el.classList.add('skel-text'));
+
     const done = () => {
       img.style.opacity = '1';
-      if (wrap) wrap.classList.remove('img-loading');
+      if (imgWrap) imgWrap.classList.remove('img-loading');
+      texts.forEach(el => el.classList.remove('skel-text'));
     };
     img.addEventListener('load',  done, { once: true });
     img.addEventListener('error', done, { once: true });

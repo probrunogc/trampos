@@ -1065,7 +1065,23 @@ html, body {
 .prod-img img { width: 100%; height: 100%; object-fit: contain; display: block; }
 .prod-art-svg { padding: 6%; }
 
-/* ─── Image loading shimmer ─────────────────────────────────── */
+/* ─── Image + text loading shimmer ──────────────────────────── */
+.skel-text {
+  color: transparent !important;
+  background: linear-gradient(
+    90deg,
+    rgba(255,255,255,0.07) 25%,
+    rgba(255,255,255,0.15) 50%,
+    rgba(255,255,255,0.07) 75%
+  );
+  background-size: 800px 100%;
+  animation: shimmer 1.4s infinite linear;
+  border-radius: 6px;
+  pointer-events: none;
+}
+.skel-text * { visibility: hidden; }
+
+
 .img-loading {
   background: linear-gradient(
     90deg,
