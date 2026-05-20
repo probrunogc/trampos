@@ -19,9 +19,10 @@ jobs:
           channelId: live
           projectId: adegas-pf
 
+      # GOOGLE_APPLICATION_CREDENTIALS is exported by the action above
       - name: Deploy Firestore + Storage Rules
-        env:
-          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
         run: |
-          echo "$FIREBASE_SERVICE_ACCOUNT" > /tmp/sa.json
-          GOOGLE_APPLICATION_CREDENTIALS=/tmp/sa.json npx firebase-tools@latest deploy --only firestore,storage --project adegas-pf
+          npx firebase-tools@latest deploy \
+            --only firestore,storage \
+            --project adegas-pf \
+            --non-interactive
