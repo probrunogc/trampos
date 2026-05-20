@@ -16,72 +16,96 @@ html,body{height:100%;background:var(--purple);color:#fff;
 /* ── screens ── */
 .screen{position:absolute;inset:0;display:flex;flex-direction:column;
   transition:opacity .28s,transform .28s;will-change:transform,opacity;overflow:hidden}
-.screen.hidden{opacity:0;pointer-events:none;transform:translateX(48px)}
-.screen.out   {opacity:0;pointer-events:none;transform:translateX(-48px)}
+.screen.hidden {opacity:0;pointer-events:none;transform:translateX(52px)}
+.screen.out    {opacity:0;pointer-events:none;transform:translateX(-52px)}
+.screen.back   {opacity:0;pointer-events:none;transform:translateX(-52px)}
+.screen.out-r  {opacity:0;pointer-events:none;transform:translateX(52px)}
 
 /* ── save indicator ── */
 #save-dot{position:fixed;top:14px;right:16px;font-size:11px;font-weight:700;
-  color:rgba(255,255,255,0.35);z-index:99;transition:color .3s}
+  color:rgba(255,255,255,0.3);z-index:99;transition:color .3s;pointer-events:none}
 #save-dot.saving{color:var(--gold)}
 #save-dot.saved {color:#22c55e}
 
-/* ── CATEGORIES screen ── */
-#s-cats{padding:0;background:var(--purple)}
-.cats-top{padding:24px 20px 16px;flex-shrink:0}
-.cats-top h1{font-size:22px;font-weight:900;color:var(--gold)}
-.cats-top p{font-size:13px;color:var(--grey);margin-top:4px}
+/* ── shared header ── */
+.screen-top{padding:14px 16px 10px;display:flex;align-items:center;gap:10px;flex-shrink:0;
+  border-bottom:1px solid rgba(255,255,255,0.07)}
+.btn-back{background:rgba(255,255,255,0.09);border:none;border-radius:10px;
+  width:38px;height:38px;color:#fff;font-size:18px;cursor:pointer;flex-shrink:0;
+  transition:background .12s}
+.btn-back:active{background:rgba(255,255,255,0.18)}
+.top-title{font-size:17px;font-weight:800;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.top-badge{font-size:12px;color:var(--gold);font-weight:700;white-space:nowrap}
+
+/* ── CATEGORIES ── */
+#s-cats{background:var(--purple)}
+.cats-top{padding:22px 18px 14px;flex-shrink:0}
+.cats-top h1{font-size:21px;font-weight:900;color:var(--gold)}
+.cats-top p{font-size:13px;color:var(--grey);margin-top:3px}
 .total-badge{display:inline-flex;align-items:center;gap:6px;background:var(--sel);
   border:1px solid rgba(245,200,66,0.3);border-radius:20px;padding:4px 12px;
   font-size:12px;font-weight:700;color:var(--gold);margin-top:10px}
-.cats-scroll{flex:1;overflow-y:auto;padding:0 16px 24px;display:grid;
-  grid-template-columns:1fr 1fr;gap:12px;align-content:start}
+.cats-scroll{flex:1;overflow-y:auto;padding:0 14px 24px;display:grid;
+  grid-template-columns:1fr 1fr;gap:11px;align-content:start}
 .cat-card{background:var(--card);border:1.5px solid rgba(255,255,255,0.08);
-  border-radius:18px;padding:20px 14px 16px;cursor:pointer;
+  border-radius:18px;padding:18px 12px 14px;cursor:pointer;
   transition:transform .12s,border-color .2s,background .2s;position:relative;
   display:flex;flex-direction:column;align-items:center;text-align:center}
 .cat-card:active{transform:scale(0.94)}
 .cat-card.has-sel{border-color:rgba(245,200,66,0.5);background:var(--sel)}
-.cat-icon{font-size:34px;margin-bottom:8px;line-height:1}
-.cat-name{font-size:14px;font-weight:700}
+.cat-icon{font-size:32px;margin-bottom:7px;line-height:1}
+.cat-name{font-size:13px;font-weight:700}
 .cat-sub{font-size:11px;color:var(--grey);margin-top:3px}
-.cat-pill{position:absolute;top:10px;right:10px;background:var(--gold);color:var(--purple);
+.cat-pill{position:absolute;top:9px;right:9px;background:var(--gold);color:var(--purple);
   font-size:11px;font-weight:900;border-radius:20px;padding:2px 7px;
   opacity:0;transition:opacity .2s}
 .cat-card.has-sel .cat-pill{opacity:1}
-.cat-bar{width:100%;height:3px;background:rgba(255,255,255,0.1);border-radius:2px;margin-top:10px;overflow:hidden}
+.cat-bar{width:100%;height:3px;background:rgba(255,255,255,0.1);border-radius:2px;margin-top:9px;overflow:hidden}
 .cat-bar-fill{height:100%;background:var(--gold);border-radius:2px;transition:width .4s}
 
-/* ── PRODUCTS screen ── */
+/* ── PRODUCTS (brands) ── */
 #s-prods{background:var(--purple)}
-.prods-top{padding:14px 16px 10px;display:flex;align-items:center;gap:10px;flex-shrink:0;
-  border-bottom:1px solid rgba(255,255,255,0.07)}
-.btn-back{background:rgba(255,255,255,0.09);border:none;border-radius:10px;
-  width:38px;height:38px;color:#fff;font-size:17px;cursor:pointer;flex-shrink:0}
-.prods-title{font-size:17px;font-weight:800;flex:1}
-.prods-count{font-size:12px;color:var(--gold);font-weight:700}
-.prods-grid{flex:1;overflow-y:auto;padding:12px 14px 32px;
+.prods-grid{flex:1;overflow-y:auto;padding:10px 13px 32px;
   display:grid;grid-template-columns:1fr 1fr;gap:9px;align-content:start}
 .prod-card{background:var(--card);border:1.5px solid rgba(255,255,255,0.08);
-  border-radius:13px;padding:13px 11px 10px;cursor:pointer;position:relative;
-  transition:transform .1s,border-color .15s,background .15s;min-height:70px;
+  border-radius:13px;padding:13px 11px 11px;cursor:pointer;position:relative;
+  transition:transform .1s,border-color .15s,background .15s;min-height:64px;
   display:flex;flex-direction:column;justify-content:space-between}
 .prod-card:active{transform:scale(0.93)}
-.prod-card.sel{border-color:var(--gold);background:var(--sel)}
-.prod-check{position:absolute;top:7px;right:9px;font-size:14px;font-weight:900;
+.prod-card.has-vars{border-color:rgba(245,200,66,0.5);background:var(--sel)}
+.prod-check{position:absolute;top:7px;right:9px;font-size:13px;font-weight:900;
   color:var(--gold);opacity:0;transform:scale(0);transition:opacity .15s,transform .2s}
-.prod-card.sel .prod-check{opacity:1;transform:scale(1)}
-.prod-name{font-size:13px;font-weight:700;line-height:1.3;padding-right:18px}
-.prod-price-wrap{display:none;margin-top:8px}
-.prod-card.sel .prod-price-wrap{display:flex;align-items:center;gap:6px}
+.prod-card.has-vars .prod-check{opacity:1;transform:scale(1)}
+.prod-name{font-size:13px;font-weight:700;line-height:1.3;padding-right:20px}
+.prod-vars-badge{font-size:11px;color:var(--gold);margin-top:5px;font-weight:600}
+
+/* ── VARIANTS ── */
+#s-vars{background:var(--purple)}
+.vars-brand-bar{padding:8px 16px 10px;flex-shrink:0;border-bottom:1px solid rgba(255,255,255,0.07)}
+.vars-brand-name{font-size:19px;font-weight:900;color:#fff}
+.vars-brand-cat{font-size:12px;color:var(--grey);margin-top:2px}
+.vars-grid{flex:1;overflow-y:auto;padding:12px 13px 40px;
+  display:grid;grid-template-columns:1fr 1fr;gap:9px;align-content:start}
+.var-card{background:var(--card);border:1.5px solid rgba(255,255,255,0.08);
+  border-radius:13px;padding:13px 11px 11px;cursor:pointer;position:relative;
+  transition:transform .1s,border-color .15s,background .15s}
+.var-card:active{transform:scale(0.93)}
+.var-card.sel{border-color:rgba(245,200,66,0.5);background:var(--sel)}
+.var-check{position:absolute;top:7px;right:9px;font-size:13px;font-weight:900;
+  color:var(--gold);opacity:0;transform:scale(0);transition:opacity .15s,transform .2s}
+.var-card.sel .var-check{opacity:1;transform:scale(1)}
+.var-name{font-size:13px;font-weight:700;padding-right:20px;line-height:1.3}
+.var-price-wrap{display:none;margin-top:9px;align-items:center;gap:5px}
+.var-card.sel .var-price-wrap{display:flex}
 .price-label{font-size:10px;color:var(--gold);font-weight:700;white-space:nowrap}
-.prod-price{width:100%;background:rgba(245,200,66,0.1);border:1px solid rgba(245,200,66,0.25);
-  border-radius:7px;padding:5px 8px;color:var(--gold);font-size:13px;font-weight:700;
-  outline:none;-webkit-appearance:none}
-/* bounce animation */
+.var-price{width:100%;background:rgba(245,200,66,0.1);border:1px solid rgba(245,200,66,0.25);
+  border-radius:7px;padding:5px 7px;color:var(--gold);font-size:13px;font-weight:700;
+  outline:none;-webkit-appearance:none;min-width:0}
+
+/* ── shared animations ── */
 .bounce{animation:bounce .22s cubic-bezier(.34,1.56,.64,1)}
 @keyframes bounce{0%{transform:scale(1)}50%{transform:scale(1.07)}100%{transform:scale(1)}}
-/* ripple */
-.ripple{position:absolute;border-radius:50%;background:rgba(245,200,66,0.3);
+.ripple{position:absolute;border-radius:50%;background:rgba(245,200,66,0.28);
   transform:scale(0);animation:rpl .45s ease-out forwards;pointer-events:none}
 @keyframes rpl{to{transform:scale(5);opacity:0}}
 </style>
@@ -89,24 +113,39 @@ html,body{height:100%;background:var(--purple);color:#fff;
 <body>
 <div id="save-dot">●</div>
 
-<!-- Categories -->
+<!-- Screen 1: Categories -->
 <div class="screen" id="s-cats">
   <div class="cats-top">
     <h1>📦 Catálogo de Produtos</h1>
-    <p>Toque nas categorias e marque o que você tem</p>
-    <div class="total-badge">✓ <span id="total-sel">0</span> produtos selecionados</div>
+    <p>Toque na categoria e marque o que você tem</p>
+    <div class="total-badge">✓ <span id="total-sel">0</span> itens selecionados</div>
   </div>
   <div class="cats-scroll" id="cats-grid"></div>
 </div>
 
-<!-- Products -->
+<!-- Screen 2: Brands/Products -->
 <div class="screen hidden" id="s-prods">
-  <div class="prods-top">
-    <button class="btn-back" id="btn-back">←</button>
-    <span id="prods-title" class="prods-title"></span>
-    <span id="prods-count" class="prods-count"></span>
+  <div class="screen-top">
+    <button class="btn-back" id="btn-back-cats">←</button>
+    <span id="prods-title" class="top-title"></span>
+    <span id="prods-badge" class="top-badge"></span>
   </div>
   <div class="prods-grid" id="prods-grid"></div>
+</div>
+
+<!-- Screen 3: Variants -->
+<div class="screen hidden" id="s-vars">
+  <div class="screen-top">
+    <button class="btn-back" id="btn-back-prods">←</button>
+    <div style="flex:1;overflow:hidden">
+      <div id="vars-brand-name" class="top-title"></div>
+    </div>
+    <span id="vars-badge" class="top-badge"></span>
+  </div>
+  <div class="vars-brand-bar">
+    <div id="vars-cat-label" class="vars-brand-cat"></div>
+  </div>
+  <div class="vars-grid" id="vars-grid"></div>
 </div>
 
 <script type="module">
@@ -118,7 +157,7 @@ import { firebaseConfig } from './scripts/firebase-config.js';
 const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 const db  = getFirestore(app);
 
-/* ── Session ID (persiste no localStorage) ── */
+/* ── Session ID ── */
 const SESSION_KEY = 'emporio_cat_session';
 let sessionId = localStorage.getItem(SESSION_KEY);
 if (!sessionId) {
@@ -128,157 +167,229 @@ if (!sessionId) {
 
 /* ── Audio ── */
 const AC = new (window.AudioContext || window.webkitAudioContext)();
-const beep = (freq, dur=0.08, vol=0.15, type='sine') => {
+const beep = (f, d=0.08, v=0.14, t='sine') => {
   try {
     const o=AC.createOscillator(), g=AC.createGain();
-    o.type=type; o.frequency.value=freq;
-    g.gain.setValueAtTime(vol, AC.currentTime);
-    g.gain.exponentialRampToValueAtTime(0.001, AC.currentTime+dur);
+    o.type=t; o.frequency.value=f;
+    g.gain.setValueAtTime(v, AC.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, AC.currentTime+d);
     o.connect(g); g.connect(AC.destination);
-    o.start(); o.stop(AC.currentTime+dur);
+    o.start(); o.stop(AC.currentTime+d);
   } catch{}
 };
 const sndOn  = () => { beep(523,.06); setTimeout(()=>beep(659,.07),55); };
 const sndOff = () => { beep(440,.06); setTimeout(()=>beep(350,.07),55); };
-const sndNav = () => beep(400,.08,'sine',.1);
+const sndNav = () => beep(400,.08,'sine',.09);
 
-/* ── Data ── */
+/* ── Catalog data ── */
 const CATS = [
-  { id:'cerveja',      icon:'🍺', name:'Cervejas',      color:'#F5A623' },
-  { id:'destilado',    icon:'🥃', name:'Destilados',     color:'#8B5CF6' },
-  { id:'energetico',   icon:'⚡', name:'Energéticos',    color:'#EF4444' },
-  { id:'refrigerante', icon:'🥤', name:'Refrigerantes',  color:'#06B6D4' },
-  { id:'vinho',        icon:'🍷', name:'Vinhos',         color:'#7C3AED' },
-  { id:'agua',         icon:'💧', name:'Águas & Gelo',   color:'#3B82F6' },
-  { id:'outros',       icon:'🛒', name:'Outros',         color:'#6B7280' },
+  { id:'cerveja',      icon:'🍺', name:'Cervejas' },
+  { id:'destilado',    icon:'🥃', name:'Destilados' },
+  { id:'energetico',   icon:'⚡', name:'Energéticos' },
+  { id:'refrigerante', icon:'🥤', name:'Refrigerantes' },
+  { id:'vinho',        icon:'🍷', name:'Vinhos & Espumantes' },
+  { id:'agua',         icon:'💧', name:'Águas & Gelo' },
+  { id:'outros',       icon:'🛒', name:'Outros' },
 ];
+
 const PRODS = {
   cerveja:['Antarctica Pilsen','Brahma Chopp','Skol','Heineken','Budweiser','Corona','Stella Artois',
-    'Itaipava','Crystal','Bohemia','Spaten','Devassa','Original','Amstel','Beck\'s','Eisenbahn Pilsen',
-    'Baden Baden','Patagônica','Petra','Modelo','Bud Light','Carlsberg','Leffe','Hoegaarden',
-    'Guinness','Paulaner','Weissbier','IPA Artesanal','Stout Artesanal'],
+    'Itaipava','Crystal','Bohemia','Spaten','Devassa','Original','Amstel','Beck\'s','Eisenbahn',
+    'Baden Baden','Patagônica','Petra','Modelo','Carlsberg','Leffe','Hoegaarden',
+    'Guinness','Paulaner','IPA Artesanal','Stout Artesanal','Weissbier'],
   destilado:['Cachaça 51','Ypióca Prata','Ypióca Ouro','Velho Barreiro','Pirassununga 965',
     'Gin Tanqueray','Gin Beefeater','Gin Gordon\'s','Gin Bombay','Gin Hendrick\'s',
     'Vodka Absolut','Vodka Smirnoff','Vodka Grey Goose','Vodka Skyy',
     'Whisky J.W. Red','Whisky J.W. Black','Jack Daniel\'s','Ballantine\'s',
-    'Chivas Regal','Old Parr','Jameson','Rum Bacardi','Rum Havana Club','Tequila Cuervo',
-    'Tequila Olmeca','Licor Amarula','Licor Baileys','Cointreau'],
-  energetico:['Red Bull 250ml','Red Bull 355ml','Monster Energy','Monster Ultra','TNT Energy',
-    'Fusion Energy','Baly','Vibe','Burn','Flying Horse','Flash Power'],
+    'Chivas Regal','Old Parr','Jameson','Rum Bacardi','Rum Havana Club',
+    'Tequila Cuervo','Tequila Olmeca','Licor Amarula','Licor Baileys','Cointreau'],
+  energetico:['Red Bull','Monster Energy','Monster Ultra','TNT Energy',
+    'Fusion Energy','Baly','Vibe','Burn','Flash Power','Flying Horse'],
   refrigerante:['Coca-Cola','Coca-Cola Zero','Pepsi','Pepsi Black','Guaraná Antarctica',
     'Guaraná Jesus','Sprite','Fanta Laranja','Fanta Uva','7Up','Schweppes Tônica',
     'Schweppes Citrus','H2OH!','Del Valle','Lipton Ice Tea'],
   vinho:['Vinho Tinto Seco','Vinho Tinto Suave','Vinho Branco Seco','Vinho Branco Suave',
     'Vinho Rosé','Espumante Brut','Espumante Moscatel','Prosecco','Champagne','Vinho Porto'],
-  agua:['Água s/ Gás 500ml','Água s/ Gás 1,5L','Água c/ Gás','Água de Coco',
-    'Gelo em Barra','Gelo Picado'],
+  agua:['Água s/ Gás','Água c/ Gás','Água de Coco','Gelo em Barra','Gelo Picado'],
   outros:['Dose Avulsa','Combo Família','Petisco/Snack','Carvão','Copo Descartável'],
 };
 
-/* ── State: sel = { 'cerveja:Heineken': { price:'' }, ... } ── */
-let sel = {};
-let saveTimer = null;
-let curCat = null;
+/* Variants per category — sizes/formats */
+const VARIANTS = {
+  cerveja:      ['Lata 269ml','Lata 350ml','Long Neck 330ml','Long Neck 355ml',
+                 'Garrafa 600ml','Garrafa 1L','Barril 5L','Barril 30L','Barril 50L'],
+  destilado:    ['Dose 50ml','Mini 200ml','Meia 375ml','Inteira 750ml','1L','1,75L'],
+  energetico:   ['250ml','355ml','473ml','1L'],
+  refrigerante: ['Lata 350ml','Garrafa 200ml','Garrafa 350ml','Garrafa 600ml',
+                 'PET 1L','PET 1,5L','PET 2L'],
+  vinho:        ['Mini 375ml','Garrafa 750ml','Magnum 1,5L'],
+  agua:         ['300ml','500ml','1,5L','5L','Garrafão 20L'],
+  outros:       ['Unidade','Pacote','Kg','Caixa'],
+};
 
-/* ── Load from Firestore ── */
+/* ── State
+   Key format: 'catId:brandName:variantName'  →  { price: '' }
+── */
+let sel = {};
+let curCat  = null;  // current category id
+let curBrand = null; // current brand name
+let saveTimer = null;
+
+/* ── Firestore ── */
 async function loadState() {
   try {
     const snap = await getDoc(doc(db,'catalogs',sessionId));
     if (snap.exists()) sel = snap.data().sel || {};
   } catch {}
-  renderCats();
-  updateTotal();
+  renderCats(); updateTotal();
 }
 
-/* ── Auto-save (debounced 2s) ── */
 function scheduleSave() {
   const dot = document.getElementById('save-dot');
-  dot.textContent = '● salvando…'; dot.className = 'saving';
+  dot.textContent='● salvando…'; dot.className='saving';
   clearTimeout(saveTimer);
   saveTimer = setTimeout(async () => {
     try {
-      await setDoc(doc(db,'catalogs',sessionId), {
-        sel, updatedAt: serverTimestamp(), sessionId
-      }, { merge: true });
-      dot.textContent = '● salvo'; dot.className = 'saved';
+      await setDoc(doc(db,'catalogs',sessionId),
+        { sel, updatedAt: serverTimestamp(), sessionId }, { merge: true });
+      dot.textContent='● salvo'; dot.className='saved';
       setTimeout(()=>{ dot.textContent='●'; dot.className=''; }, 2000);
     } catch { dot.textContent='●'; dot.className=''; }
   }, 1800);
 }
 
-/* ── Utils ── */
-function catSelCount(catId) {
-  return Object.keys(sel).filter(k=>k.startsWith(catId+':')).length;
+/* ── Helpers ── */
+function brandsInCat(catId) {
+  const brands = new Set(
+    Object.keys(sel)
+      .filter(k => k.startsWith(catId+':'))
+      .map(k => k.split(':')[1])
+  );
+  return brands.size;
 }
-function totalSel() {
+function variantsForBrand(catId, brand) {
+  return Object.keys(sel).filter(k => k.startsWith(catId+':'+brand+':')).length;
+}
+function totalItems() {
   return Object.keys(sel).length;
 }
+function updateTotal() {
+  document.getElementById('total-sel').textContent = totalItems();
+}
 function ripple(el, e) {
-  const r=document.createElement('span'); r.className='ripple';
-  const rect=el.getBoundingClientRect();
-  const s=Math.max(rect.width,rect.height);
-  r.style.cssText=`width:${s}px;height:${s}px;left:${(e?.clientX??rect.left+rect.width/2)-rect.left-s/2}px;top:${(e?.clientY??rect.top+rect.height/2)-rect.top-s/2}px`;
-  el.appendChild(r); setTimeout(()=>r.remove(),460);
+  const r = document.createElement('span'); r.className='ripple';
+  const rect = el.getBoundingClientRect();
+  const s = Math.max(rect.width, rect.height);
+  r.style.cssText = `width:${s}px;height:${s}px;left:${(e?.clientX??rect.left+rect.width/2)-rect.left-s/2}px;top:${(e?.clientY??rect.top+rect.height/2)-rect.top-s/2}px`;
+  el.appendChild(r); setTimeout(()=>r.remove(), 460);
 }
 
-/* ── Render categories ── */
+/* ── Navigation ── */
+function goForward(targetId) {
+  document.querySelectorAll('.screen').forEach(s => {
+    if (s.id === targetId) {
+      s.classList.remove('hidden','out','back','out-r');
+    } else if (!s.classList.contains('hidden') && !s.classList.contains('out') && !s.classList.contains('out-r')) {
+      s.classList.add('out');
+      setTimeout(() => s.classList.add('hidden'), 300);
+    }
+  });
+}
+function goBack(targetId) {
+  const current = document.querySelector('.screen:not(.hidden):not(.out):not(.back):not(.out-r)');
+  if (current) {
+    current.classList.add('out-r');
+    setTimeout(() => current.classList.add('hidden'), 300);
+  }
+  const target = document.getElementById(targetId);
+  target.classList.add('back');
+  target.classList.remove('hidden');
+  requestAnimationFrame(() => requestAnimationFrame(() =>
+    target.classList.remove('back','out','out-r')
+  ));
+}
+
+/* ── Screen 1: Categories ── */
 function renderCats() {
   const g = document.getElementById('cats-grid');
   g.innerHTML = CATS.map(c => {
-    const n = catSelCount(c.id);
+    const n     = brandsInCat(c.id);
     const total = PRODS[c.id].length;
-    const pct = n/total*100;
+    const pct   = n / total * 100;
     return `<div class="cat-card${n>0?' has-sel':''}" data-cat="${c.id}">
       <span class="cat-pill">${n}</span>
       <div class="cat-icon">${c.icon}</div>
       <div class="cat-name">${c.name}</div>
-      <div class="cat-sub">${n>0?n+' de '+total+' itens':total+' itens'}</div>
+      <div class="cat-sub">${n>0 ? n+' de '+total+' marcas' : total+' marcas'}</div>
       <div class="cat-bar"><div class="cat-bar-fill" style="width:${pct}%"></div></div>
     </div>`;
   }).join('');
-  g.querySelectorAll('.cat-card').forEach(card => {
-    card.addEventListener('click', e => { sndNav(); openCat(card.dataset.cat, e); });
-  });
+  g.querySelectorAll('.cat-card').forEach(card =>
+    card.addEventListener('click', e => { sndNav(); openCat(card.dataset.cat, e); })
+  );
 }
 
-function updateTotal() {
-  document.getElementById('total-sel').textContent = totalSel();
-}
-
-/* ── Open category ── */
+/* ── Screen 2: Brands ── */
 function openCat(catId, e) {
   curCat = catId;
-  const cat = CATS.find(c=>c.id===catId);
-  document.getElementById('prods-title').textContent = cat.icon+' '+cat.name;
+  const cat = CATS.find(c => c.id === catId);
+  document.getElementById('prods-title').textContent = cat.icon + ' ' + cat.name;
   renderProds();
-  goTo('s-prods');
+  goForward('s-prods');
 }
 
-/* ── Render products ── */
 function renderProds() {
   const prods = PRODS[curCat];
-  const n = catSelCount(curCat);
-  document.getElementById('prods-count').textContent = n ? n+' selecionados' : '';
+  const n = brandsInCat(curCat);
+  document.getElementById('prods-badge').textContent = n ? n+' marcas' : '';
   const g = document.getElementById('prods-grid');
-  g.innerHTML = prods.map(name => {
-    const key = curCat+':'+name;
-    const info = sel[key];
-    return `<div class="prod-card${info?' sel':''}" data-key="${key}" data-name="${name}">
+  g.innerHTML = prods.map(brand => {
+    const vc = variantsForBrand(curCat, brand);
+    return `<div class="prod-card${vc>0?' has-vars':''}" data-brand="${brand}">
       <span class="prod-check">✓</span>
-      <div class="prod-name">${name}</div>
-      <div class="prod-price-wrap">
+      <div class="prod-name">${brand}</div>
+      ${vc > 0 ? `<div class="prod-vars-badge">${vc} tamanho${vc>1?'s':''}</div>` : ''}
+    </div>`;
+  }).join('');
+  g.querySelectorAll('.prod-card').forEach(card =>
+    card.addEventListener('click', e => { sndNav(); ripple(card, e); openBrand(card.dataset.brand); })
+  );
+}
+
+/* ── Screen 3: Variants ── */
+function openBrand(brand) {
+  curBrand = brand;
+  const cat = CATS.find(c => c.id === curCat);
+  document.getElementById('vars-brand-name').textContent = brand;
+  document.getElementById('vars-cat-label').textContent  = cat.icon + ' ' + cat.name;
+  renderVars();
+  goForward('s-vars');
+}
+
+function renderVars() {
+  const variants = VARIANTS[curCat] || ['Unidade'];
+  const vc = variantsForBrand(curCat, curBrand);
+  document.getElementById('vars-badge').textContent = vc ? vc+' selecionado'+(vc>1?'s':'') : '';
+  const g = document.getElementById('vars-grid');
+  g.innerHTML = variants.map(v => {
+    const key  = curCat+':'+curBrand+':'+v;
+    const info = sel[key];
+    return `<div class="var-card${info?' sel':''}" data-key="${key}" data-var="${v}">
+      <span class="var-check">✓</span>
+      <div class="var-name">${v}</div>
+      <div class="var-price-wrap">
         <span class="price-label">R$</span>
-        <input class="prod-price" type="number" inputmode="decimal" placeholder="Preço"
+        <input class="var-price" type="number" inputmode="decimal" placeholder="Preço"
           value="${info?.price||''}" />
       </div>
     </div>`;
   }).join('');
-  g.querySelectorAll('.prod-card').forEach(card => {
+  g.querySelectorAll('.var-card').forEach(card => {
     card.addEventListener('click', e => {
-      if (e.target.tagName==='INPUT') return;
-      toggleProd(card, e);
+      if (e.target.tagName === 'INPUT') return;
+      toggleVar(card, e);
     });
-    const inp = card.querySelector('.prod-price');
+    const inp = card.querySelector('.var-price');
     if (inp) inp.addEventListener('input', () => {
       const key = card.dataset.key;
       if (sel[key]) { sel[key].price = inp.value; scheduleSave(); }
@@ -286,41 +397,38 @@ function renderProds() {
   });
 }
 
-function toggleProd(card, e) {
+function toggleVar(card, e) {
   ripple(card, e);
-  const key = card.dataset.key;
-  const name = card.dataset.name;
+  const key  = card.dataset.key;
+  const vname = card.dataset.var;
   if (sel[key]) {
     delete sel[key];
     card.classList.remove('sel');
     sndOff();
   } else {
-    sel[key] = { name, cat: curCat, price: '' };
+    sel[key] = { cat: curCat, brand: curBrand, variant: vname, price: '' };
     card.classList.add('sel');
     card.classList.add('bounce');
-    setTimeout(()=>card.classList.remove('bounce'), 240);
+    setTimeout(() => card.classList.remove('bounce'), 240);
     sndOn();
   }
-  // Update count header
-  const n = catSelCount(curCat);
-  document.getElementById('prods-count').textContent = n ? n+' selecionados' : '';
+  // update badge
+  const vc = variantsForBrand(curCat, curBrand);
+  document.getElementById('vars-badge').textContent = vc ? vc+' selecionado'+(vc>1?'s':'') : '';
   updateTotal();
   scheduleSave();
 }
 
-/* ── Navigation ── */
-function goTo(id) {
-  document.querySelectorAll('.screen').forEach(s => {
-    if (s.id===id) { s.classList.remove('hidden','out'); }
-    else if (!s.classList.contains('hidden')) { s.classList.add('out'); setTimeout(()=>s.classList.add('hidden'),300); }
-  });
-}
-
-document.getElementById('btn-back').addEventListener('click', () => {
+/* ── Back buttons ── */
+document.getElementById('btn-back-cats').addEventListener('click', () => {
   sndNav();
-  renderCats();
-  updateTotal();
-  goTo('s-cats');
+  renderCats(); updateTotal();
+  goBack('s-cats');
+});
+document.getElementById('btn-back-prods').addEventListener('click', () => {
+  sndNav();
+  renderProds();
+  goBack('s-prods');
 });
 
 /* ── Boot ── */
