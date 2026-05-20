@@ -1065,6 +1065,18 @@ html, body {
 .prod-img img { width: 100%; height: 100%; object-fit: contain; display: block; }
 .prod-art-svg { padding: 6%; }
 
+/* ─── Image loading shimmer ─────────────────────────────────── */
+.img-loading {
+  background: linear-gradient(
+    90deg,
+    rgba(255,255,255,0.05) 25%,
+    rgba(255,255,255,0.13) 50%,
+    rgba(255,255,255,0.05) 75%
+  ) !important;
+  background-size: 800px 100% !important;
+  animation: shimmer 1.4s infinite linear !important;
+}
+
 /* ─── Skeleton / Shimmer ─────────────────────────────────────── */
 @keyframes shimmer {
   0%   { background-position: -400px 0; }

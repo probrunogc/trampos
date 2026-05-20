@@ -218,6 +218,23 @@ function openWhatsApp(message) {
   window.open(`https://wa.me/55${phone}?text=${encodeURIComponent(message)}`, '_blank');
 }
 
+/* ─── Image shimmer while loading ───────────────────────────── */
+function shimmerImages(container) {
+  container.querySelectorAll('.banner-art img, .prod-img img, .cat-chip-icon img').forEach(img => {
+    if (img.complete && img.naturalWidth) return; // já carregou
+    const wrap = img.closest('.banner-art, .prod-img, .cat-chip-icon');
+    img.style.opacity = '0';
+    img.style.transition = 'opacity .35s';
+    if (wrap) wrap.classList.add('img-loading');
+    const done = () => {
+      img.style.opacity = '1';
+      if (wrap) wrap.classList.remove('img-loading');
+    };
+    img.addEventListener('load',  done, { once: true });
+    img.addEventListener('error', done, { once: true });
+  });
+}
+
 /* ─── Navigation ─────────────────────────────────────────────── */
 function go(view, params = {}, back = false) {
   const root  = document.getElementById('view-root');
@@ -253,6 +270,7 @@ function go(view, params = {}, back = false) {
 
   updateBottomNav(view);
   updateCartBadge();
+  shimmerImages(div);
   wireView(view, params, div);
 
   div.scrollTop = 0;
