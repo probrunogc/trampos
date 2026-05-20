@@ -239,7 +239,9 @@ function setupKioskNav() {
     const ok = await ui.confirm({ title: 'Sair do quiosque', message: 'Encerrar a sessão?', okText: 'Sair' });
     if (!ok) return;
     localStorage.removeItem('_km');
+    localStorage.removeItem('_kk');
     await auth.signOut();
+    location.href = './kiosk.html';
   };
 
   const clockEl = $('#kiosk-clock');
