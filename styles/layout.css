@@ -185,6 +185,109 @@
 .app-shell.kiosk-mode #btn-sidebar-toggle {
   display: none;
 }
+.app-shell.kiosk-mode .topbar { display: none; }
+
+/* === KIOSK NAV BAR === */
+.kiosk-nav {
+  display: none;
+  align-items: center;
+  height: 64px;
+  background: var(--bg-sidebar);
+  border-bottom: 2px solid var(--line-strong);
+  padding: 0 20px;
+  flex-shrink: 0;
+  gap: 0;
+  z-index: 10;
+}
+.app-shell.kiosk-mode .kiosk-nav { display: flex; }
+
+.kiosk-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 170px;
+}
+.kiosk-logo {
+  width: 38px; height: 38px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+.kiosk-brand-name {
+  font-family: var(--font-brand);
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  background: var(--grad-gold-text);
+  -webkit-background-clip: text;
+          background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  white-space: nowrap;
+}
+
+.kiosk-tabs {
+  display: flex;
+  flex: 1;
+  justify-content: center;
+  height: 100%;
+  gap: 2px;
+}
+.kiosk-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 0 22px;
+  height: 100%;
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  color: var(--text-2);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: color var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease);
+  white-space: nowrap;
+}
+.kiosk-tab svg { opacity: 0.65; transition: opacity var(--t-fast); }
+.kiosk-tab:hover { color: var(--gold-200); }
+.kiosk-tab:hover svg { opacity: 1; }
+.kiosk-tab.active {
+  color: var(--gold-300);
+  border-bottom-color: var(--gold-400);
+}
+.kiosk-tab.active svg { opacity: 1; }
+
+.kiosk-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 170px;
+  justify-content: flex-end;
+}
+.kiosk-clock {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--text-2);
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+.kiosk-logout-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px; height: 36px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--text-3);
+  cursor: pointer;
+  transition: all var(--t-fast) var(--ease);
+}
+.kiosk-logout-btn:hover { color: var(--danger); border-color: var(--danger); background: rgba(231,76,60,0.08); }
 
 /* === SIDEBAR === */
 .sidebar {

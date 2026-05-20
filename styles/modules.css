@@ -937,3 +937,68 @@
 [data-theme="light"] .rep-prod-rev,
 [data-theme="light"] .rep-dose-bar-qty,
 [data-theme="light"] .delivery-code { color: var(--gold-700); }
+
+/* =========================================================
+   KIOSK MODE — PDV overrides (bigger, bolder)
+   ========================================================= */
+.kiosk-mode .pdv-layout {
+  height: calc(100dvh - 64px - 28px);
+}
+.kiosk-mode .pdv-cart {
+  min-width: 420px;
+}
+.kiosk-mode .pdv-grid {
+  grid-template-columns: repeat(auto-fill, minmax(175px, 1fr));
+  gap: var(--sp-4);
+  padding: var(--sp-5);
+}
+.kiosk-mode .pdv-product {
+  min-height: 130px;
+}
+.kiosk-mode .pdv-product-img {
+  height: 110px;
+}
+.kiosk-mode .pdv-product-name {
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+.kiosk-mode .pdv-product-price {
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+.kiosk-mode .pdv-search-bar input {
+  font-size: 1rem;
+  padding: 13px 14px 13px 44px;
+}
+.kiosk-mode .pdv-cat-chip {
+  font-size: 0.85rem;
+  padding: 8px 18px;
+}
+.kiosk-mode .cart-item-name {
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+.kiosk-mode .cart-item-total {
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+.kiosk-mode .pdv-total-row.grand {
+  font-size: 1.5rem;
+  margin-top: var(--sp-3);
+  padding-top: var(--sp-3);
+}
+.kiosk-mode #pdv-finish {
+  padding: 16px;
+  font-size: 1.05rem;
+  letter-spacing: 0.06em;
+}
+.kiosk-mode .pdv-cart-head h3 {
+  font-size: 1rem;
+}
+.kiosk-mode .pdv-customer-name {
+  font-size: 1rem;
+}
+.kiosk-mode .cart-qty-btn {
+  width: 30px; height: 30px;
+  font-size: 1.1rem;
+}

@@ -164,7 +164,7 @@ function showApp(user) {
   $('#screen-login').classList.add('hidden');
   $('#screen-bootstrap').classList.add('hidden');
   $('#app-shell').classList.remove('hidden');
-  if (localStorage.getItem('_km')) $('#app-shell').classList.add('kiosk-mode');
+  if (localStorage.getItem('_km')) { $('#app-shell').classList.add('kiosk-mode'); setupKioskNav(); }
 
   // Avatar + chip
   const initial = (user.name || user.email || '?').trim().charAt(0).toUpperCase();
@@ -225,6 +225,36 @@ function buildSidebar(user) {
     });
     // Fechar mobile menu
     if (window.innerWidth <= 600) $('#app-shell').classList.remove('mobile-open');
+  });
+}
+
+function setupKioskNav() {
+  const nav = $('#kiosk-nav');
+
+  $('#kiosk-tabs').querySelectorAll('.kiosk-tab').forEach(btn => {
+    btn.onclick = () => router.navigate('/' + btn.dataset.mod);
+  });
+
+  $('#kiosk-logout').onclick = async () => {
+    const ok = await ui.confirm({ title: 'Sair do quiosque', message: 'Encerrar a sessão?', okText: 'Sair' });
+    if (!ok) return;
+    localStorage.removeItem('_km');
+    await auth.signOut();
+  };
+
+  const clockEl = $('#kiosk-clock');
+  const tick = () => {
+    const n = new Date();
+    clockEl.textContent = n.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+      + '  ' + n.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: 'short' });
+  };
+  tick();
+  setInterval(tick, 15000);
+
+  router.onChange(path => {
+    nav.querySelectorAll('.kiosk-tab').forEach(b => {
+      b.classList.toggle('active', path === '/' + b.dataset.mod);
+    });
   });
 }
 
