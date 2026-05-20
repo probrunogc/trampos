@@ -38,41 +38,73 @@ async function uploadFile(blob, ext = 'png') {
   return getDownloadURL(storageRef);
 }
 
-/* ── Image processing ───────────────────────────────────────── */
-let _removeBg = null;
+/* ── Image processing (Canvas — funciona em todos os browsers) ── */
 
-function showDebugModal(title, detail) {
-  const pre = document.createElement('pre');
-  pre.style.cssText = 'white-space:pre-wrap;word-break:break-all;font-size:0.72rem;line-height:1.5;user-select:text;-webkit-user-select:text;max-height:260px;overflow-y:auto;background:rgba(0,0,0,0.3);padding:10px;border-radius:6px;color:#f8b;';
-  pre.textContent = detail;
-  const hint = document.createElement('p');
-  hint.style.cssText = 'font-size:0.75rem;color:var(--text-3);margin-top:8px;';
-  hint.textContent = 'Segure o texto acima para selecionar e copiar.';
-  const wrap = document.createElement('div');
-  wrap.appendChild(pre);
-  wrap.appendChild(hint);
-  ui.modal({ title: `⚠ ${title}`, body: wrap, narrow: true,
-    footer: [Object.assign(document.createElement('button'), {
-      className: 'btn btn-ghost', type: 'button', textContent: 'Fechar',
-      onclick: () => ui.closeModal(false),
-    })],
+/**
+ * Remove fundo branco/claro via flood-fill a partir dos 4 cantos.
+ * Funciona para fotos de produto em fundo branco/cinza estúdio.
+ * tolerance: 0–255 — quão "branco" conta como fundo (35 = até ~220/255)
+ */
+function removeWhiteBackground(blob, tolerance = 40) {
+  return new Promise(resolve => {
+    const img = new Image();
+    const url = URL.createObjectURL(blob);
+    img.onload = () => {
+      // Limita a 1600px para performance em mobile
+      const MAX = 1600;
+      let sw = img.naturalWidth, sh = img.naturalHeight;
+      if (sw > MAX || sh > MAX) {
+        const s = MAX / Math.max(sw, sh);
+        sw = Math.round(sw * s); sh = Math.round(sh * s);
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = sw; canvas.height = sh;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, sw, sh);
+      URL.revokeObjectURL(url);
+
+      const imgData = ctx.getImageData(0, 0, sw, sh);
+      const d = imgData.data;
+      const visited = new Uint8Array(sw * sh);
+
+      function isBg(p) {
+        const i = p * 4;
+        if (d[i + 3] < 10) return true;
+        const r = d[i], g = d[i + 1], b = d[i + 2];
+        const bright = (r + g + b) / 3;
+        const sat = Math.max(r, g, b) - Math.min(r, g, b);
+        return bright >= (255 - tolerance) && sat <= tolerance;
+      }
+
+      // Flood fill iterativo (sem recursão)
+      const stack = [];
+      function fill(sx, sy) {
+        const sp = sy * sw + sx;
+        if (visited[sp] || !isBg(sp)) return;
+        stack.push(sx, sy);
+        while (stack.length) {
+          const y = stack.pop(), x = stack.pop();
+          if (x < 0 || x >= sw || y < 0 || y >= sh) continue;
+          const p = y * sw + x;
+          if (visited[p]) continue;
+          visited[p] = 1;
+          if (!isBg(p)) continue;
+          d[p * 4 + 3] = 0; // transparente
+          stack.push(x + 1, y, x - 1, y, x, y + 1, x, y - 1);
+        }
+      }
+
+      fill(0, 0); fill(sw - 1, 0); fill(0, sh - 1); fill(sw - 1, sh - 1);
+      // Meio das bordas para fundos que não chegam exatamente nos cantos
+      fill(Math.floor(sw / 2), 0); fill(Math.floor(sw / 2), sh - 1);
+      fill(0, Math.floor(sh / 2)); fill(sw - 1, Math.floor(sh / 2));
+
+      ctx.putImageData(imgData, 0, 0);
+      canvas.toBlob(b => resolve(b || blob), 'image/png');
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); resolve(blob); };
+    img.src = url;
   });
-}
-
-async function loadBgRemover() {
-  if (_removeBg) return _removeBg;
-  try {
-    const CDN = 'https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.4.5/dist/browser/index.js';
-    const mod = await import(CDN);
-    _removeBg = mod.removeBackground ?? mod.default?.removeBackground ?? null;
-    if (!_removeBg) {
-      showDebugModal('bg-removal: export não encontrado', `Chaves do módulo: ${Object.keys(mod).join(', ')}`);
-    }
-    return _removeBg;
-  } catch (err) {
-    showDebugModal('bg-removal: falha ao carregar CDN', String(err?.stack || err));
-    return null;
-  }
 }
 
 function squareCrop(blob, size = 600) {
@@ -83,7 +115,6 @@ function squareCrop(blob, size = 600) {
       const canvas = document.createElement('canvas');
       canvas.width = size; canvas.height = size;
       const ctx = canvas.getContext('2d');
-      // transparent background — no fillRect
       const scale = Math.min(size / img.width, size / img.height) * 0.88;
       const w = img.width * scale, h = img.height * scale;
       ctx.drawImage(img, (size - w) / 2, (size - h) / 2, w, h);
@@ -96,28 +127,10 @@ function squareCrop(blob, size = 600) {
 }
 
 async function processProductImage(file, onStatus) {
-  onStatus('Carregando IA…');
-  const removeBg = await loadBgRemover();
-  let result = file;
-  if (removeBg) {
-    try {
-      onStatus('Removendo fundo…');
-      result = await removeBg(file, {
-        publicPath: 'https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.4.5/dist/browser/',
-        output: { format: 'image/png', quality: 0.95 },
-        progress: (key, cur, tot) => {
-          if (key === 'compute:inference') onStatus(`Processando ${Math.round(cur / tot * 100)}%`);
-        },
-      });
-    } catch (err) {
-      showDebugModal('bg-removal: falha no processamento', String(err?.stack || err));
-      result = file;
-    }
-  } else {
-    ui.toast('IA de remoção de fundo indisponível (CDN falhou).', 'warning');
-  }
+  onStatus('Removendo fundo…');
+  const nobg = await removeWhiteBackground(file);
   onStatus('Ajustando tamanho…');
-  const cropped = await squareCrop(result instanceof Blob ? result : file, 600);
+  const cropped = await squareCrop(nobg, 600);
   onStatus('done');
   return cropped;
 }
