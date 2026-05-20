@@ -347,30 +347,32 @@ function renderHome() {
 
     <div class="banners">
       ${bannerProds.length > 0 ? `
-        <div class="banner-carousel" id="banner-carousel">
-          ${bannerProds.map((p, i) => {
-            const img = getProductImages(p)[0] || '';
-            return `
-              <div class="banner-slide${i === 0 ? ' active' : ''}" data-pid="${esc(p.id)}">
-                <div class="banner-card">
-                  <div class="banner-text">
-                    <span class="banner-tag">Delivery rápido</span>
-                    <h3>${esc(p.name)}</h3>
-                    <p class="banner-price-tag">${brl(p.price)}</p>
-                    <p>${time} · ${fee === 0 ? 'Grátis' : brl(fee)}</p>
+        <div class="banner-wrap">
+          <div class="banner-track" id="banner-track">
+            ${bannerProds.map((p, i) => {
+              const img = getProductImages(p)[0] || '';
+              return `
+                <div class="banner-slide" data-pid="${esc(p.id)}">
+                  <div class="banner-card">
+                    <div class="banner-text">
+                      <span class="banner-tag">Delivery rápido</span>
+                      <h3>${esc(p.name)}</h3>
+                      <p class="banner-price-tag">${brl(p.price)}</p>
+                      <p>${time} · ${fee === 0 ? 'Grátis' : brl(fee)}</p>
+                    </div>
+                    <div class="banner-img-wrap">
+                      ${img ? `<img src="${esc(img)}" alt="" />` : ''}
+                    </div>
                   </div>
-                  <div class="banner-img-wrap">
-                    ${img ? `<img src="${esc(img)}" alt="" />` : ''}
-                  </div>
-                </div>
-              </div>`;
-          }).join('')}
-        </div>
-        ${bannerProds.length > 1 ? `
-          <div class="banner-dots" id="banner-dots">
-            ${bannerProds.map((_, i) => `<span class="banner-dot${i === 0 ? ' active' : ''}"></span>`).join('')}
+                </div>`;
+            }).join('')}
           </div>
-        ` : ''}
+          ${bannerProds.length > 1 ? `
+            <div class="banner-dots" id="banner-dots">
+              ${bannerProds.map((_, i) => `<span class="banner-dot${i === 0 ? ' active' : ''}"></span>`).join('')}
+            </div>
+          ` : ''}
+        </div>
       ` : `
         <div class="banner-card">
           <div class="banner-text">
@@ -791,37 +793,58 @@ function wireView(view, params, c) {
 function wireHome(c) {
   c.querySelector('#btn-see-all')?.addEventListener('click', () => go('categories'));
 
-  // Auto-sliding banner
-  const banCarousel = c.querySelector('#banner-carousel');
-  const banDotsEl   = c.querySelector('#banner-dots');
-  if (banCarousel && banDotsEl) {
-    const slides = banCarousel.querySelectorAll('.banner-slide');
-    const dots   = banDotsEl.querySelectorAll('.banner-dot');
-    let cur = 0;
-    let timer;
+  // Swipeable banner com auto-advance
+  const banTrack  = c.querySelector('#banner-track');
+  const banDotsEl = c.querySelector('#banner-dots');
+  if (banTrack) {
+    const slides = banTrack.querySelectorAll('.banner-slide');
+    const dots   = banDotsEl ? banDotsEl.querySelectorAll('.banner-dot') : [];
+    let autoTimer;
+    let scrolling = false;
 
-    function showSlide(idx) {
-      slides[cur].classList.remove('active');
-      dots[cur]?.classList.remove('active');
-      cur = (idx + slides.length) % slides.length;
-      slides[cur].classList.add('active');
-      dots[cur]?.classList.add('active');
+    function curIdx() { return Math.round(banTrack.scrollLeft / banTrack.clientWidth); }
+
+    function goTo(idx) {
+      banTrack.scrollTo({ left: idx * banTrack.clientWidth, behavior: 'smooth' });
     }
 
-    function restart() {
-      clearInterval(timer);
-      timer = setInterval(() => showSlide(cur + 1), 3500);
+    function syncDots(idx) {
+      dots.forEach((d, i) => d.classList.toggle('active', i === idx));
     }
-    restart();
 
-    dots.forEach((dot, i) => dot.addEventListener('click', () => { showSlide(i); restart(); }));
+    function startAuto() {
+      clearInterval(autoTimer);
+      autoTimer = setInterval(() => {
+        const next = (curIdx() + 1) % slides.length;
+        goTo(next);
+      }, 3500);
+    }
 
+    banTrack.addEventListener('scroll', () => {
+      syncDots(curIdx());
+      // Restart auto-advance after user swipes
+      clearInterval(autoTimer);
+      clearTimeout(banTrack._rt);
+      banTrack._rt = setTimeout(startAuto, 4000);
+    }, { passive: true });
+
+    dots.forEach((dot, i) => {
+      dot.addEventListener('click', () => { goTo(i); startAuto(); });
+    });
+
+    // Tap to open product (only if not a swipe)
     slides.forEach(slide => {
-      slide.addEventListener('click', () => {
-        const product = S.products.find(p => p.id === slide.dataset.pid);
-        if (product) go('product', { product });
+      let startX = 0;
+      slide.addEventListener('pointerdown', e => { startX = e.clientX; });
+      slide.addEventListener('pointerup', e => {
+        if (Math.abs(e.clientX - startX) < 10) {
+          const product = S.products.find(p => p.id === slide.dataset.pid);
+          if (product) go('product', { product });
+        }
       });
     });
+
+    startAuto();
   }
 
   c.querySelectorAll('.cat-chip').forEach(chip =>

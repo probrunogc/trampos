@@ -266,22 +266,20 @@ html, body {
 
 /* ─── Banners ────────────────────────────────────────────────── */
 .banners { padding: 14px 16px 0; }
-.banner-carousel {
-  display: grid;
+.banner-wrap { position: relative; }
+.banner-track {
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
   border-radius: var(--r-lg);
-  overflow: hidden;
 }
+.banner-track::-webkit-scrollbar { display: none; }
 .banner-slide {
-  grid-row: 1;
-  grid-column: 1;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity .5s ease;
+  flex: 0 0 100%;
+  scroll-snap-align: start;
   cursor: pointer;
-}
-.banner-slide.active {
-  opacity: 1;
-  pointer-events: auto;
 }
 .banner-dots {
   display: flex;
