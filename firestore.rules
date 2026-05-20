@@ -68,6 +68,13 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    // === BANNERS DO CARROSSEL ===
+    match /banners/{id} {
+      allow read:   if true;    // loja pública lê banners
+      allow create, update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
     // === PEDIDOS DA LOJA ONLINE ===
     match /orders/{id} {
       allow create: if true;    // qualquer visitante pode fazer pedido
