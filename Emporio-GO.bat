@@ -1,8 +1,8 @@
 @echo off
 setlocal EnableDelayedExpansion
 
-REM  /launch = abre o quiosque direto (usado pelos atalhos criados aqui)
-if /i "%~1"=="/launch" goto :kiosk
+REM  Se ja foi instalado antes, vai direto pro quiosque
+if exist "%LOCALAPPDATA%\EmporioGO\installed.txt" goto :kiosk
 
 REM ============================================================
 REM  MODO INSTALADOR — roda apenas quando executado manualmente
@@ -247,13 +247,34 @@ set "BAT=%DEST%\Emporio-GO.bat"
 set "DSK=%USERPROFILE%\Desktop"
 set "STP=%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup"
 
+REM Cria marcador de instalacao (usado na proxima execucao para ir direto ao quiosque)
+echo instalado > "%DEST%\installed.txt"
+
+REM Remove atalhos antigos
 for %%F in ("Emporio das Bebidas" "Emporio GO") do (
   if exist "%DSK%\%%~F.lnk" del /Q "%DSK%\%%~F.lnk" 2>nul
   if exist "%STP%\%%~F.lnk" del /Q "%STP%\%%~F.lnk" 2>nul
 )
 
-powershell -NoProfile -Command "$w=New-Object -ComObject WScript.Shell;$s=$w.CreateShortcut('%DSK%\Emporio GO.lnk');$s.TargetPath='%BAT%';$s.Arguments='/launch';$s.WorkingDirectory='%DEST%';$s.WindowStyle=7;$s.Description='Emporio GO - Caixa';$s.Save()"
-powershell -NoProfile -Command "$w=New-Object -ComObject WScript.Shell;$s=$w.CreateShortcut('%STP%\Emporio GO.lnk');$s.TargetPath='%BAT%';$s.Arguments='/launch';$s.WorkingDirectory='%DEST%';$s.WindowStyle=7;$s.Description='Emporio GO - Caixa';$s.Save()"
+REM Cria atalhos via VBScript (mais confiavel que PowerShell em qualquer Windows)
+set "VBS=%TEMP%\eg_link.vbs"
+(
+  echo Set oWS = WScript.CreateObject^("WScript.Shell"^)
+  echo Set oD = oWS.CreateShortcut^("%DSK%\Emporio GO.lnk"^)
+  echo oD.TargetPath = ^"%BAT%^"
+  echo oD.WorkingDirectory = ^"%DEST%^"
+  echo oD.WindowStyle = 1
+  echo oD.Description = "Emporio GO - Caixa"
+  echo oD.Save
+  echo Set oS = oWS.CreateShortcut^("%STP%\Emporio GO.lnk"^)
+  echo oS.TargetPath = ^"%BAT%^"
+  echo oS.WorkingDirectory = ^"%DEST%^"
+  echo oS.WindowStyle = 7
+  echo oS.Description = "Emporio GO - Caixa"
+  echo oS.Save
+) > "%VBS%"
+cscript //NoLogo "%VBS%" >nul 2>&1
+del /Q "%VBS%" >nul 2>&1
 
 del /Q "%T1%" "%T2%" "%T3%" "%T4%" >nul 2>&1
 
