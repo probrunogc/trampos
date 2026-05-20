@@ -74,10 +74,13 @@ export async function render(root) {
   document.getElementById('btn-new').onclick = () => openForm();
 
   const [bannersRes, productsRes] = await Promise.allSettled([
-    db.list('banners', { orderBy: 'order' }),
+    db.list('settings'),
     db.list('products', { orderBy: 'name' }),
   ]);
-  state.list     = bannersRes.status     === 'fulfilled' ? bannersRes.value     : [];
+  const allSettings  = bannersRes.status === 'fulfilled' ? bannersRes.value : [];
+  state.list     = allSettings
+    .filter(s => s._type === 'banner')
+    .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
   state.products = productsRes.status === 'fulfilled' ? productsRes.value : [];
   paint();
 }
@@ -122,7 +125,7 @@ function paint() {
     chk.onchange = async () => {
       const id = chk.dataset.id;
       const active = chk.checked;
-      await db.update('banners', id, { active });
+      await db.update('settings', id, { active });
       const b = state.list.find(x => x.id === id);
       if (b) b.active = active;
       paint();
@@ -139,7 +142,7 @@ function paint() {
       const b = state.list.find(x => x.id === btn.dataset.del);
       const ok = await ui.confirm({ title: 'Excluir banner', message: `Excluir "${b.title || 'este banner'}"?`, okText: 'Excluir', danger: true });
       if (ok) {
-        await db.remove('banners', b.id);
+        await db.remove('settings', b.id);
         state.list = state.list.filter(x => x.id !== b.id);
         paint();
         ui.toast('Banner excluído.', 'success');
@@ -256,12 +259,12 @@ async function openForm(id = null) {
         active:    form.querySelector('[name="active"]').checked,
       };
       if (isEdit) {
-        const updated = await db.update('banners', id, payload);
+        const updated = await db.update('settings', id, payload);
         const idx = state.list.findIndex(x => x.id === id);
         state.list[idx] = { ...state.list[idx], ...updated };
         ui.toast('Banner atualizado.', 'success');
       } else {
-        const created = await db.create('banners', payload);
+        const created = await db.create('settings', { ...payload, _type: 'banner' });
         state.list.push(created);
         ui.toast('Banner criado.', 'success');
       }

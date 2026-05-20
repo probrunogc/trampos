@@ -5,7 +5,7 @@
 
 import { initializeApp, getApps, getApp } from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js';
 import {
-  getFirestore, collection, getDocs, query, orderBy,
+  getFirestore, collection, getDocs, query, orderBy, where,
   addDoc, serverTimestamp, doc, getDoc
 } from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js';
 import { firebaseConfig } from './firebase-config.js';
@@ -142,7 +142,11 @@ async function loadProducts() {
 
 async function loadBanners() {
   try {
-    const snap = await getDocs(query(collection(db, 'banners'), orderBy('order')));
+    const snap = await getDocs(query(
+      collection(db, 'settings'),
+      where('_type', '==', 'banner'),
+      orderBy('order')
+    ));
     S.banners = snap.docs.map(d => ({ id: d.id, ...d.data() }))
       .filter(b => b.active !== false);
   } catch { S.banners = []; }
