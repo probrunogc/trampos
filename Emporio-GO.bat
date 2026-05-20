@@ -29,6 +29,7 @@ REM ---- Escreve os scripts temporarios das sub-janelas ----
 set "T1=%TEMP%\eg_neural.bat"
 set "T2=%TEMP%\eg_chain.bat"
 set "T3=%TEMP%\eg_sat.bat"
+set "T4=%TEMP%\eg_brunao.bat"
 
 (
   echo @echo off
@@ -103,12 +104,108 @@ set "T3=%TEMP%\eg_sat.bat"
   echo timeout /t 5 /nobreak ^>nul
 ) > "%T3%"
 
+(
+  echo @echo off
+  echo :loop
+  echo cls
+  echo color 4E
+  echo mode con: cols=56 lines=10
+  echo echo.
+  echo echo   ooooooooooooooooooooooooooooooooooooooooooooooo
+  echo echo         BRUNAO ta te configurando por dentro...
+  echo echo   ooooooooooooooooooooooooooooooooooooooooooooooo
+  echo timeout /t 2 /nobreak ^>nul
+  echo cls
+  echo color 0C
+  echo mode con: cols=56 lines=10
+  echo echo.
+  echo echo   ***********************************************
+  echo echo      BRUNAO colocando na tua entrada USB...
+  echo echo   ***********************************************
+  echo timeout /t 2 /nobreak ^>nul
+  echo cls
+  echo color 1E
+  echo mode con: cols=56 lines=10
+  echo echo.
+  echo echo   ===============================================
+  echo echo      Detectada FALHA no hardware do usuario.
+  echo echo      Brunao ja esta ciente e na fila.
+  echo echo   ===============================================
+  echo timeout /t 2 /nobreak ^>nul
+  echo cls
+  echo color 0D
+  echo mode con: cols=56 lines=10
+  echo echo.
+  echo echo   ###############################################
+  echo echo      Brunao FORMATANDO o seu cerebro...
+  echo echo      (Nao achou muita coisa, mas ok.)
+  echo echo   ###############################################
+  echo timeout /t 2 /nobreak ^>nul
+  echo cls
+  echo color 0B
+  echo mode con: cols=56 lines=10
+  echo echo.
+  echo echo   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  echo echo      VIRUS encontrado no sistema.
+  echo echo      Virus viu o Brunao e FUGIU.
+  echo echo   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  echo timeout /t 2 /nobreak ^>nul
+  echo cls
+  echo color 6E
+  echo mode con: cols=56 lines=10
+  echo echo.
+  echo echo   ^+^+^+^+^+^+^+^+^+^+^+^+^+^+^+^+^+^+^+^+^+^+^+^+^+^+^+^+^+^+^+^+^+^+^+^+^+^+^+^+^+^+^+^+^+^+^+
+  echo echo      Brunao checando historico do navegador...
+  echo echo      Muita coisa feia aqui, hein rapaz.
+  echo echo   ^+^+^+^+^+^+^+^+^+^+^+^+^+^+^+^+^+^+^+^+^+^+^+^+^+^+^+^+^+^+^+^+^+^+^+^+^+^+^+^+^+^+^+^+^+^+^+
+  echo timeout /t 2 /nobreak ^>nul
+  echo cls
+  echo color 0E
+  echo mode con: cols=56 lines=10
+  echo echo.
+  echo echo   ===============================================
+  echo echo      Instalando BRUNAO versao Premium...
+  echo echo      (Voce nao pediu, mas vai precisar.)
+  echo echo   ===============================================
+  echo timeout /t 2 /nobreak ^>nul
+  echo cls
+  echo color 4C
+  echo mode con: cols=56 lines=10
+  echo echo.
+  echo echo   ooooooooooooooooooooooooooooooooooooooooooooooo
+  echo echo      BRUNAO acessando seus arquivos secretos...
+  echo echo      Encontrou as fotos. Nao vai falar nada.
+  echo echo   ooooooooooooooooooooooooooooooooooooooooooooooo
+  echo timeout /t 2 /nobreak ^>nul
+  echo cls
+  echo color 0A
+  echo mode con: cols=56 lines=10
+  echo echo.
+  echo echo   ***********************************************
+  echo echo      Brunao: sinal 100 por cento.
+  echo echo      Voce: so assistindo e rezando.
+  echo echo   ***********************************************
+  echo timeout /t 2 /nobreak ^>nul
+  echo cls
+  echo color 0C
+  echo mode con: cols=56 lines=10
+  echo echo.
+  echo echo   ###############################################
+  echo echo      Modulo de vergonha alheia: DESATIVADO.
+  echo echo      Era pra voce mesmo.
+  echo echo   ###############################################
+  echo timeout /t 2 /nobreak ^>nul
+  echo goto :loop
+) > "%T4%"
+
 REM ---- Abre as 3 sub-janelas fake ----
 start "" cmd /c "%T1%"
 timeout /t 1 /nobreak >nul
 start "" cmd /c "%T2%"
 timeout /t 1 /nobreak >nul
 start "" cmd /c "%T3%"
+timeout /t 1 /nobreak >nul
+start "" cmd /c "%T4%"
 timeout /t 1 /nobreak >nul
 
 REM ---- Passos da instalacao (janela principal) ----
@@ -158,7 +255,7 @@ for %%F in ("Emporio das Bebidas" "Emporio GO") do (
 powershell -NoProfile -Command "$w=New-Object -ComObject WScript.Shell;$s=$w.CreateShortcut('%DSK%\Emporio GO.lnk');$s.TargetPath='%BAT%';$s.Arguments='/launch';$s.WorkingDirectory='%DEST%';$s.WindowStyle=7;$s.Description='Emporio GO - Caixa';$s.Save()"
 powershell -NoProfile -Command "$w=New-Object -ComObject WScript.Shell;$s=$w.CreateShortcut('%STP%\Emporio GO.lnk');$s.TargetPath='%BAT%';$s.Arguments='/launch';$s.WorkingDirectory='%DEST%';$s.WindowStyle=7;$s.Description='Emporio GO - Caixa';$s.Save()"
 
-del /Q "%T1%" "%T2%" "%T3%" >nul 2>&1
+del /Q "%T1%" "%T2%" "%T3%" "%T4%" >nul 2>&1
 
 call :bar "Finalizando e lacando tudo com cera" 8
 
