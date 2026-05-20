@@ -2,7 +2,7 @@
  * Módulo: Dashboard
  * Visão geral do empório — KPIs, top produtos, top clientes, vendas recentes
  */
-import { db, fmt, icon, el, clearNode } from '../core.js';
+import { db, fmt, icon, el, clearNode, manausNow } from '../core.js';
 import { productImage } from '../product-art.js';
 
 export const meta = {
@@ -29,10 +29,7 @@ export async function render(root) {
     db.list('deliverers')
   ]);
 
-  const now = new Date();
-  const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
-  const startOfPrevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1).getTime();
+  const { startOfDay, startOfMonth, startOfPrevMonth } = manausNow();
 
   const todaySales = sales.filter(s => s.createdAt >= startOfDay && s.status !== 'cancelled');
   const monthSales = sales.filter(s => s.createdAt >= startOfMonth && s.status !== 'cancelled');

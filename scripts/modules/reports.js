@@ -3,7 +3,7 @@
  * Relatório financeiro completo: bruto x líquido, formas de pagamento,
  * fiados, produtos mais vendidos, horários de pico, entregas, doses/copão.
  */
-import { db, fmt, icon, clearNode } from '../core.js';
+import { db, fmt, icon, clearNode, manausNow } from '../core.js';
 import { productImage } from '../product-art.js';
 
 export const meta = {
@@ -74,12 +74,10 @@ async function load() {
 }
 
 function rangeStart() {
-  const now = new Date();
-  if (state.period === 'mes') return new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+  const { startOfMonth, startOfDay } = manausNow();
+  if (state.period === 'mes') return startOfMonth;
   const days = Number(state.period);
-  const d = new Date(); d.setHours(0, 0, 0, 0);
-  d.setDate(d.getDate() - (days - 1));
-  return d.getTime();
+  return startOfDay - (days - 1) * 24 * 60 * 60 * 1000;
 }
 
 function paint() {
@@ -165,8 +163,8 @@ function paint() {
           <span class="text-mute small">Total <strong class="text-gold">${fmt.currency(bruto)}</strong></span>
         </div>
         ${barChart(dayEntries.map(d => ({
-          label: new Date(d.ts).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
-          short: String(new Date(d.ts).getDate()).padStart(2, '0'),
+          label: new Date(d.ts).toLocaleDateString('pt-BR', { timeZone: 'America/Manaus', day: '2-digit', month: '2-digit' }),
+          short: new Date(d.ts).toLocaleDateString('pt-BR', { timeZone: 'America/Manaus', day: '2-digit' }),
           value: d.v
         })), 'currency')}
       </div>

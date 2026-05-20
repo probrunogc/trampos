@@ -138,6 +138,7 @@ async function boot() {
   const updateDate = () => {
     const d = new Date();
     dateEl.textContent = d.toLocaleString('pt-BR', {
+      timeZone: 'America/Manaus',
       weekday: 'short', day: '2-digit', month: 'short',
       hour: '2-digit', minute: '2-digit'
     });
@@ -231,6 +232,11 @@ function buildSidebar(user) {
 function setupKioskNav() {
   const nav = $('#kiosk-nav');
 
+  // Bloqueia cliques em linhas editáveis — quiosque é sempre somente leitura
+  document.addEventListener('click', e => {
+    if (e.target.closest('tr.clickable')) e.stopImmediatePropagation();
+  }, true);
+
   $('#kiosk-tabs').querySelectorAll('.kiosk-tab').forEach(btn => {
     btn.onclick = () => router.navigate('/' + btn.dataset.mod);
   });
@@ -247,8 +253,8 @@ function setupKioskNav() {
   const clockEl = $('#kiosk-clock');
   const tick = () => {
     const n = new Date();
-    clockEl.textContent = n.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
-      + '  ' + n.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: 'short' });
+    clockEl.textContent = n.toLocaleTimeString('pt-BR', { timeZone: 'America/Manaus', hour: '2-digit', minute: '2-digit' })
+      + '  ' + n.toLocaleDateString('pt-BR', { timeZone: 'America/Manaus', weekday: 'short', day: '2-digit', month: 'short' });
   };
   tick();
   setInterval(tick, 15000);

@@ -731,6 +731,22 @@ export function clearNode(node) {
   while (node.firstChild) node.removeChild(node.firstChild);
 }
 
+// Manaus = UTC-4, sem horário de verão
+export function manausNow() {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/Manaus',
+    year: 'numeric', month: '2-digit', day: '2-digit', hour12: false
+  }).formatToParts(new Date());
+  const g = t => Number(parts.find(p => p.type === t).value);
+  const y = g('year'), m = g('month') - 1, d = g('day');
+  return {
+    year: y, month: m, day: d,
+    startOfDay:   Date.UTC(y, m, d, 4, 0, 0),
+    startOfMonth: Date.UTC(y, m, 1, 4, 0, 0),
+    startOfPrevMonth: Date.UTC(m === 0 ? y - 1 : y, m === 0 ? 11 : m - 1, 1, 4, 0, 0),
+  };
+}
+
 export function $(sel, root = document) { return root.querySelector(sel); }
 export function $$(sel, root = document) { return [...root.querySelectorAll(sel)]; }
 
