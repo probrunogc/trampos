@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Setup Operadores — Empório GO</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: radial-gradient(ellipse at 60% 0%, #1a2f50 0%, #0d1b2a 60%);
+      min-height: 100vh;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .card {
+      background: #152233;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 20px;
+      padding: 40px 36px;
+      width: 100%;
+      max-width: 520px;
+      box-shadow: 0 24px 64px rgba(0,0,0,0.5);
+    }
+    h1 { font-size: 22px; font-weight: 800; color: #e8c44a; margin-bottom: 4px; }
+    .sub { font-size: 13px; color: #6688aa; margin-bottom: 32px; }
+    .section { margin-bottom: 28px; }
+    .section-title {
+      font-size: 11px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 1px; color: #e8c44a; margin-bottom: 14px;
+      padding-bottom: 8px; border-bottom: 1px solid rgba(232,196,74,0.2);
+    }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+    .field { display: flex; flex-direction: column; gap: 6px; }
+    .field label { font-size: 11px; font-weight: 600; text-transform: uppercase; color: #6688aa; letter-spacing: .6px; }
+    .field input {
+      background: #0d1b2a;
+      border: 1px solid rgba(255,255,255,0.09);
+      border-radius: 10px;
+      padding: 11px 14px;
+      color: #fff;
+      font-size: 14px;
+      outline: none;
+      transition: border-color .15s;
+    }
+    .field input:focus { border-color: #e8c44a; }
+    .field input.full { grid-column: span 2; }
+    .btn {
+      width: 100%; padding: 14px;
+      background: #e8c44a; color: #0d1b2a;
+      border: none; border-radius: 10px;
+      font-size: 15px; font-weight: 800;
+      cursor: pointer; transition: background .15s;
+      margin-top: 8px;
+    }
+    .btn:hover:not(:disabled) { background: #f5d45a; }
+    .btn:disabled { opacity: .5; cursor: default; }
+    .btn-secondary {
+      background: transparent; border: 1px solid rgba(255,255,255,0.15);
+      color: #aabbcc; font-weight: 600;
+    }
+    .btn-secondary:hover:not(:disabled) { background: rgba(255,255,255,0.06); }
+    .log {
+      margin-top: 20px;
+      background: #0a1520;
+      border-radius: 10px;
+      padding: 16px;
+      font-size: 13px;
+      line-height: 1.7;
+      min-height: 60px;
+      display: none;
+    }
+    .log.visible { display: block; }
+    .log .ok  { color: #4dcc88; }
+    .log .err { color: #ff7070; }
+    .log .info { color: #8899bb; }
+    .divider { height: 1px; background: rgba(255,255,255,0.07); margin: 24px 0; }
+    .pin-hint { font-size: 11px; color: #5577aa; margin-top: 4px; }
+    #step-admin { }
+    #step-ops   { display: none; }
+    .admin-badge {
+      display: flex; align-items: center; gap: 10px;
+      background: rgba(77,204,136,0.1); border: 1px solid rgba(77,204,136,0.3);
+      border-radius: 10px; padding: 10px 14px; margin-bottom: 20px;
+      font-size: 13px; color: #4dcc88;
+    }
+  </style>
+</head>
+<body>
+<div class="card">
+  <h1>Setup Operadores</h1>
+  <div class="sub">Cria as contas dos operadores do quiosque. Use apenas uma vez.</div>
+
+  <!-- Step 1: Admin login -->
+  <div id="step-admin">
+    <div class="section">
+      <div class="section-title">Login de administrador</div>
+      <div class="field" style="margin-bottom:12px">
+        <label>E-mail admin</label>
+        <input id="a-email" type="email" placeholder="admin@email.com" autocomplete="username">
+      </div>
+      <div class="field">
+        <label>Senha</label>
+        <input id="a-pass" type="password" placeholder="••••••••" autocomplete="current-password">
+      </div>
+    </div>
+    <button class="btn" id="btn-admin-login">Entrar como admin</button>
+    <div class="log" id="log-admin"></div>
+  </div>
+
+  <!-- Step 2: Create operators -->
+  <div id="step-ops">
+    <div class="admin-badge" id="admin-badge">✓ Logado como admin</div>
+
+    <div class="section">
+      <div class="section-title">Operador 1</div>
+      <div class="row">
+        <div class="field">
+          <label>Nome</label>
+          <input id="op1-name" type="text" value="Rafael">
+        </div>
+        <div class="field">
+          <label>PIN (4 dígitos)</label>
+          <input id="op1-pin" type="text" maxlength="4" placeholder="1234" inputmode="numeric">
+          <span class="pin-hint">Será a senha de acesso no quiosque</span>
+        </div>
+      </div>
+      <div class="field">
+        <label>E-mail</label>
+        <input id="op1-email" type="email" placeholder="rafael@emporioGO.com">
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Operador 2</div>
+      <div class="row">
+        <div class="field">
+          <label>Nome</label>
+          <input id="op2-name" type="text" value="Neto">
+        </div>
+        <div class="field">
+          <label>PIN (4 dígitos)</label>
+          <input id="op2-pin" type="text" maxlength="4" placeholder="5678" inputmode="numeric">
+          <span class="pin-hint">Será a senha de acesso no quiosque</span>
+        </div>
+      </div>
+      <div class="field">
+        <label>E-mail</label>
+        <input id="op2-email" type="email" placeholder="neto@emporioGO.com">
+      </div>
+    </div>
+
+    <button class="btn" id="btn-create">Criar operadores</button>
+    <div class="log" id="log-ops"></div>
+  </div>
+</div>
+
+<script type="module">
+  import { initializeApp }
+    from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js';
+  import { getAuth, signInWithEmailAndPassword }
+    from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js';
+  import { getFirestore, collection, query, where, getDocs, setDoc, addDoc, doc, serverTimestamp }
+    from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js';
+  import { firebaseConfig }
+    from './scripts/firebase-config.js';
+
+  const app  = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db   = getFirestore(app);
+
+  const API_KEY = firebaseConfig.apiKey;
+
+  function log(el, msg, type = 'info') {
+    el.classList.add('visible');
+    el.innerHTML += `<div class="${type}">${msg}</div>`;
+    el.scrollTop = el.scrollHeight;
+  }
+
+  // Create Firebase Auth user via REST (doesn't affect current SDK session)
+  async function createAuthUser(email, password, displayName) {
+    const res = await fetch(
+      `https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${API_KEY}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, displayName, returnSecureToken: true }),
+      }
+    );
+    const data = await res.json();
+    if (data.error) {
+      // If user already exists, update their password
+      if (data.error.message === 'EMAIL_EXISTS') {
+        return await updateAuthUser(email, password);
+      }
+      throw new Error(data.error.message);
+    }
+    return data.localId; // UID
+  }
+
+  async function updateAuthUser(email, password) {
+    // Sign in as that user temporarily to get UID, then update password
+    const res = await fetch(
+      `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${API_KEY}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, returnSecureToken: true }),
+      }
+    );
+    const data = await res.json();
+    if (data.error) throw new Error('Usuário já existe mas o PIN está errado. Acesse o painel de usuários para redefinir.');
+    return data.localId;
+  }
+
+  async function createOperator(name, email, pin, order, logEl) {
+    if (!name || !email || !pin) throw new Error('Preencha nome, e-mail e PIN');
+    if (!/^\d{4}$/.test(pin)) throw new Error('PIN deve ter exatamente 4 dígitos');
+
+    log(logEl, `Criando conta Auth para ${name}…`);
+    const uid = await createAuthUser(email, pin, name);
+    log(logEl, `✓ Conta criada — UID: ${uid.slice(0, 8)}…`, 'ok');
+
+    log(logEl, `Salvando usuário no Firestore…`);
+    await setDoc(doc(db, 'users', uid), {
+      name, email,
+      role: 'vendedor',
+      createdAt: serverTimestamp(),
+    }, { merge: true });
+    log(logEl, `✓ users/${uid.slice(0,8)}… salvo`, 'ok');
+
+    log(logEl, `Registrando operador do quiosque…`);
+    const snap = await getDocs(
+      query(collection(db, 'settings'), where('_type', '==', 'kiosk_op'), where('email', '==', email))
+    );
+    const opData = { _type: 'kiosk_op', name, email, uid, role: 'Vendedor', active: true, order };
+    if (!snap.empty) {
+      await setDoc(snap.docs[0].ref, opData, { merge: true });
+    } else {
+      await addDoc(collection(db, 'settings'), { ...opData, createdAt: serverTimestamp() });
+    }
+    log(logEl, `✓ Operador "${name}" registrado no quiosque!`, 'ok');
+  }
+
+  // Admin login
+  document.getElementById('btn-admin-login').onclick = async () => {
+    const email = document.getElementById('a-email').value.trim();
+    const pass  = document.getElementById('a-pass').value;
+    const btn   = document.getElementById('btn-admin-login');
+    const logEl = document.getElementById('log-admin');
+    logEl.innerHTML = '';
+    if (!email || !pass) { log(logEl, 'Preencha e-mail e senha.', 'err'); return; }
+    btn.disabled = true; btn.textContent = 'Entrando…';
+    try {
+      await signInWithEmailAndPassword(auth, email, pass);
+      log(logEl, '✓ Login realizado!', 'ok');
+      document.getElementById('step-admin').style.display = 'none';
+      document.getElementById('step-ops').style.display = 'block';
+      document.getElementById('admin-badge').textContent = `✓ Logado como ${email}`;
+    } catch (err) {
+      log(logEl, 'Erro: ' + (err.message || err), 'err');
+      btn.disabled = false; btn.textContent = 'Entrar como admin';
+    }
+  };
+
+  document.getElementById('a-pass').onkeydown = e => {
+    if (e.key === 'Enter') document.getElementById('btn-admin-login').click();
+  };
+
+  // Create operators
+  document.getElementById('btn-create').onclick = async () => {
+    const btn   = document.getElementById('btn-create');
+    const logEl = document.getElementById('log-ops');
+    logEl.innerHTML = '';
+    btn.disabled = true; btn.textContent = 'Criando…';
+
+    const ops = [
+      { name: document.getElementById('op1-name').value.trim(),
+        email: document.getElementById('op1-email').value.trim(),
+        pin: document.getElementById('op1-pin').value.trim() },
+      { name: document.getElementById('op2-name').value.trim(),
+        email: document.getElementById('op2-email').value.trim(),
+        pin: document.getElementById('op2-pin').value.trim() },
+    ].filter(o => o.name && o.email && o.pin);
+
+    if (ops.length === 0) {
+      log(logEl, 'Preencha pelo menos um operador completo (nome, e-mail e PIN).', 'err');
+      btn.disabled = false; btn.textContent = 'Criar operadores';
+      return;
+    }
+
+    let ok = 0;
+    for (let i = 0; i < ops.length; i++) {
+      try {
+        await createOperator(ops[i].name, ops[i].email, ops[i].pin, i, logEl);
+        ok++;
+      } catch (err) {
+        log(logEl, `✗ Erro em ${ops[i].name}: ${err.message}`, 'err');
+      }
+      if (i < ops.length - 1) log(logEl, '─────────────');
+    }
+
+    if (ok === ops.length) {
+      log(logEl, `\nTudo pronto! ${ok} operador(es) criado(s). Podem usar o quiosque agora.`, 'ok');
+      btn.textContent = 'Concluído ✓';
+    } else {
+      btn.disabled = false; btn.textContent = 'Tentar novamente';
+    }
+  };
+</script>
+</body>
+</html>
