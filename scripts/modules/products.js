@@ -17,6 +17,30 @@ const CATEGORIES = ['Cerveja', 'Refrigerante', 'Água', 'Energético', 'Destilad
 
 let state = { search: '', category: 'all', list: [] };
 
+/* ── Firebase Storage (lazy import) ─────────────────────────── */
+let _storageInstance = null;
+
+async function getStorageInstance() {
+  if (_storageInstance) return _storageInstance;
+  const [{ getApp }, { getStorage }] = await Promise.all([
+    import('https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js'),
+    import('https://www.gstatic.com/firebasejs/10.13.2/firebase-storage.js'),
+  ]);
+  _storageInstance = getStorage(getApp());
+  return _storageInstance;
+}
+
+async function uploadFile(file) {
+  const { ref, uploadBytes, getDownloadURL } = await import('https://www.gstatic.com/firebasejs/10.13.2/firebase-storage.js');
+  const storage = await getStorageInstance();
+  const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '');
+  const path = `products/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+  const storageRef = ref(storage, path);
+  await uploadBytes(storageRef, file);
+  return getDownloadURL(storageRef);
+}
+
+/* ── Render ─────────────────────────────────────────────────── */
 export async function render(root) {
   clearNode(root);
   root.innerHTML = `
@@ -103,6 +127,7 @@ function paint() {
   tbody.innerHTML = rows.map(p => {
     const low = p.stock != null && p.minStock != null && p.stock <= p.minStock;
     const zero = p.stock === 0;
+    const imgCount = Array.isArray(p.images) ? p.images.length : (p.image ? 1 : 0);
     return `
       <tr class="clickable" data-id="${p.id}">
         <td data-label="Produto">
@@ -111,6 +136,7 @@ function paint() {
             <div>
               <strong>${fmt.escape(p.name)}</strong>
               ${p.brand ? `<div class="text-mute small">${fmt.escape(p.brand)}</div>` : ''}
+              ${imgCount > 1 ? `<div class="text-mute small">${imgCount} fotos</div>` : ''}
             </div>
           </div>
         </td>
@@ -162,6 +188,14 @@ async function openForm(id = null) {
   const isEdit = !!id;
   const p = isEdit ? state.list.find(x => x.id === id) : {};
 
+  // Image state (scoped per modal instance)
+  let formImgs = [];
+  if (Array.isArray(p?.images)) {
+    formImgs = p.images.filter(Boolean).map(url => ({ url, file: null, blobUrl: null }));
+  } else if (p?.image) {
+    formImgs = [{ url: p.image, file: null, blobUrl: null }];
+  }
+
   const form = el('form', { autocomplete: 'off' });
   form.innerHTML = `
     <div class="field-row">
@@ -193,9 +227,30 @@ async function openForm(id = null) {
       </label>
     </div>
 
-    <label class="field" style="margin-top: var(--sp-3)">
-      <span class="field-label">URL da foto (opcional)</span>
-      <input name="image" value="${fmt.escape(p?.image || '')}" placeholder="https://… — vazio usa ilustração automática" />
+    <div class="divider-text">Imagens</div>
+    <div class="img-upload-wrap">
+      <div id="img-preview-list" class="img-preview-list"></div>
+      <label class="img-add-btn">
+        + Adicionar imagem
+        <input type="file" id="img-file-input" accept="image/png,image/jpeg,image/webp,image/gif" multiple style="display:none" />
+      </label>
+      <p class="field-hint">A primeira imagem aparece como principal. Arraste para reordenar usando as setas.</p>
+    </div>
+
+    <div class="divider-text">Descrição</div>
+    <div class="field-row">
+      <label class="field">
+        <span class="field-label">Teor alcoólico</span>
+        <input name="teor" placeholder="Ex.: 5%, 40%, Zero" value="${fmt.escape(p?.teor || '')}" />
+      </label>
+      <label class="field">
+        <span class="field-label">Origem</span>
+        <input name="origem" placeholder="Ex.: Brasil, México" value="${fmt.escape(p?.origem || '')}" />
+      </label>
+    </div>
+    <label class="field">
+      <span class="field-label">Descrição curta</span>
+      <textarea name="description" placeholder="Uma descrição divertida e informativa…" style="min-height:72px">${fmt.escape(p?.description || '')}</textarea>
     </label>
 
     <div class="divider-text">Preços</div>
@@ -225,33 +280,114 @@ async function openForm(id = null) {
     <label class="switch" style="margin-top: var(--sp-4)">
       <input name="active" type="checkbox" ${p?.active !== false ? 'checked' : ''}>
       <span class="switch-knob"></span>
-      <span>Produto ativo (aparece no PDV)</span>
+      <span>Produto ativo (aparece no PDV e na loja)</span>
     </label>
   `;
 
+  // ── Image preview rendering ──────────────────────────────────
+  function renderPreviews() {
+    const list = form.querySelector('#img-preview-list');
+    if (!list) return;
+    if (formImgs.length === 0) {
+      list.innerHTML = `<p class="img-preview-empty">Nenhuma imagem adicionada.</p>`;
+      return;
+    }
+    list.innerHTML = formImgs.map((item, i) => `
+      <div class="img-thumb">
+        <img src="${item.blobUrl || fmt.escape(item.url)}" alt="" />
+        <div class="img-thumb-footer">
+          <span class="img-thumb-num">${i + 1}ª</span>
+          <div class="img-thumb-btns">
+            ${i > 0 ? `<button type="button" class="img-order-btn" data-up="${i}" title="Mover para cima">↑</button>` : ''}
+            ${i < formImgs.length - 1 ? `<button type="button" class="img-order-btn" data-dn="${i}" title="Mover para baixo">↓</button>` : ''}
+            <button type="button" class="img-del-btn" data-del="${i}" title="Remover">✕</button>
+          </div>
+        </div>
+      </div>
+    `).join('');
+
+    list.querySelectorAll('[data-up]').forEach(btn => {
+      btn.onclick = () => {
+        const i = +btn.dataset.up;
+        [formImgs[i - 1], formImgs[i]] = [formImgs[i], formImgs[i - 1]];
+        renderPreviews();
+      };
+    });
+    list.querySelectorAll('[data-dn]').forEach(btn => {
+      btn.onclick = () => {
+        const i = +btn.dataset.dn;
+        [formImgs[i], formImgs[i + 1]] = [formImgs[i + 1], formImgs[i]];
+        renderPreviews();
+      };
+    });
+    list.querySelectorAll('[data-del]').forEach(btn => {
+      btn.onclick = () => {
+        const i = +btn.dataset.del;
+        if (formImgs[i].blobUrl) URL.revokeObjectURL(formImgs[i].blobUrl);
+        formImgs.splice(i, 1);
+        renderPreviews();
+      };
+    });
+  }
+  renderPreviews();
+
+  form.querySelector('#img-file-input').onchange = (e) => {
+    Array.from(e.target.files).forEach(file => {
+      const blobUrl = URL.createObjectURL(file);
+      formImgs.push({ url: '', file, blobUrl });
+    });
+    e.target.value = '';
+    renderPreviews();
+  };
+
+  // ── Buttons ──────────────────────────────────────────────────
   const cancelBtn = el('button', { class: 'btn btn-ghost', type: 'button',
-    onClick: () => ui.closeModal(false) }, 'Cancelar');
+    onClick: () => {
+      formImgs.forEach(item => { if (item.blobUrl) URL.revokeObjectURL(item.blobUrl); });
+      ui.closeModal(false);
+    }
+  }, 'Cancelar');
   const saveBtn = el('button', { class: 'btn btn-primary', type: 'submit' }, isEdit ? 'Salvar' : 'Cadastrar');
   form.appendChild(el('div', { class: 'hidden' }, saveBtn));
 
+  // ── Submit ───────────────────────────────────────────────────
   form.onsubmit = async (e) => {
     e.preventDefault();
     saveBtn.disabled = true;
-    const fd = Object.fromEntries(new FormData(form));
-    const payload = {
-      name: fd.name.trim(),
-      brand: fd.brand.trim(),
-      category: fd.category,
-      unit: fd.unit,
-      sku: fd.sku.trim(),
-      image: fd.image.trim(),
-      price: parseFloat(fd.price) || 0,
-      costPrice: parseFloat(fd.costPrice) || 0,
-      stock: parseInt(fd.stock) || 0,
-      minStock: parseInt(fd.minStock) || 0,
-      active: form.querySelector('[name="active"]').checked
-    };
+    saveBtn.textContent = 'Salvando…';
+
     try {
+      // Upload any new files
+      const finalUrls = [];
+      for (const item of formImgs) {
+        if (item.file) {
+          const url = await uploadFile(item.file);
+          if (item.blobUrl) URL.revokeObjectURL(item.blobUrl);
+          finalUrls.push(url);
+        } else if (item.url) {
+          finalUrls.push(item.url);
+        }
+      }
+
+      const fd = Object.fromEntries(new FormData(form));
+      const payload = {
+        name:        fd.name.trim(),
+        brand:       fd.brand.trim(),
+        category:    fd.category,
+        unit:        fd.unit,
+        sku:         fd.sku.trim(),
+        images:      finalUrls,
+        image:       finalUrls[0] || '',
+        teor:        fd.teor.trim(),
+        origem:      fd.origem.trim(),
+        description: fd.description.trim(),
+        price:       parseFloat(fd.price) || 0,
+        costPrice:   parseFloat(fd.costPrice) || 0,
+        stock:       parseInt(fd.stock) || 0,
+        minStock:    parseInt(fd.minStock) || 0,
+        active:      form.querySelector('[name="active"]').checked
+      };
+
       if (isEdit) {
         const updated = await db.update('products', id, payload);
         const idx = state.list.findIndex(x => x.id === id);
@@ -268,6 +404,7 @@ async function openForm(id = null) {
     } catch (err) {
       ui.toast(err.message || 'Erro ao salvar', 'danger');
       saveBtn.disabled = false;
+      saveBtn.textContent = isEdit ? 'Salvar' : 'Cadastrar';
     }
   };
 

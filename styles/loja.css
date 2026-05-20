@@ -592,13 +592,75 @@ html, body {
 .product-detail-brand  { font-size: .82rem; color: var(--text-secondary); margin-top: 3px; }
 .product-detail-price  { font-size: 1.6rem; font-weight: 900; color: var(--c-purple-900); margin-top: 10px; }
 .product-detail-desc   { font-size: .84rem; color: var(--text-secondary); line-height: 1.5; margin-top: 8px; }
+/* ─── Product detail carousel ─────────────────────────────── */
+.product-carousel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.carousel-track {
+  display: flex;
+  flex: 1;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.carousel-track::-webkit-scrollbar { display: none; }
+.carousel-slide {
+  flex: 0 0 100%;
+  scroll-snap-align: start;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.carousel-dots {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 0 20px;
+}
+.dot {
+  width: 6px; height: 6px;
+  border-radius: 3px;
+  background: rgba(255,255,255,0.25);
+  transition: all .22s;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.dot.active {
+  background: var(--c-yellow);
+  width: 20px;
+}
+
+/* ─── Product info tags (teor, origem) ────────────────────── */
+.product-info-tags {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+.product-info-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: var(--c-purple-100);
+  color: var(--c-purple-700);
+  font-size: .72rem;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: var(--r-full);
+}
+
+/* ─── Qty row with quick-add ─────────────────────────────── */
 .qty-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 10px;
   margin-top: 18px;
 }
-.qty-row > label { font-size: .88rem; font-weight: 600; color: var(--text-secondary); }
 .qty-ctrl {
   display: flex;
   align-items: center;
@@ -621,6 +683,20 @@ html, body {
 }
 .qty-btn:disabled { opacity: .3; cursor: default; }
 .qty-val { width: 36px; text-align: center; font-size: .95rem; font-weight: 800; color: var(--text-primary); }
+.qty-quick-btns { display: flex; gap: 6px; }
+.qty-quick {
+  padding: 8px 14px;
+  border-radius: var(--r-full);
+  background: var(--c-purple-50);
+  border: 1.5px solid var(--border);
+  font-size: .82rem;
+  font-weight: 700;
+  color: var(--c-purple-700);
+  cursor: pointer;
+  font-family: inherit;
+  transition: all .15s;
+}
+.qty-quick:active { background: var(--c-purple-100); border-color: var(--c-purple-400); transform: scale(.96); }
 .btn-add-cart {
   display: flex;
   align-items: center;

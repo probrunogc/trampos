@@ -76,10 +76,17 @@ function saveCart() { localStorage.setItem('eg:cart', JSON.stringify(S.cart)); }
 function cartCount() { return S.cart.reduce((n, i) => n + i.qty, 0); }
 function cartTotal() { return S.cart.reduce((n, i) => n + i.price * i.qty, 0); }
 
+function getProductImages(p) {
+  if (Array.isArray(p.images) && p.images.length > 0) return p.images.filter(Boolean);
+  if (p.image) return [p.image];
+  return [];
+}
+
 function addToCart(product, qty = 1) {
   const existing = S.cart.find(i => i.id === product.id);
   if (existing) { existing.qty += qty; }
   else {
+    const imgs = getProductImages(product);
     S.cart.push({
       id:    product.id,
       name:  product.name,
@@ -87,7 +94,7 @@ function addToCart(product, qty = 1) {
       price: product.price,
       unit:  product.unit   || 'un',
       art:   product.art    || '',
-      image: product.image  || '',
+      image: imgs[0]        || '',
       category: product.category || '',
       qty,
     });
@@ -472,9 +479,10 @@ function renderProductCard(p) {
 
 /* PRODUCT DETAIL */
 function renderProductDetail(p) {
-  const cat = CATS.find(c => c.id === p.category) || { emoji: '🛒', label: p.category || '' };
+  const cat     = CATS.find(c => c.id === p.category) || { label: p.category || '' };
   const inStock = (p.stock ?? 1) > 0;
-  const priceLabel = brl(p.price * S.qty);
+  const images  = getProductImages(p);
+
   return `
     <div class="product-detail-hero">
       <div class="product-hero-topbar">
@@ -485,21 +493,53 @@ function renderProductDetail(p) {
         </button>
         <div style="width:36px"></div>
       </div>
-      <div class="product-hero-img">${productImage(p)}</div>
+      ${images.length > 1 ? `
+        <div class="product-carousel">
+          <div class="carousel-track" id="carousel-track">
+            ${images.map(url => `
+              <div class="carousel-slide">
+                <div class="product-hero-img">
+                  <div class="prod-img">
+                    <img src="${esc(url)}" alt="" loading="lazy" />
+                  </div>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+          <div class="carousel-dots" id="carousel-dots">
+            ${images.map((_, i) => `<span class="dot${i === 0 ? ' active' : ''}"></span>`).join('')}
+          </div>
+        </div>
+      ` : `
+        <div class="product-hero-img">${productImage(p)}</div>
+      `}
     </div>
     <div class="product-detail-body">
       <span class="product-category-chip">${esc(cat.label)}</span>
       <h2 class="product-detail-name">${esc(p.name)}</h2>
       ${p.brand ? `<p class="product-detail-brand">${esc(p.brand)}</p>` : ''}
+      ${(p.teor || p.origem) ? `
+        <div class="product-info-tags">
+          ${p.teor   ? `<span class="product-info-tag">${esc(p.teor)}</span>` : ''}
+          ${p.origem ? `<span class="product-info-tag">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="11" height="11"><circle cx="12" cy="10" r="3"/><path d="M12 21.7C17.3 17 20 13 20 10a8 8 0 10-16 0c0 3 2.7 6.9 8 11.7z"/></svg>
+            ${esc(p.origem)}
+          </span>` : ''}
+        </div>
+      ` : ''}
       <div class="product-detail-price">${brl(p.price)}</div>
       ${p.description ? `<p class="product-detail-desc">${esc(p.description)}</p>` : ''}
       ${inStock ? `
         <div class="qty-row">
-          <label>Quantidade</label>
           <div class="qty-ctrl">
             <button class="qty-btn" id="qty-minus" ${S.qty <= 1 ? 'disabled' : ''}>−</button>
             <span class="qty-val" id="qty-val">${S.qty}</span>
             <button class="qty-btn" id="qty-plus">+</button>
+          </div>
+          <div class="qty-quick-btns">
+            <button class="qty-quick" data-add="2">+2</button>
+            <button class="qty-quick" data-add="6">+6</button>
+            <button class="qty-quick" data-add="12">+12</button>
           </div>
         </div>
         <button class="btn-add-cart" id="btn-add-to-cart">
@@ -507,7 +547,7 @@ function renderProductDetail(p) {
             <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
             <path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/>
           </svg>
-          <span id="btn-add-label">Adicionar — ${priceLabel}</span>
+          <span id="btn-add-label">Adicionar — ${brl(p.price * S.qty)}</span>
         </button>
       ` : `
         <div class="empty-state" style="padding:24px 0">
@@ -812,6 +852,22 @@ function wireProductList(c, catId) {
 }
 
 function wireProductDetail(c, product) {
+  // Carousel
+  const track  = c.querySelector('#carousel-track');
+  const dotsEl = c.querySelector('#carousel-dots');
+  if (track && dotsEl) {
+    const dots = dotsEl.querySelectorAll('.dot');
+    track.addEventListener('scroll', () => {
+      const idx = Math.round(track.scrollLeft / track.clientWidth);
+      dots.forEach((d, i) => d.classList.toggle('active', i === idx));
+    }, { passive: true });
+    dots.forEach((dot, i) => {
+      dot.addEventListener('click', () => {
+        track.scrollTo({ left: i * track.clientWidth, behavior: 'smooth' });
+      });
+    });
+  }
+
   const btnMinus = c.querySelector('#qty-minus');
   const btnPlus  = c.querySelector('#qty-plus');
   const qtyVal   = c.querySelector('#qty-val');
@@ -826,6 +882,14 @@ function wireProductDetail(c, product) {
 
   btnMinus?.addEventListener('click', () => { if (S.qty > 1) { S.qty--; syncQty(); } });
   btnPlus?.addEventListener('click',  () => { S.qty++; syncQty(); });
+
+  c.querySelectorAll('.qty-quick').forEach(btn => {
+    btn.addEventListener('click', () => {
+      S.qty += parseInt(btn.dataset.add, 10);
+      syncQty();
+    });
+  });
+
   btnAdd?.addEventListener('click', () => {
     addToCart(product, S.qty);
     if (btnAdd) {

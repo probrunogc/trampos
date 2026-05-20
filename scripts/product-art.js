@@ -199,10 +199,11 @@ export function productArt(product = {}) {
   return ART[byCat]();
 }
 
-/** HTML pronto da imagem do produto: foto (campo image) OU arte vetorial. */
+/** HTML pronto da imagem do produto: foto (campo images[] ou image) OU arte vetorial. */
 export function productImage(product = {}, { cls = '' } = {}) {
-  if (product.image) {
-    const url = String(product.image).replace(/"/g, '&quot;');
+  const firstImage = (Array.isArray(product.images) && product.images[0]) || product.image;
+  if (firstImage) {
+    const url = String(firstImage).replace(/"/g, '&quot;');
     return `<div class="prod-img ${cls}">
       <img src="${url}" alt="" loading="lazy"
         onerror="this.remove()" />
