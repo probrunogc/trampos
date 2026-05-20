@@ -959,15 +959,14 @@
 .kiosk-mode .pdv-product {
   padding: 0;
   overflow: hidden;
-  min-height: 0;
   flex-direction: column;
 }
 .kiosk-mode .pdv-product-img {
   width: 100%;
-  height: 130px;
+  height: 125px;
   margin-bottom: 0;
   border-radius: 0;
-  flex-shrink: 0;
+  flex-shrink: 0; /* impede a imagem de encolher e cortar o texto */
 }
 
 /* Categoria removida do card — já existe no filtro de chips */
@@ -1011,6 +1010,11 @@
   font-size: 1rem;
   padding: 13px 14px 13px 44px;
 }
+
+/* Produtos: somente leitura no kiosk — oculta botões de edição/exclusão/criação */
+.kiosk-mode .page-header-actions,
+.kiosk-mode [data-edit],
+.kiosk-mode [data-del] { display: none !important; }
 
 /* Carrinho */
 .kiosk-mode .cart-item-name {

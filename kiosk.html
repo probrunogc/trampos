@@ -3,130 +3,194 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Empório GO</title>
+  <title>Empório GO — Quiosque</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
     body {
-      background: radial-gradient(ellipse at 60% 0%, #1a2f50 0%, #0d1b2a 55%);
+      background: radial-gradient(ellipse at 60% 0%, #1a2f50 0%, #0d1b2a 60%);
       min-height: 100vh;
       display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       color: #fff;
+      padding: 24px;
     }
 
-    .card {
-      background: #152233;
-      border: 1px solid rgba(255,255,255,0.07);
-      border-radius: 20px;
-      padding: 44px 40px 36px;
-      width: 360px;
-      text-align: center;
-      box-shadow: 0 24px 64px rgba(0,0,0,0.5);
-    }
+    /* ── Header ── */
+    .header { text-align: center; margin-bottom: 40px; }
+    .logo { width: 72px; height: 72px; border-radius: 50%; margin-bottom: 14px; }
+    .brand { font-size: 28px; font-weight: 800; letter-spacing: 3px; color: #e8c44a; }
+    .brand-sub { font-size: 13px; color: #5577aa; letter-spacing: 3px; margin-top: 4px; }
+    .greeting { font-size: 18px; color: #aabbcc; margin-top: 16px; font-weight: 400; }
 
-    .logo { width: 80px; margin-bottom: 18px; }
-    .brand { font-size: 26px; font-weight: 800; letter-spacing: 2px; color: #e8c44a; }
-    .brand-sub { font-size: 13px; color: #e8c44a; letter-spacing: 4px; margin-top: 2px; }
-    .since { font-size: 11px; color: #5577aa; letter-spacing: 2px; margin-top: 4px; margin-bottom: 32px; }
-
-    .status {
-      color: #8899aa;
-      font-size: 14px;
-      padding: 24px 0;
+    /* ── Operator cards ── */
+    .ops-grid {
       display: flex;
-      align-items: center;
+      flex-wrap: wrap;
       justify-content: center;
-      gap: 10px;
-    }
-    .spinner {
-      width: 18px; height: 18px;
-      border: 2px solid rgba(255,255,255,0.15);
-      border-top-color: #e8c44a;
-      border-radius: 50%;
-      animation: spin .7s linear infinite;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    #form { display: none; }
-
-    .field { margin-bottom: 14px; text-align: left; }
-    .field-label {
-      display: block; font-size: 11px; font-weight: 600;
-      text-transform: uppercase; color: #6688aa;
-      letter-spacing: .6px; margin-bottom: 7px;
-    }
-    .field input {
+      gap: 20px;
+      max-width: 720px;
       width: 100%;
-      background: #0d1b2a;
-      border: 1px solid rgba(255,255,255,0.09);
-      border-radius: 10px;
-      padding: 12px 15px;
-      color: #fff;
-      font-size: 15px;
-      outline: none;
-      transition: border-color .15s;
     }
-    .field input:focus { border-color: #e8c44a; }
-
-    .save-row {
-      display: flex; align-items: center; gap: 10px;
-      margin: 18px 0 20px; cursor: pointer;
-    }
-    .save-row input[type="checkbox"] {
-      width: 16px; height: 16px; accent-color: #e8c44a; cursor: pointer; flex-shrink: 0;
-    }
-    .save-row span { font-size: 13px; color: #8899bb; text-align: left; line-height: 1.4; }
-
-    .btn {
-      width: 100%; padding: 14px;
-      background: #e8c44a; color: #0d1b2a;
-      border: none; border-radius: 10px;
-      font-size: 15px; font-weight: 800;
-      letter-spacing: .5px; cursor: pointer;
-      transition: background .15s, transform .1s;
-    }
-    .btn:hover:not(:disabled) { background: #f5d45a; transform: translateY(-1px); }
-    .btn:disabled { opacity: .55; cursor: default; transform: none; }
-
-    .err {
-      color: #ff7070; font-size: 13px;
-      margin-top: 14px; min-height: 18px;
+    .op-card {
+      background: #152233;
+      border: 2px solid rgba(255,255,255,0.08);
+      border-radius: 18px;
+      width: 160px;
+      padding: 28px 16px 22px;
       text-align: center;
+      cursor: pointer;
+      transition: transform .15s, border-color .15s, box-shadow .15s;
+      user-select: none;
     }
+    .op-card:hover { transform: translateY(-4px); border-color: #e8c44a; box-shadow: 0 12px 32px rgba(0,0,0,0.4); }
+    .op-avatar {
+      width: 68px; height: 68px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #1e3661, #0f1f3a);
+      border: 2px solid #e8c44a;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 28px; font-weight: 800; color: #e8c44a;
+      margin: 0 auto 14px;
+    }
+    .op-name { font-size: 17px; font-weight: 700; color: #fff; }
+    .op-role { font-size: 12px; color: #6688aa; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+    /* ── PIN overlay ── */
+    .pin-overlay {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(5, 14, 26, 0.88);
+      backdrop-filter: blur(6px);
+      align-items: center; justify-content: center;
+      z-index: 100;
+    }
+    .pin-overlay.open { display: flex; }
+    .pin-box {
+      background: #152233;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 20px;
+      padding: 36px 32px;
+      width: 320px;
+      text-align: center;
+      box-shadow: 0 24px 64px rgba(0,0,0,0.6);
+    }
+    .pin-name { font-size: 22px; font-weight: 700; margin-bottom: 8px; }
+    .pin-label { font-size: 13px; color: #6688aa; margin-bottom: 24px; }
+    .pin-dots {
+      display: flex; gap: 14px; justify-content: center; margin-bottom: 28px;
+    }
+    .pin-dot {
+      width: 16px; height: 16px; border-radius: 50%;
+      border: 2px solid #3355aa;
+      transition: background .1s, border-color .1s;
+    }
+    .pin-dot.filled { background: #e8c44a; border-color: #e8c44a; }
+    .pin-pad {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 14px;
+    }
+    .pin-btn {
+      padding: 16px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 12px;
+      color: #fff; font-size: 20px; font-weight: 600;
+      cursor: pointer; transition: background .1s;
+    }
+    .pin-btn:hover { background: rgba(232,196,74,0.15); border-color: #e8c44a; }
+    .pin-btn:active { background: rgba(232,196,74,0.25); transform: scale(0.96); }
+    .pin-btn.zero { grid-column: 2; }
+    .pin-btn.del  { background: transparent; border-color: transparent; color: #8899bb; font-size: 16px; }
+    .pin-btn.del:hover { color: #fff; background: rgba(255,255,255,0.06); }
+    .pin-btn.cancel-btn {
+      grid-column: span 3; background: transparent; border-color: rgba(255,255,255,0.08);
+      color: #6688aa; font-size: 14px; padding: 12px;
+    }
+    .pin-btn.cancel-btn:hover { color: #aabbcc; }
+    .pin-err { color: #ff7070; font-size: 13px; min-height: 18px; margin-top: 8px; }
+
+    /* ── Fallback email/pass form ── */
+    #fallback { display: none; width: 100%; max-width: 340px; }
+    .field { margin-bottom: 14px; text-align: left; }
+    .field label { display: block; font-size: 11px; font-weight: 600; text-transform: uppercase; color: #6688aa; letter-spacing: .6px; margin-bottom: 7px; }
+    .field input { width: 100%; background: #0d1b2a; border: 1px solid rgba(255,255,255,0.09); border-radius: 10px; padding: 12px 15px; color: #fff; font-size: 15px; outline: none; transition: border-color .15s; }
+    .field input:focus { border-color: #e8c44a; }
+    .save-row { display: flex; align-items: center; gap: 10px; margin: 14px 0 18px; cursor: pointer; }
+    .save-row input[type="checkbox"] { width: 16px; height: 16px; accent-color: #e8c44a; }
+    .save-row span { font-size: 13px; color: #8899bb; }
+    .btn { width: 100%; padding: 14px; background: #e8c44a; color: #0d1b2a; border: none; border-radius: 10px; font-size: 15px; font-weight: 800; cursor: pointer; transition: background .15s; }
+    .btn:hover:not(:disabled) { background: #f5d45a; }
+    .btn:disabled { opacity: .55; cursor: default; }
+    .err-msg { color: #ff7070; font-size: 13px; margin-top: 12px; text-align: center; min-height: 18px; }
+
+    /* ── Loading ── */
+    .loading { color: #8899aa; font-size: 14px; display: flex; align-items: center; gap: 10px; }
+    .spinner { width: 18px; height: 18px; border: 2px solid rgba(255,255,255,0.15); border-top-color: #e8c44a; border-radius: 50%; animation: spin .7s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
   </style>
 </head>
 <body>
-  <div class="card">
-    <img class="logo" src="./assets/logo.svg" alt="" onerror="this.style.display='none'">
-    <div class="brand">EMPÓRIO</div>
-    <div class="brand-sub">GO</div>
-    <div class="since">★ SINCE 2025 ★</div>
+  <div class="header">
+    <img class="logo" src="./assets/logo.png" alt="" onerror="this.style.display='none'">
+    <div class="brand">EMPÓRIO GO</div>
+    <div class="brand-sub">★ CAIXA ★</div>
+    <div class="greeting" id="greeting">Quem está trabalhando hoje?</div>
+  </div>
 
-    <div id="status" class="status">
-      <div class="spinner"></div>
-      <span>Iniciando quiosque…</span>
+  <div id="status" class="loading">
+    <div class="spinner"></div>
+    <span>Carregando operadores…</span>
+  </div>
+
+  <!-- Operator selection grid -->
+  <div class="ops-grid" id="ops-grid"></div>
+
+  <!-- Fallback: email + password for admins -->
+  <div id="fallback">
+    <div class="field">
+      <label for="f-email">E-mail</label>
+      <input id="f-email" type="email" placeholder="seu@email.com" autocomplete="username">
     </div>
+    <div class="field">
+      <label for="f-pass">Senha</label>
+      <input id="f-pass" type="password" placeholder="••••••••" autocomplete="current-password">
+    </div>
+    <label class="save-row">
+      <input id="f-save" type="checkbox" checked>
+      <span>Lembrar neste quiosque</span>
+    </label>
+    <button class="btn" id="f-btn">Entrar</button>
+    <div class="err-msg" id="f-err"></div>
+  </div>
 
-    <div id="form">
-      <div class="field">
-        <label class="field-label" for="email">E-mail</label>
-        <input id="email" type="email" placeholder="seu@email.com" autocomplete="username">
+  <!-- PIN pad overlay -->
+  <div class="pin-overlay" id="pin-overlay">
+    <div class="pin-box">
+      <div class="pin-name" id="pin-who"></div>
+      <div class="pin-label">Digite seu PIN</div>
+      <div class="pin-dots" id="pin-dots">
+        <div class="pin-dot" data-i="0"></div>
+        <div class="pin-dot" data-i="1"></div>
+        <div class="pin-dot" data-i="2"></div>
+        <div class="pin-dot" data-i="3"></div>
       </div>
-      <div class="field">
-        <label class="field-label" for="pass">Senha</label>
-        <input id="pass" type="password" placeholder="••••••••" autocomplete="current-password">
+      <div class="pin-pad">
+        <button class="pin-btn" data-d="1">1</button>
+        <button class="pin-btn" data-d="2">2</button>
+        <button class="pin-btn" data-d="3">3</button>
+        <button class="pin-btn" data-d="4">4</button>
+        <button class="pin-btn" data-d="5">5</button>
+        <button class="pin-btn" data-d="6">6</button>
+        <button class="pin-btn" data-d="7">7</button>
+        <button class="pin-btn" data-d="8">8</button>
+        <button class="pin-btn" data-d="9">9</button>
+        <button class="pin-btn del" id="pin-del">⌫</button>
+        <button class="pin-btn zero" data-d="0">0</button>
+        <button class="pin-btn del" id="pin-cancel-x">✕</button>
       </div>
-
-      <label class="save-row">
-        <input id="save" type="checkbox" checked>
-        <span>Lembrar neste quiosque — não pedir login novamente</span>
-      </label>
-
-      <button class="btn" id="btn-login">Entrar</button>
-      <div class="err" id="err"></div>
+      <div class="pin-err" id="pin-err"></div>
     </div>
   </div>
 
@@ -135,61 +199,148 @@
       from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js';
     import { getAuth, signInWithEmailAndPassword, onAuthStateChanged }
       from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js';
+    import { getFirestore, collection, query, where, getDocs }
+      from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js';
     import { firebaseConfig }
       from './scripts/firebase-config.js';
 
     const app  = initializeApp(firebaseConfig);
     const auth = getAuth(app);
-    const KEY  = '_kk';
+    const db   = getFirestore(app);
+    const SAVED_KEY = '_kk';
 
-    const goSales  = () => { localStorage.setItem('_km', '1'); location.href = './index.html#/sales'; };
-    const showForm = () => {
-      document.getElementById('status').style.display = 'none';
-      document.getElementById('form').style.display   = 'block';
-      document.getElementById('email').focus();
-    };
+    const goSales = () => { localStorage.setItem('_km', '1'); location.href = './index.html#/sales'; };
 
-    async function tryAutoLogin() {
-      const raw = localStorage.getItem(KEY);
-      if (!raw) return false;
+    /* ── Load operators from Firestore settings ── */
+    async function loadOperators() {
       try {
-        const { e, p } = JSON.parse(atob(raw));
-        await signInWithEmailAndPassword(auth, e, p);
-        return true;
+        const snap = await getDocs(query(collection(db, 'settings'), where('_type', '==', 'kiosk_op')));
+        return snap.docs
+          .map(d => ({ id: d.id, ...d.data() }))
+          .filter(o => o.active !== false)
+          .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+      } catch { return []; }
+    }
+
+    /* ── Auth check on load ── */
+    onAuthStateChanged(auth, async user => {
+      if (user) { goSales(); return; }
+
+      // Try auto-login from saved credentials
+      const raw = localStorage.getItem(SAVED_KEY);
+      if (raw) {
+        try {
+          const { e, p } = JSON.parse(atob(raw));
+          await signInWithEmailAndPassword(auth, e, p);
+          return;
+        } catch { localStorage.removeItem(SAVED_KEY); }
+      }
+
+      // Load operator list
+      const ops = await loadOperators();
+      document.getElementById('status').style.display = 'none';
+
+      if (ops.length > 0) {
+        renderOperators(ops);
+      } else {
+        document.getElementById('greeting').textContent = 'Faça login para continuar';
+        document.getElementById('fallback').style.display = 'block';
+        document.getElementById('f-email').focus();
+      }
+    });
+
+    /* ── Render operator name cards ── */
+    function renderOperators(ops) {
+      const grid = document.getElementById('ops-grid');
+      grid.innerHTML = ops.map(op => `
+        <div class="op-card" data-id="${op.id}" data-email="${op.email}">
+          <div class="op-avatar">${(op.name || '?').charAt(0).toUpperCase()}</div>
+          <div class="op-name">${op.name}</div>
+          <div class="op-role">${op.role || 'Operador'}</div>
+        </div>
+      `).join('');
+
+      grid.querySelectorAll('.op-card').forEach(card => {
+        card.onclick = () => openPin(card.dataset.email, card.querySelector('.op-name').textContent);
+      });
+    }
+
+    /* ── PIN pad logic ── */
+    let pinEmail = '', pinBuffer = '';
+
+    function openPin(email, name) {
+      pinEmail = email;
+      pinBuffer = '';
+      updateDots();
+      document.getElementById('pin-who').textContent = name;
+      document.getElementById('pin-err').textContent = '';
+      document.getElementById('pin-overlay').classList.add('open');
+    }
+
+    function updateDots() {
+      document.querySelectorAll('.pin-dot').forEach((d, i) => {
+        d.classList.toggle('filled', i < pinBuffer.length);
+      });
+    }
+
+    async function submitPin() {
+      const err = document.getElementById('pin-err');
+      err.textContent = '';
+      try {
+        await signInWithEmailAndPassword(auth, pinEmail, pinBuffer);
+        // Save auto-login if it was a PIN login (convenience)
+        localStorage.setItem(SAVED_KEY, btoa(JSON.stringify({ e: pinEmail, p: pinBuffer })));
       } catch {
-        localStorage.removeItem(KEY);
-        return false;
+        err.textContent = 'PIN incorreto. Tente novamente.';
+        pinBuffer = '';
+        updateDots();
       }
     }
 
-    onAuthStateChanged(auth, async user => {
-      if (user) { goSales(); return; }
-      const ok = await tryAutoLogin();
-      if (!ok) showForm();
+    document.querySelectorAll('.pin-btn[data-d]').forEach(btn => {
+      btn.onclick = async () => {
+        if (pinBuffer.length >= 4) return;
+        pinBuffer += btn.dataset.d;
+        updateDots();
+        if (pinBuffer.length === 4) await submitPin();
+      };
     });
 
-    async function doLogin() {
-      const email = document.getElementById('email').value.trim();
-      const pass  = document.getElementById('pass').value;
-      const save  = document.getElementById('save').checked;
-      const btn   = document.getElementById('btn-login');
-      const err   = document.getElementById('err');
+    document.getElementById('pin-del').onclick = () => {
+      pinBuffer = pinBuffer.slice(0, -1);
+      updateDots();
+      document.getElementById('pin-err').textContent = '';
+    };
+
+    const closePin = () => {
+      document.getElementById('pin-overlay').classList.remove('open');
+      pinBuffer = '';
+    };
+    document.getElementById('pin-cancel-x').onclick = closePin;
+    document.getElementById('pin-overlay').onclick = e => {
+      if (e.target === document.getElementById('pin-overlay')) closePin();
+    };
+
+    /* ── Fallback email/password login ── */
+    async function doFallbackLogin() {
+      const email = document.getElementById('f-email').value.trim();
+      const pass  = document.getElementById('f-pass').value;
+      const save  = document.getElementById('f-save').checked;
+      const btn   = document.getElementById('f-btn');
+      const err   = document.getElementById('f-err');
       if (!email || !pass) { err.textContent = 'Preencha e-mail e senha.'; return; }
       btn.disabled = true; btn.textContent = 'Entrando…'; err.textContent = '';
       try {
         await signInWithEmailAndPassword(auth, email, pass);
-        if (save) localStorage.setItem(KEY, btoa(JSON.stringify({ e: email, p: pass })));
-        goSales();
+        if (save) localStorage.setItem(SAVED_KEY, btoa(JSON.stringify({ e: email, p: pass })));
       } catch {
         err.textContent = 'E-mail ou senha incorretos.';
         btn.disabled = false; btn.textContent = 'Entrar';
       }
     }
 
-    document.getElementById('btn-login').onclick = doLogin;
-    document.getElementById('pass').addEventListener('keydown', e => {
-      if (e.key === 'Enter') doLogin();
-    });
+    document.getElementById('f-btn').onclick = doFallbackLogin;
+    document.getElementById('f-pass').onkeydown = e => { if (e.key === 'Enter') doFallbackLogin(); };
   </script>
 </body>
 </html>
