@@ -948,57 +948,74 @@
   min-width: 420px;
 }
 
-/* Grid: cards um pouco maiores */
+/* Grid: colunas menores para caber bem em 1366px */
 .kiosk-mode .pdv-grid {
-  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(155px, 1fr));
+  grid-auto-rows: 165px;
   gap: var(--sp-3);
   padding: var(--sp-4);
 }
 
-/* Card: canvas sem padding, imagem borda a borda */
+/* Card: imagem preenche tudo, nome/preço em overlay */
 .kiosk-mode .pdv-product {
   padding: 0;
   overflow: hidden;
-  flex-direction: column;
+  position: relative;
+  height: 165px;
 }
 .kiosk-mode .pdv-product-img {
+  position: absolute;
+  inset: 0;
   width: 100%;
-  height: 125px;
-  margin-bottom: 0;
+  height: 100%;
   border-radius: 0;
-  flex-shrink: 0; /* impede a imagem de encolher e cortar o texto */
+  margin: 0;
+  object-fit: cover;
+  flex-shrink: 0;
 }
 
-/* Categoria removida do card — já existe no filtro de chips */
+/* Categoria removida do card */
 .kiosk-mode .pdv-product-cat { display: none; }
 
-/* Nome como inscrição: centralizado e legível */
+/* Nome em overlay sobre a imagem, com gradiente escuro por baixo */
 .kiosk-mode .pdv-product-name {
-  font-size: 0.82rem;
+  position: absolute;
+  bottom: 26px;
+  left: 0; right: 0;
+  font-size: 0.78rem;
   font-weight: 700;
   text-align: center;
-  padding: 8px 10px 2px;
-  line-height: 1.25;
-  flex: 0;
-  letter-spacing: 0.01em;
+  padding: 22px 8px 3px;
+  line-height: 1.2;
+  background: linear-gradient(transparent, rgba(5,12,25,0.92));
+  z-index: 2;
 }
 
-/* Preço centrado em destaque */
+/* Preço fixado na base do card */
 .kiosk-mode .pdv-product-price {
-  font-size: 1rem;
+  position: absolute;
+  bottom: 0;
+  left: 0; right: 0;
+  font-size: 0.9rem;
   font-weight: 800;
   text-align: center;
-  padding: 0 10px 10px;
+  padding: 2px 8px 6px;
+  background: rgba(5,12,25,0.78);
+  z-index: 2;
 }
 
 /* Estoque: esconde quando normal, mostra só quando crítico */
 .kiosk-mode .pdv-product-stock { display: none; }
 .kiosk-mode .pdv-product-stock.low,
 .kiosk-mode .pdv-product-stock.zero {
-  display: block;
+  position: absolute;
+  top: 6px; left: 0; right: 0;
   text-align: center;
-  font-size: 0.7rem;
-  padding-bottom: 8px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  z-index: 3;
+  padding: 2px 4px;
+  background: rgba(200,60,60,0.85);
 }
 
 /* Chips de categoria: tamanho equilibrado */
