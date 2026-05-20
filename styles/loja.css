@@ -259,17 +259,22 @@ html, body {
 
 /* ─── Banners ────────────────────────────────────────────────── */
 .banners { padding: 14px 16px 0; }
-.banner-wrap { position: relative; }
+.banner-wrap {
+  position: relative;
+}
 .banner-track {
   display: flex;
+  gap: 10px;
   overflow-x: auto;
   scroll-snap-type: x mandatory;
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
+  padding: 0 16px;
+  /* clip ao lado direito para o peek não vazar além da tela */
 }
 .banner-track::-webkit-scrollbar { display: none; }
 .banner-slide {
-  flex: 0 0 100%;
+  flex: 0 0 calc(100% - 52px); /* mostra ~26px do próximo card */
   scroll-snap-align: start;
   cursor: pointer;
 }

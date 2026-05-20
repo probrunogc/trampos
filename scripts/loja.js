@@ -792,10 +792,10 @@ function wireHome(c) {
     let autoTimer;
     let scrolling = false;
 
-    function curIdx() { return Math.round(banTrack.scrollLeft / banTrack.clientWidth); }
-
+    const slideW = () => slides[0].offsetWidth + 10; // width + gap
+    function curIdx() { return Math.round(banTrack.scrollLeft / slideW()); }
     function goTo(idx) {
-      banTrack.scrollTo({ left: idx * banTrack.clientWidth, behavior: 'smooth' });
+      banTrack.scrollTo({ left: idx * slideW(), behavior: 'smooth' });
     }
 
     function syncDots(idx) {
@@ -807,7 +807,7 @@ function wireHome(c) {
       autoTimer = setInterval(() => {
         const next = (curIdx() + 1) % slides.length;
         goTo(next);
-      }, 3500);
+      }, 2000);
     }
 
     banTrack.addEventListener('scroll', () => {
