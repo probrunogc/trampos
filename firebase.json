@@ -11,8 +11,9 @@
       ".firebaserc"
     ],
     "rewrites": [
-      { "source": "/instalar", "destination": "/instalar.html" },
-      { "source": "/loja",    "destination": "/loja.html" },
+      { "source": "/instalar",      "destination": "/instalar.html" },
+      { "source": "/seed-produtos", "destination": "/seed-produtos.html" },
+      { "source": "/loja",          "destination": "/loja.html" },
       { "source": "/loja/**", "destination": "/loja.html" },
       { "source": "**",       "destination": "/index.html" }
     ],
