@@ -811,7 +811,31 @@ function wireProductList(c, catId) {
   if (grid) wireProductCards(grid);
 }
 
+function addCondensationDrops(prodImg) {
+  const drops = [
+    { x: 18, y: 22, w: 3,   h: 4,   delay: 0,   dur: 3.2 },
+    { x: 72, y: 14, w: 2,   h: 2.8, delay: 1.4, dur: 3.8 },
+    { x: 42, y: 48, w: 4,   h: 5,   delay: 0.8, dur: 4.1 },
+    { x: 83, y: 38, w: 2.5, h: 3.2, delay: 2.1, dur: 3.3 },
+    { x: 28, y: 68, w: 3,   h: 3.8, delay: 1.7, dur: 3.6 },
+    { x: 61, y: 58, w: 2,   h: 2.5, delay: 0.4, dur: 4.4 },
+    { x: 12, y: 44, w: 3.5, h: 4.5, delay: 2.8, dur: 3.7 },
+    { x: 87, y: 72, w: 2,   h: 2.6, delay: 1.1, dur: 3.5 },
+    { x: 55, y: 30, w: 2.5, h: 3,   delay: 3.2, dur: 4.0 },
+    { x: 35, y: 80, w: 3,   h: 3.8, delay: 0.6, dur: 3.9 },
+  ];
+  drops.forEach(d => {
+    const el = document.createElement('div');
+    el.className = 'condensation-drop';
+    el.style.cssText = `left:${d.x}%;top:${d.y}%;width:${d.w}px;height:${d.h}px;animation-duration:${d.dur}s;animation-delay:${d.delay}s`;
+    prodImg.appendChild(el);
+  });
+}
+
 function wireProductDetail(c, product) {
+  const prodImg = c.querySelector('.product-hero-img .prod-img');
+  if (prodImg) addCondensationDrops(prodImg);
+
   const btnMinus = c.querySelector('#qty-minus');
   const btnPlus  = c.querySelector('#qty-plus');
   const qtyVal   = c.querySelector('#qty-val');

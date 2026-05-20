@@ -535,11 +535,15 @@ html, body {
 
 /* ─── Product detail ─────────────────────────────────────────── */
 .product-detail-hero {
-  background: var(--bg-header);
+  background: linear-gradient(180deg, #f0eef8 0%, #ffffff 100%);
   padding: calc(var(--safe-top) + 14px) 16px 0;
   min-height: 320px;
   display: flex;
   flex-direction: column;
+}
+.product-detail-hero .btn-back {
+  background: rgba(26,10,74,0.08);
+  color: var(--c-purple-900);
 }
 .product-hero-topbar {
   display: flex;
@@ -552,26 +556,57 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 10px;
+  padding: 16px 10px 24px;
 }
 .product-hero-img .prod-img {
-  width: 230px; height: 230px;
+  width: 240px; height: 240px;
   background: white;
   border-radius: var(--r-xl);
-  box-shadow: 0 12px 40px rgba(0,0,0,0.3);
+  border: 1px solid rgba(90,50,176,0.09);
+  box-shadow: 0 4px 24px rgba(26,10,74,0.10);
   position: relative;
   overflow: hidden;
 }
-.product-hero-img .prod-art-svg { width: 190px; height: 190px; }
+/* Frost shimmer animation */
+.product-hero-img .prod-img::after {
+  content: '';
+  position: absolute;
+  top: -50%; left: -60%;
+  width: 45%; height: 200%;
+  background: linear-gradient(to right, transparent, rgba(180,220,255,0.28), transparent);
+  transform: rotate(25deg);
+  animation: frostShimmer 5s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes frostShimmer {
+  0%   { transform: translateX(0)    rotate(25deg); opacity: 0; }
+  6%   { opacity: 1; }
+  30%  { transform: translateX(500%) rotate(25deg); opacity: 0; }
+  100% { transform: translateX(500%) rotate(25deg); opacity: 0; }
+}
+/* Condensation drops */
+.condensation-drop {
+  position: absolute;
+  border-radius: 50% 50% 50% 50% / 40% 40% 60% 60%;
+  background: rgba(140, 200, 255, 0.55);
+  pointer-events: none;
+  animation: dropFall linear infinite;
+}
+@keyframes dropFall {
+  0%   { transform: translateY(0);     opacity: 0; }
+  8%   { opacity: 0.8; }
+  85%  { transform: translateY(36px);  opacity: 0.5; }
+  100% { transform: translateY(42px);  opacity: 0; }
+}
+.product-hero-img .prod-art-svg { width: 200px; height: 200px; }
 .product-hero-img .prod-img img {
   width: 100%; height: 100%;
   object-fit: contain;
-  padding: 12px;
+  padding: 14px;
 }
 .product-detail-body {
   background: var(--bg-card);
-  border-radius: var(--r-xl) var(--r-xl) 0 0;
-  margin-top: -20px;
+  border-top: 1px solid var(--border);
   padding: 22px 16px 24px;
   flex: 1;
 }
