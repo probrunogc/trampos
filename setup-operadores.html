@@ -127,13 +127,16 @@
     <div class="admin-badge" id="admin-badge">✓ Logado</div>
     <button class="btn" id="btn-create">Criar Rafael e Neto agora</button>
     <div class="log" id="log-ops"></div>
+    <button class="btn" id="btn-go-kiosk" style="display:none; margin-top:14px; background:#1e3a5f; color:#e8c44a; border:1px solid #e8c44a;">
+      Ir para o quiosque →
+    </button>
   </div>
 </div>
 
 <script type="module">
   import { initializeApp }
     from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js';
-  import { getAuth, signInWithEmailAndPassword }
+  import { getAuth, signInWithEmailAndPassword, signOut }
     from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js';
   import { getFirestore, collection, query, where, getDocs, setDoc, addDoc, doc, serverTimestamp }
     from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js';
@@ -245,9 +248,16 @@
     if (ok === OPERATORS.length) {
       log('log-ops', `Tudo certo! Rafael e Neto podem usar o quiosque com PIN <strong>102030</strong>.`, 'ok');
       btn.textContent = 'Concluído ✓';
+      document.getElementById('btn-go-kiosk').style.display = 'block';
     } else {
       btn.disabled = false; btn.textContent = 'Tentar novamente';
     }
+  };
+
+  document.getElementById('btn-go-kiosk').onclick = async () => {
+    localStorage.removeItem('_kk');
+    await signOut(auth);
+    location.href = './kiosk.html';
   };
 </script>
 </body>
