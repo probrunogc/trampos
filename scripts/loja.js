@@ -320,7 +320,7 @@ function renderHome() {
   const time   = cfg.lojaDeliveryTime || '30–45 min';
   const activeCats = CATS.filter(c => S.products.some(p => p.category === c.id));
   const featured    = S.products.slice(0, 6);
-  const bannerProds = S.products.filter(p => getProductImages(p).length > 0).slice(0, 6);
+  const bannerProds = S.products.filter(p => p.bannerImage || getProductImages(p).length > 0).slice(0, 6);
 
   return `
     <div class="home-header">
@@ -351,7 +351,7 @@ function renderHome() {
           <div class="banner-track" id="banner-track">
             ${bannerProds.map((p) => {
               const imgs = getProductImages(p);
-              const arteImg = imgs.length >= 3 ? imgs[2] : null;
+              const arteImg = p.bannerImage || null;
               const cardImg = imgs[0] || '';
               if (arteImg) {
                 return `

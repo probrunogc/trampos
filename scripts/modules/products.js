@@ -15,12 +15,6 @@ export const meta = {
 
 const CATEGORIES = ['Cerveja', 'Refrigerante', 'Água', 'Energético', 'Destilado', 'Vinho', 'Suco', 'Dose', 'Outros'];
 
-const IMG_SLOTS = [
-  { key: 'unidade', label: 'Foto Unidade',  hint: 'Fundo removido automaticamente • quadrado', type: 'produto' },
-  { key: 'caixa',   label: 'Foto Caixinha', hint: 'Fundo removido automaticamente • quadrado', type: 'produto' },
-  { key: 'arte',    label: 'Arte Banner',   hint: 'Imagem horizontal — aparece no banner',     type: 'arte'    },
-];
-
 let state = { search: '', category: 'all', list: [] };
 
 /* ── Firebase Storage ───────────────────────────────────────── */
@@ -65,6 +59,7 @@ function squareCrop(blob, size = 600) {
       const canvas = document.createElement('canvas');
       canvas.width = size; canvas.height = size;
       const ctx = canvas.getContext('2d');
+      // transparent background — no fillRect
       const scale = Math.min(size / img.width, size / img.height) * 0.88;
       const w = img.width * scale, h = img.height * scale;
       ctx.drawImage(img, (size - w) / 2, (size - h) / 2, w, h);
@@ -72,26 +67,6 @@ function squareCrop(blob, size = 600) {
       canvas.toBlob(b => resolve(b || blob), 'image/png');
     };
     img.onerror = () => { URL.revokeObjectURL(url); resolve(blob); };
-    img.src = url;
-  });
-}
-
-function bannerResize(file) {
-  return new Promise(resolve => {
-    const img = new Image();
-    const url = URL.createObjectURL(file);
-    img.onload = () => {
-      const W = 1200, H = Math.round(W * 7 / 16);
-      const canvas = document.createElement('canvas');
-      canvas.width = W; canvas.height = H;
-      const ctx = canvas.getContext('2d');
-      const scale = Math.max(W / img.width, H / img.height);
-      const w = img.width * scale, h = img.height * scale;
-      ctx.drawImage(img, (W - w) / 2, (H - h) / 2, w, h);
-      URL.revokeObjectURL(url);
-      canvas.toBlob(b => resolve(b || file), 'image/jpeg', 0.92);
-    };
-    img.onerror = () => { URL.revokeObjectURL(url); resolve(file); };
     img.src = url;
   });
 }
@@ -116,13 +91,6 @@ async function processProductImage(file, onStatus) {
   const cropped = await squareCrop(result instanceof Blob ? result : file, 600);
   onStatus('done');
   return cropped;
-}
-
-async function processArteImage(file, onStatus) {
-  onStatus('Ajustando banner…');
-  const resized = await bannerResize(file);
-  onStatus('done');
-  return resized;
 }
 
 /* ── Render ─────────────────────────────────────────────────── */
@@ -255,14 +223,14 @@ async function openForm(id = null) {
   const isEdit = !!id;
   const p = isEdit ? state.list.find(x => x.id === id) : {};
 
-  const existingImgs = Array.isArray(p?.images) ? p.images : (p?.image ? [p.image] : []);
+  const existingImgs    = Array.isArray(p?.images) ? p.images.filter(Boolean) : (p?.image ? [p.image] : []);
+  const existingBanner  = p?.bannerImage || '';
 
-  // Per-slot state
-  let slots = IMG_SLOTS.map((_, i) => ({
-    url:     existingImgs[i] || '',
-    file:    null,   // processed Blob ready to upload
-    blobUrl: null,   // preview URL
-    status:  '',     // '' | 'processing' message | 'done'
+  // Each image: { url, file (processed Blob), blobUrl (preview), isBanner, processing, status }
+  let images = existingImgs.map(url => ({
+    url, file: null, blobUrl: null,
+    isBanner: url === existingBanner,
+    processing: false, status: '',
   }));
 
   const form = el('form', { autocomplete: 'off' });
@@ -297,7 +265,7 @@ async function openForm(id = null) {
     </div>
 
     <div class="divider-text">Imagens</div>
-    <div class="img-slots-grid" id="img-slots-grid"></div>
+    <div id="img-grid-wrap"></div>
 
     <div class="divider-text">Descrição</div>
     <div class="field-row">
@@ -346,83 +314,130 @@ async function openForm(id = null) {
     </label>
   `;
 
-  /* ── Render image slots ──────────────────────────────────── */
-  function renderSlots() {
-    const grid = form.querySelector('#img-slots-grid');
-    if (!grid) return;
-    grid.innerHTML = IMG_SLOTS.map((slot, i) => {
-      const s = slots[i];
-      const preview = s.blobUrl || s.url;
-      const busy    = s.status && s.status !== 'done';
-      return `
-        <div class="img-slot-card">
-          <div class="img-slot-head">
-            <span class="img-slot-title">${slot.label}</span>
-            <span class="img-slot-type ${slot.type}">${slot.type === 'arte' ? 'Banner' : 'Produto'}</span>
-          </div>
-          <div class="img-slot-preview">
-            ${preview ? `<img src="${preview}" alt="" />` : '<span class="img-slot-placeholder">Sem imagem</span>'}
-            ${busy ? `<div class="img-slot-busy"><span>${s.status}</span></div>` : ''}
-          </div>
-          <div class="img-slot-footer">
-            <label class="img-slot-btn">
-              ${preview ? 'Trocar' : '+ Adicionar'}
-              <input type="file" accept="image/png,image/jpeg,image/webp" data-slot="${i}" style="display:none" ${busy ? 'disabled' : ''} />
-            </label>
-            ${preview && !busy ? `<button type="button" class="img-slot-clear" data-slot="${i}">✕</button>` : ''}
-          </div>
-          <p class="field-hint">${slot.hint}</p>
-        </div>`;
-    }).join('');
+  /* ── Render image grid ──────────────────────────────────── */
+  function renderImages() {
+    const wrap = form.querySelector('#img-grid-wrap');
+    if (!wrap) return;
+    wrap.innerHTML = `
+      <div class="img-free-grid">
+        ${images.map((img, i) => {
+          const src = img.blobUrl || img.url;
+          const busy = img.processing;
+          return `
+            <div class="img-free-card${img.isBanner ? ' is-banner' : ''}">
+              <div class="img-free-preview">
+                <img src="${fmt.escape(src)}" alt="" />
+                ${busy ? `
+                  <div class="img-slot-busy">
+                    <div class="img-slot-spinner"></div>
+                    <span class="img-slot-status-text">${fmt.escape(img.status)}</span>
+                  </div>` : ''}
+                ${img.isBanner ? '<span class="img-banner-badge">Banner</span>' : ''}
+              </div>
+              <div class="img-free-actions">
+                <button type="button" class="img-action-btn" data-ajust="${i}" ${busy ? 'disabled' : ''} title="Remove fundo e corta quadrado">Ajustar</button>
+                <button type="button" class="img-action-btn${img.isBanner ? ' is-active' : ''}" data-banner="${i}" title="${img.isBanner ? 'Remover do banner' : 'Usar no banner'}">★</button>
+                <button type="button" class="img-action-clear" data-del="${i}" title="Remover">✕</button>
+              </div>
+            </div>`;
+        }).join('')}
+        <label class="img-add-card" title="Adicionar foto">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+          <span>Foto</span>
+          <input type="file" accept="image/png,image/jpeg,image/webp" style="display:none" multiple />
+        </label>
+      </div>
+    `;
 
-    grid.querySelectorAll('[type="file"]').forEach(inp => {
-      inp.onchange = e => handleFile(+inp.dataset.slot, e.target.files[0]);
+    wrap.querySelector('input[type="file"]').onchange = e => {
+      [...e.target.files].forEach(addFile);
+      e.target.value = '';
+    };
+
+    wrap.querySelectorAll('[data-ajust]').forEach(btn => {
+      btn.onclick = () => ajustarImage(+btn.dataset.ajust);
     });
-    grid.querySelectorAll('.img-slot-clear').forEach(btn => {
+
+    wrap.querySelectorAll('[data-banner]').forEach(btn => {
       btn.onclick = () => {
-        const i = +btn.dataset.slot;
-        if (slots[i].blobUrl) URL.revokeObjectURL(slots[i].blobUrl);
-        slots[i] = { url: '', file: null, blobUrl: null, status: '' };
-        renderSlots();
+        const i = +btn.dataset.banner;
+        const was = images[i].isBanner;
+        images.forEach(img => img.isBanner = false);
+        images[i].isBanner = !was;
+        renderImages();
+      };
+    });
+
+    wrap.querySelectorAll('[data-del]').forEach(btn => {
+      btn.onclick = () => {
+        const i = +btn.dataset.del;
+        if (images[i].blobUrl) URL.revokeObjectURL(images[i].blobUrl);
+        images.splice(i, 1);
+        renderImages();
       };
     });
   }
-  renderSlots();
+  renderImages();
 
-  /* ── Handle file selection ───────────────────────────────── */
-  async function handleFile(idx, file) {
-    if (!file) return;
-    const slot = IMG_SLOTS[idx];
+  /* ── Add file ───────────────────────────────────────────── */
+  function addFile(file) {
+    const blobUrl = URL.createObjectURL(file);
+    images.push({ url: '', file, blobUrl, isBanner: false, processing: false, status: '' });
+    renderImages();
+  }
 
-    // Show original immediately
-    if (slots[idx].blobUrl) URL.revokeObjectURL(slots[idx].blobUrl);
-    slots[idx] = { url: '', file: null, blobUrl: URL.createObjectURL(file), status: 'Iniciando…' };
-    renderSlots();
+  /* ── Ajustar: bg removal + transparent square crop ──────── */
+  async function ajustarImage(idx) {
+    const img = images[idx];
+    if (img.processing) return;
 
-    const setStatus = s => { slots[idx].status = s; renderSlots(); };
+    images[idx].processing = true;
+    images[idx].status = 'Iniciando…';
+    renderImages();
+
+    const setStatus = s => { images[idx].status = s; renderImages(); };
 
     try {
-      let processed;
-      if (slot.type === 'arte') {
-        processed = await processArteImage(file, setStatus);
+      let sourceBlob;
+      if (img.file) {
+        sourceBlob = img.file;
       } else {
-        processed = await processProductImage(file, setStatus);
+        // fetch already-saved image URL
+        setStatus('Baixando…');
+        const resp = await fetch(img.url);
+        if (!resp.ok) throw new Error('fetch failed');
+        sourceBlob = await resp.blob();
       }
-      URL.revokeObjectURL(slots[idx].blobUrl);
-      slots[idx] = { url: '', file: processed, blobUrl: URL.createObjectURL(processed), status: 'done' };
-      renderSlots();
+
+      const asFile = sourceBlob instanceof File
+        ? sourceBlob
+        : new File([sourceBlob], 'img.png', { type: sourceBlob.type || 'image/png' });
+
+      const processed = await processProductImage(asFile, setStatus);
+
+      if (images[idx].blobUrl) URL.revokeObjectURL(images[idx].blobUrl);
+      images[idx] = {
+        ...images[idx],
+        url:        images[idx].url,  // keep original URL until saved
+        file:       processed,
+        blobUrl:    URL.createObjectURL(processed),
+        processing: false,
+        status:     'done',
+      };
+      renderImages();
     } catch (err) {
       console.error(err);
-      slots[idx].status = '';
-      renderSlots();
-      ui.toast('Erro ao processar imagem.', 'danger');
+      images[idx].processing = false;
+      images[idx].status = '';
+      renderImages();
+      ui.toast('Erro ao ajustar imagem.', 'danger');
     }
   }
 
   /* ── Buttons ─────────────────────────────────────────────── */
   const cancelBtn = el('button', { class: 'btn btn-ghost', type: 'button',
     onClick: () => {
-      slots.forEach(s => { if (s.blobUrl) URL.revokeObjectURL(s.blobUrl); });
+      images.forEach(s => { if (s.blobUrl) URL.revokeObjectURL(s.blobUrl); });
       ui.closeModal(false);
     }
   }, 'Cancelar');
@@ -437,17 +452,21 @@ async function openForm(id = null) {
     saveBtn.disabled = true;
     saveBtn.textContent = 'Salvando…';
     try {
-      const finalUrls = [];
-      for (let i = 0; i < slots.length; i++) {
-        const s = slots[i];
-        if (s.file) {
-          const ext = s.file.type === 'image/jpeg' ? 'jpg' : 'png';
-          finalUrls.push(await uploadFile(s.file, ext));
-          if (s.blobUrl) URL.revokeObjectURL(s.blobUrl);
-        } else if (s.url) {
-          finalUrls.push(s.url);
+      // Upload new/processed blobs; keep existing URLs as-is
+      const finalImages = [];
+      for (const img of images) {
+        if (img.file) {
+          const ext = img.file.type === 'image/jpeg' ? 'jpg' : 'png';
+          const url = await uploadFile(img.file, ext);
+          if (img.blobUrl) URL.revokeObjectURL(img.blobUrl);
+          finalImages.push({ url, isBanner: img.isBanner });
+        } else if (img.url) {
+          finalImages.push({ url: img.url, isBanner: img.isBanner });
         }
       }
+
+      const finalUrls   = finalImages.map(x => x.url);
+      const bannerEntry = finalImages.find(x => x.isBanner);
 
       const fd = Object.fromEntries(new FormData(form));
       const payload = {
@@ -458,6 +477,7 @@ async function openForm(id = null) {
         sku:         fd.sku.trim(),
         images:      finalUrls,
         image:       finalUrls[0] || '',
+        bannerImage: bannerEntry?.url || '',
         teor:        fd.teor.trim(),
         origem:      fd.origem.trim(),
         description: fd.description.trim(),
