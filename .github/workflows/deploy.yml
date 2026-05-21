@@ -23,11 +23,3 @@ jobs:
           channelId: live
           projectId: adegas-pf
 
-      - name: Deploy Firestore Rules
-        run: |
-          npm install -g firebase-tools
-          echo "$SA_JSON" > /tmp/sa.json
-          firebase deploy --only firestore:rules --project adegas-pf
-        env:
-          GOOGLE_APPLICATION_CREDENTIALS: /tmp/sa.json
-          SA_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
