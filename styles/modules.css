@@ -942,26 +942,37 @@
    KIOSK MODE — PDV overrides (bigger, bolder)
    ========================================================= */
 .kiosk-mode .pdv-layout {
-  height: calc(100dvh - 64px - 28px);
+  height: calc(100dvh - 64px - 24px);
 }
 .kiosk-mode .pdv-cart {
-  min-width: 420px;
+  min-width: 440px;
+  max-width: 440px;
 }
 
-/* Grid: colunas menores para caber bem em 1366px */
+/* Grid: fill 1366px canvas with well-proportioned touch targets */
 .kiosk-mode .pdv-grid {
-  grid-template-columns: repeat(auto-fill, minmax(155px, 1fr));
-  grid-auto-rows: 165px;
+  grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
+  grid-auto-rows: 180px;
   gap: var(--sp-3);
-  padding: var(--sp-4);
+  padding: var(--sp-3) var(--sp-4);
 }
 
-/* Card: imagem preenche tudo, nome/preço em overlay */
+/* Card: full-bleed image with overlay text */
 .kiosk-mode .pdv-product {
   padding: 0;
   overflow: hidden;
   position: relative;
-  height: 165px;
+  height: 180px;
+  border-radius: 14px;
+  transition: transform .14s ease, border-color .14s ease, box-shadow .14s ease;
+}
+.kiosk-mode .pdv-product:hover {
+  transform: translateY(-3px) scale(1.015);
+  box-shadow: 0 12px 30px rgba(0,0,0,0.55);
+}
+.kiosk-mode .pdv-product:active {
+  transform: scale(0.97);
+  transition-duration: .07s;
 }
 .kiosk-mode .pdv-product-img {
   position: absolute;
@@ -977,31 +988,32 @@
 /* Categoria removida do card */
 .kiosk-mode .pdv-product-cat { display: none; }
 
-/* Nome em overlay sobre a imagem, com gradiente escuro por baixo */
+/* Nome em overlay — gradient ramp, bigger font */
 .kiosk-mode .pdv-product-name {
   position: absolute;
-  bottom: 26px;
+  bottom: 30px;
   left: 0; right: 0;
-  font-size: 0.78rem;
+  font-size: 0.84rem;
   font-weight: 700;
   text-align: center;
-  padding: 22px 8px 3px;
+  padding: 28px 10px 4px;
   line-height: 1.2;
-  background: linear-gradient(transparent, rgba(5,12,25,0.92));
+  background: linear-gradient(transparent, rgba(4,10,22,0.95));
   z-index: 2;
 }
 
-/* Preço fixado na base do card */
+/* Preço fixado na base — bolder, slightly taller strip */
 .kiosk-mode .pdv-product-price {
   position: absolute;
   bottom: 0;
   left: 0; right: 0;
-  font-size: 0.9rem;
+  font-size: 0.97rem;
   font-weight: 800;
   text-align: center;
-  padding: 2px 8px 6px;
-  background: rgba(5,12,25,0.78);
+  padding: 3px 10px 8px;
+  background: rgba(4,10,22,0.82);
   z-index: 2;
+  letter-spacing: 0.02em;
 }
 
 /* Estoque: esconde quando normal, mostra só quando crítico */
@@ -1018,14 +1030,18 @@
   background: rgba(200,60,60,0.85);
 }
 
-/* Chips de categoria: tamanho equilibrado */
+/* Chips de categoria — taller for easier touch tap */
 .kiosk-mode .pdv-cat-chip {
-  font-size: 0.82rem;
-  padding: 6px 14px;
+  font-size: 0.86rem;
+  padding: 9px 18px;
+  font-weight: 700;
+}
+.kiosk-mode .pdv-cat-chip.active {
+  box-shadow: 0 6px 18px rgba(212,175,55,0.4);
 }
 .kiosk-mode .pdv-search-bar input {
   font-size: 1rem;
-  padding: 13px 14px 13px 44px;
+  padding: 14px 14px 14px 44px;
 }
 
 /* Produtos: somente leitura no kiosk — oculta botões de edição/exclusão/criação */
@@ -1033,32 +1049,41 @@
 .kiosk-mode [data-edit],
 .kiosk-mode [data-del] { display: none !important; }
 
-/* Carrinho */
+/* Carrinho — bolder text, larger qty controls */
 .kiosk-mode .cart-item-name {
-  font-size: 0.95rem;
+  font-size: 1rem;
   font-weight: 600;
 }
 .kiosk-mode .cart-item-total {
-  font-size: 0.95rem;
+  font-size: 1rem;
   font-weight: 700;
 }
 .kiosk-mode .pdv-total-row.grand {
-  font-size: 1.5rem;
+  font-size: 1.65rem;
   margin-top: var(--sp-3);
   padding-top: var(--sp-3);
 }
 .kiosk-mode #pdv-finish {
-  padding: 16px;
-  font-size: 1.05rem;
-  letter-spacing: 0.06em;
+  padding: 18px;
+  font-size: 1.1rem;
+  letter-spacing: 0.07em;
+  box-shadow: 0 6px 20px rgba(212,175,55,0.35);
+}
+.kiosk-mode #pdv-finish:active {
+  transform: scale(0.97);
+  box-shadow: 0 2px 8px rgba(212,175,55,0.2);
 }
 .kiosk-mode .pdv-cart-head h3 {
-  font-size: 1rem;
+  font-size: 1.05rem;
 }
 .kiosk-mode .pdv-customer-name {
-  font-size: 1rem;
+  font-size: 1.05rem;
 }
 .kiosk-mode .cart-qty-btn {
-  width: 30px; height: 30px;
-  font-size: 1.1rem;
+  width: 36px; height: 36px;
+  font-size: 1.15rem;
+  border-radius: 8px;
+}
+.kiosk-mode .cart-item {
+  padding: 12px 14px;
 }
