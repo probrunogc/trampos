@@ -713,15 +713,18 @@
         }
       }
 
-      /* Sempre pina as duas dimensões — impede que aspect-ratio do CSS
-         ou conteúdo force quadrado quando só um eixo é arrastado */
+      /* Pina as duas dimensões explicitamente.
+         flex-basis = 'auto' é crítico: em flex-column o flex-basis afeta
+         a ALTURA (eixo principal), não a largura — se colocarmos newW aqui
+         num container coluna, a altura fica igual à largura → quadrado.
+         Com 'auto', o flex item usa width/height normalmente. */
       cTarget.style.aspectRatio = 'auto';
+      cTarget.style.flexBasis   = 'auto';
       cTarget.style.width       = newW + 'px';
-      cTarget.style.flexBasis   = newW + 'px';
       cTarget.style.maxWidth    = newW + 'px';
-      cTarget.style.minWidth    = '';
+      cTarget.style.minWidth    = '0';
       cTarget.style.height      = newH + 'px';
-      cTarget.style.minHeight   = newH + 'px';
+      cTarget.style.minHeight   = '0';
       cTransX = newTX; cTransY = newTY;
       cTarget.style.transform = `translate(${cTransX}px, ${cTransY}px)`;
       updateCanvasUI();
