@@ -11,18 +11,18 @@
 }
 
 :root {
-  /* Core palette — deeper, richer purples */
+  /* Core palette — vibrant purple for light background */
   --c-purple-950: #03010F;
   --c-purple-900: #06021A;
   --c-purple-800: #0D0530;
-  --c-purple-700: #160A4A;
-  --c-purple-600: #1F0E62;
-  --c-purple-500: #2E1272;
-  --c-purple-400: #9B6EFF;
-  --c-purple-300: #C4A8FF;
-  --c-purple-200: #DDD3FF;
+  --c-purple-700: #6B21A8;
+  --c-purple-600: #7C3AED;
+  --c-purple-500: #7C3AED;
+  --c-purple-400: #A78BFA;
+  --c-purple-300: #C4B5FD;
+  --c-purple-200: #DDD6FE;
   --c-purple-100: #EDE9FF;
-  --c-purple-50:  #F7F5FF;
+  --c-purple-50:  #F5F3FF;
 
   /* Accent */
   --c-yellow:       #F5A623;
@@ -37,22 +37,22 @@
   --c-red-light:    #EF4444;
 
   /* Surfaces */
-  --bg-app:         #F2F0FA;
+  --bg-app:         #F7F7F8;
   --bg-card:        #FFFFFF;
-  --bg-card-hover:  #FAFAFE;
+  --bg-card-hover:  #FAFAFA;
   --bg-header:      linear-gradient(150deg, #06021A 0%, #0D0530 55%, #1F0E62 100%);
   --bg-bottom-nav:  #06021A;
 
   /* Text */
-  --text-primary:   #12023E;
-  --text-secondary: #6B6B8A;
-  --text-tertiary:  #9B9BB8;
+  --text-primary:   #111111;
+  --text-secondary: #666677;
+  --text-tertiary:  #9999AA;
   --text-on-dark:   #FFFFFF;
   --text-on-yellow: #1A0840;
 
   /* Borders */
-  --border:         rgba(31, 14, 98, 0.10);
-  --border-strong:  rgba(31, 14, 98, 0.20);
+  --border:         rgba(0, 0, 0, 0.08);
+  --border-strong:  rgba(0, 0, 0, 0.16);
 
   /* Shadows */
   --shadow-xs:      0 1px 3px rgba(6, 2, 26, 0.08);
