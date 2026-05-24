@@ -1214,11 +1214,11 @@ html, body {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  padding-top: 6px;
+  padding-top: 0;
 }
 
 .pd-brand {
-  font-size: .78rem;
+  font-size: .80rem;
   color: var(--text-secondary);
   font-weight: 600;
   text-transform: uppercase;
@@ -1226,19 +1226,19 @@ html, body {
 }
 
 .pd-name {
-  font-size: 1.50rem;
+  font-size: 1.70rem;
   font-weight: 900;
   color: var(--text-primary);
-  line-height: 1.18;
-  letter-spacing: -.025em;
-  margin-top: 3px;
+  line-height: 1.16;
+  letter-spacing: -.03em;
+  margin-top: 4px;
 }
 
 .pd-price {
-  font-size: 2.10rem;
+  font-size: 2.40rem;
   font-weight: 900;
   color: var(--c-purple-600);
-  letter-spacing: -.04em;
+  letter-spacing: -.045em;
   margin-top: 10px;
 }
 
@@ -1295,15 +1295,15 @@ html, body {
   display: block;
   width: calc(100% - 32px);
   margin: 6px 16px 0;
-  padding: 15px 16px;
+  padding: 19px 16px;
   background: var(--c-yellow);
   color: var(--text-on-yellow);
   border: none;
   border-radius: var(--r-full);
-  font-size: .93rem;
+  font-size: 1.0rem;
   font-weight: 900;
   text-transform: uppercase;
-  letter-spacing: .3px;
+  letter-spacing: .5px;
   cursor: pointer;
   text-align: center;
   position: relative;
