@@ -158,11 +158,13 @@ html, body {
 .view-page.slide-out    { animation: slideOutLeft  .3s var(--ease-out) both; }
 .view-page.slide-bk-in  { animation: slideBackIn   .3s var(--ease-out) both; }
 .view-page.slide-bk-out { animation: slideBackOut  .3s var(--ease-out) both; }
+.view-page.fade-in      { animation: fadeIn        .18s var(--ease-out) both; }
 
 @keyframes slideInRight  { from { transform: translateX(100%); }              to { transform: translateX(0); } }
 @keyframes slideOutLeft  { from { transform: translateX(0); }                 to { transform: translateX(-26%); opacity: .65; } }
 @keyframes slideBackIn   { from { transform: translateX(-26%); opacity: .65; } to { transform: translateX(0); } }
 @keyframes slideBackOut  { from { transform: translateX(0); }                 to { transform: translateX(100%); } }
+@keyframes fadeIn        { from { opacity: 0; }                               to { opacity: 1; } }
 
 /* ─── Bottom nav ─────────────────────────────────────────────── */
 .bottom-nav {
@@ -1794,9 +1796,9 @@ html, body {
 
 .skel-products-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  padding: 0 16px 28px;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  padding: 0 12px 28px;
 }
 
 .skel-card {
@@ -1808,20 +1810,20 @@ html, body {
 
 .skel-card-img {
   width: 100%;
-  height: 140px;
+  height: 100px;
   background: rgba(200, 190, 240, 0.32);
 }
 
 .skel-card-line {
-  height: 12px;
-  margin: 12px 11px 7px;
-  border-radius: 6px;
+  height: 9px;
+  margin: 8px 7px 5px;
+  border-radius: 5px;
 }
 
 .skel-card-line.short {
-  width: 52%;
-  height: 10px;
-  margin: 0 11px 14px;
+  width: 55%;
+  height: 8px;
+  margin: 0 7px 8px;
 }
 
 /* ─── Glass overlay — modal backdrop & cart panel ────────────── */
