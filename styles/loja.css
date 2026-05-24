@@ -150,7 +150,7 @@ html, body {
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
   background: var(--bg-app);
-  padding-bottom: calc(var(--bottom-nav-h) + var(--safe-bottom) + 12px);
+  padding-bottom: 20px;
   scroll-behavior: smooth;
 }
 
