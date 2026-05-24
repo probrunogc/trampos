@@ -634,16 +634,16 @@ function renderProductDetail(p) {
   const images  = getProductImages(p);
   const firstImg = images[0] || '';
 
-  const trBrush = `<svg width="160" height="200" viewBox="0 0 160 200" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <ellipse cx="130" cy="28" rx="92" ry="40" transform="rotate(-38 130 28)" fill="#7C3AED" opacity="0.11"/>
-    <ellipse cx="112" cy="78" rx="76" ry="31" transform="rotate(-38 112 78)" fill="#9333EA" opacity="0.08"/>
-    <ellipse cx="90" cy="122" rx="56" ry="22" transform="rotate(-38 90 122)" fill="#6D28D9" opacity="0.06"/>
+  const trBrush = `<svg width="160" height="200" viewBox="0 0 170 220" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M162 6 C148 28, 128 46, 106 64 C84 82, 60 96, 42 114 C22 134, 8 156, 2 178" stroke="#7C3AED" stroke-width="34" stroke-linecap="round" fill="none" opacity="0.16"/>
+    <path d="M170 18 C155 38, 136 55, 114 72 C92 89, 68 103, 50 120 C30 140, 14 162, 6 185" stroke="#9333EA" stroke-width="24" stroke-linecap="round" fill="none" opacity="0.11"/>
+    <path d="M154 0 C140 22, 120 40, 99 58 C78 76, 54 90, 36 108 C16 128, 3 150, 0 172" stroke="#6D28D9" stroke-width="15" stroke-linecap="round" fill="none" opacity="0.08"/>
   </svg>`;
 
-  const blBrush = `<svg width="160" height="200" viewBox="0 0 160 200" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <ellipse cx="30" cy="172" rx="92" ry="40" transform="rotate(-38 30 172)" fill="#7C3AED" opacity="0.11"/>
-    <ellipse cx="48" cy="122" rx="76" ry="31" transform="rotate(-38 48 122)" fill="#9333EA" opacity="0.08"/>
-    <ellipse cx="70" cy="78" rx="56" ry="22" transform="rotate(-38 70 78)" fill="#6D28D9" opacity="0.06"/>
+  const blBrush = `<svg width="160" height="200" viewBox="0 0 170 220" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M8 214 C22 192, 42 174, 64 156 C86 138, 110 124, 128 106 C148 86, 162 64, 168 42" stroke="#7C3AED" stroke-width="34" stroke-linecap="round" fill="none" opacity="0.16"/>
+    <path d="M0 202 C14 182, 34 164, 56 146 C78 128, 102 114, 120 96 C140 76, 156 54, 164 30" stroke="#9333EA" stroke-width="24" stroke-linecap="round" fill="none" opacity="0.11"/>
+    <path d="M16 220 C30 198, 50 180, 72 162 C94 144, 118 130, 136 112 C156 92, 168 70, 172 46" stroke="#6D28D9" stroke-width="15" stroke-linecap="round" fill="none" opacity="0.08"/>
   </svg>`;
 
   return `
@@ -1078,13 +1078,10 @@ function wireProductDetail(c, product) {
     S.imgTimer = setInterval(() => {
       if (!imgEl) return;
       idx = (idx + 1) % images.length;
-      imgEl.style.opacity = '0';
-      imgEl.style.transform = 'scale(0.90)';
-      setTimeout(() => {
-        imgEl.src = images[idx];
-        imgEl.style.opacity = '1';
-        imgEl.style.transform = 'scale(1)';
-      }, 350);
+      imgEl.classList.remove('pd-img-bounce');
+      void imgEl.offsetWidth; // force reflow to restart animation
+      imgEl.src = images[idx];
+      imgEl.classList.add('pd-img-bounce');
     }, 2800);
   }
 

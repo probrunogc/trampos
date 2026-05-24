@@ -1186,13 +1186,12 @@ html, body {
 }
 
 .pd-img-section {
-  flex: 0 0 46%;
+  flex: 0 0 54%;
   aspect-ratio: 1;
-  background: var(--c-purple-50);
-  border-radius: 18px;
+  background: transparent;
+  border-radius: 12px;
   overflow: hidden;
   position: relative;
-  border: 1px solid rgba(124, 58, 237, 0.10);
 }
 
 .pd-img-section img {
@@ -1201,9 +1200,12 @@ html, body {
   width: 100%;
   height: 100%;
   object-fit: contain;
-  padding: 14px;
+  padding: 8px;
   box-sizing: border-box;
-  transition: opacity .35s ease, transform .35s ease;
+}
+
+.pd-img-section img.pd-img-bounce {
+  animation: pd-img-bounce 0.65s cubic-bezier(.34, 1.56, .64, 1) forwards;
 }
 
 .pd-info {
@@ -1211,12 +1213,12 @@ html, body {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding-top: 2px;
+  gap: 3px;
+  padding-top: 4px;
 }
 
 .pd-brand {
-  font-size: .70rem;
+  font-size: .72rem;
   color: var(--text-secondary);
   font-weight: 600;
   text-transform: uppercase;
@@ -1224,20 +1226,20 @@ html, body {
 }
 
 .pd-name {
-  font-size: 1rem;
+  font-size: 1.30rem;
   font-weight: 900;
   color: var(--text-primary);
-  line-height: 1.25;
-  letter-spacing: -.02em;
-  margin-top: 2px;
+  line-height: 1.20;
+  letter-spacing: -.025em;
+  margin-top: 3px;
 }
 
 .pd-price {
-  font-size: 1.30rem;
+  font-size: 1.85rem;
   font-weight: 900;
   color: var(--c-purple-600);
-  letter-spacing: -.03em;
-  margin-top: 6px;
+  letter-spacing: -.035em;
+  margin-top: 8px;
 }
 
 .pd-out-of-stock {
@@ -1250,37 +1252,43 @@ html, body {
 .pd-qty-ctrl {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-top: 10px;
+  justify-content: space-between;
+  background: var(--c-purple-50);
+  border-radius: var(--r-full);
+  padding: 5px;
+  margin-top: 14px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .pd-qty-btn {
-  width: 32px;
-  height: 32px;
-  border-radius: 9px;
-  background: var(--c-purple-100);
+  width: 36px;
+  height: 36px;
+  border-radius: var(--r-full);
+  background: white;
   color: var(--c-purple-600);
   border: none;
-  font-size: 1.1rem;
-  font-weight: 800;
+  font-size: 1.2rem;
+  font-weight: 700;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   font-family: inherit;
+  flex-shrink: 0;
   -webkit-tap-highlight-color: transparent;
-  transition: transform var(--dur-fast) var(--ease-spring), background var(--dur-fast);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.10);
 }
 
-.pd-qty-btn:active { transform: scale(.88); background: var(--c-purple-200); }
+.pd-qty-btn:active { transform: scale(.85); }
 .pd-qty-btn:disabled { opacity: .28; cursor: default; }
 
 .pd-qty-val {
-  font-size: 1rem;
+  flex: 1;
+  text-align: center;
+  font-size: 1.05rem;
   font-weight: 900;
   color: var(--text-primary);
-  min-width: 22px;
-  text-align: center;
 }
 
 .pd-add-btn {
@@ -1340,6 +1348,15 @@ html, body {
   font-size: .88rem;
   color: var(--text-secondary);
   line-height: 1.6;
+}
+
+@keyframes pd-img-bounce {
+  0%   { transform: scale(0.68) translateY(18px); opacity: 0; }
+  48%  { transform: scale(1.13) translateY(-8px);  opacity: 1; }
+  68%  { transform: scale(0.93) translateY(4px); }
+  82%  { transform: scale(1.05) translateY(-2px); }
+  93%  { transform: scale(0.98) translateY(1px); }
+  100% { transform: scale(1)    translateY(0);   opacity: 1; }
 }
 
 /* ─── Delivery bar ───────────────────────────────────────────── */
@@ -1952,4 +1969,8 @@ html, body {
 /* Exceção: shimmer de carregamento fica ativo */
 .skel-pulse, .img-loading {
   animation-duration: 1.5s !important;
+}
+/* Exceção: bounce de imagem do produto */
+.pd-img-bounce {
+  animation-duration: 0.65s !important;
 }
