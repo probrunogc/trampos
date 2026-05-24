@@ -224,69 +224,127 @@ function shimmerImages(container) {
     if (img.complete && img.naturalWidth) return;
 
     const imgWrap = img.closest('.banner-art, .product-card-img, .cat-chip-icon');
-    const card    = img.closest('.product-card');
-    const texts   = card ? card.querySelectorAll('.product-card-name, .product-card-brand, .product-card-price, .btn-add-card, .product-out-badge') : [];
 
     img.style.opacity = '0';
-    img.style.transition = 'opacity .35s';
+    img.style.transition = 'opacity .3s';
     if (imgWrap) imgWrap.classList.add('img-loading');
-    texts.forEach(el => el.classList.add('skel-text'));
 
     const done = () => {
       img.style.opacity = '1';
       if (imgWrap) imgWrap.classList.remove('img-loading');
-      texts.forEach(el => el.classList.remove('skel-text'));
     };
     img.addEventListener('load',  done, { once: true });
     img.addEventListener('error', done, { once: true });
   });
 }
 
-/* ─── Navigation ─────────────────────────────────────────────── */
-function go(view, params = {}, back = false) {
-  const root  = document.getElementById('view-root');
-  const prev  = root.querySelector('#current-view');
+/* ─── Page cache ─────────────────────────────────────────────── */
+const PAGE_CACHE = new Map();
 
-  if (back) {
-    S.navStack.pop();
+function pageCacheKey(view, params) {
+  if (view === 'home')       return 'home';
+  if (view === 'categories') return 'categories';
+  if (view === 'products' && params.catId) return `products:${params.catId}`;
+  return null;
+}
+
+// Update only the dynamic parts (cart badge) on a cached home page
+function refreshCachedPage(div, view) {
+  if (view !== 'home') return;
+  const cnt = cartCount();
+  const btn = div.querySelector('#btn-header-cart');
+  if (!btn) return;
+  let badge = btn.querySelector('.header-cart-badge');
+  if (cnt > 0) {
+    if (!badge) { badge = document.createElement('span'); badge.className = 'header-cart-badge'; btn.appendChild(badge); }
+    badge.textContent = cnt;
   } else {
+    badge?.remove();
+  }
+}
+
+// Kick off image loading in background right after data is ready
+function preloadImages() {
+  const urls = new Set();
+  S.products.slice(0, 24).forEach(p => { const imgs = getProductImages(p); if (imgs[0]) urls.add(imgs[0]); });
+  S.banners.forEach(b => { if (b.imageUrl) urls.add(b.imageUrl); });
+  urls.forEach(url => { (new Image()).src = url; });
+}
+
+/* ─── Navigation ─────────────────────────────────────────────── */
+// type: 'push' (slide in) | 'back' (slide back) | 'tab' (fade) | 'replace' (instant)
+function go(view, params = {}, type = 'push') {
+  const root = document.getElementById('view-root');
+  const prev = root.querySelector('#current-view');
+
+  // Save outgoing page to cache before leaving (never save skeleton via 'replace')
+  if (prev && type !== 'replace') {
+    const key = pageCacheKey(S.view, S.viewParams);
+    if (key) {
+      prev._savedScrollTop = prev.scrollTop;
+      prev.removeAttribute('id');
+      PAGE_CACHE.set(key, prev);
+    }
+  }
+
+  if (type === 'back') {
+    S.navStack.pop();
+  } else if (type === 'push') {
     S.navStack.push({ view: S.view, params: S.viewParams });
+  } else {
+    S.navStack = [];
   }
   S.view       = view;
   S.viewParams = params;
   if (view === 'product') S.qty = 1;
 
-  const div = document.createElement('div');
-  div.className = 'view-page';
-  div.id = 'current-view';
-  div.innerHTML = renderView(view, params);
+  // Restore from cache or render fresh
+  const key    = pageCacheKey(view, params);
+  const cached = key ? PAGE_CACHE.get(key) : null;
+  let div;
+
+  if (cached) {
+    div = cached;
+    div.id = 'current-view';
+    div.classList.remove('slide-in', 'slide-out', 'slide-bk-in', 'slide-bk-out', 'fade-in');
+  } else {
+    div = document.createElement('div');
+    div.className = 'view-page';
+    div.id = 'current-view';
+    div.innerHTML = renderView(view, params);
+  }
 
   if (prev) {
-    if (back) {
-      prev.classList.add('slide-bk-out');
-      div.classList.add('slide-bk-in');
-    } else {
-      prev.classList.add('slide-out');
-      div.classList.add('slide-in');
-    }
     root.appendChild(div);
-    setTimeout(() => prev.remove(), 300);
+    const removePrev = prev;
+    if (type === 'replace') {
+      removePrev.remove();
+    } else {
+      requestAnimationFrame(() => {
+        if (removePrev.parentNode && removePrev.id !== 'current-view') removePrev.remove();
+      });
+    }
   } else {
     root.appendChild(div);
   }
 
   updateBottomNav(view);
   updateCartBadge();
-  shimmerImages(div);
-  wireView(view, params, div);
 
-  div.scrollTop = 0;
+  if (cached) {
+    refreshCachedPage(div, view);
+  } else {
+    shimmerImages(div);
+    wireView(view, params, div);
+  }
+
+  div.scrollTop = div._savedScrollTop || 0;
 }
 
 function goBack() {
   if (S.navStack.length === 0) return;
   const prev = S.navStack[S.navStack.length - 1];
-  go(prev.view, prev.params, true);
+  go(prev.view, prev.params, 'back');
 }
 
 /* ─── Bottom nav ─────────────────────────────────────────────── */
@@ -334,11 +392,11 @@ function renderBottomNav() {
       <span>Conta</span>
     </button>
   `;
-  nav.querySelector('#nav-home').onclick       = () => go('home');
-  nav.querySelector('#nav-categories').onclick = () => go('categories');
-  nav.querySelector('#nav-cart').onclick       = () => go('cart');
-  nav.querySelector('#nav-orders').onclick     = () => go('orders');
-  nav.querySelector('#nav-account').onclick    = () => go('account');
+  nav.querySelector('#nav-home').onclick       = () => go('home',       {}, 'tab');
+  nav.querySelector('#nav-categories').onclick = () => go('categories', {}, 'tab');
+  nav.querySelector('#nav-cart').onclick       = () => go('cart',       {}, 'tab');
+  nav.querySelector('#nav-orders').onclick     = () => go('orders',     {}, 'tab');
+  nav.querySelector('#nav-account').onclick    = () => go('account',    {}, 'tab');
 }
 
 function updateBottomNav(view) {
@@ -933,8 +991,7 @@ function wireCats(c) {
   c.querySelectorAll('.cat-card, .cat-banner-card').forEach(card =>
     card.addEventListener('click', () => go('products', { catId: card.dataset.catid }))
   );
-  c.querySelector('#btn-back')?.addEventListener('click', () => go('home'));
-  c.querySelector('#btn-cat-search')?.addEventListener('click', () => go('home'));
+  c.querySelector('#btn-cat-search')?.addEventListener('click', () => go('home', {}, 'tab'));
 }
 
 function wireProductCards(c) {
@@ -1038,20 +1095,47 @@ function wireProductDetail(c, product) {
 }
 
 function wireCart(c) {
-  c.querySelectorAll('.cart-qty-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const cid   = btn.dataset.cid;
-      const delta = parseInt(btn.dataset.delta, 10);
-      const item  = S.cart.find(i => i.id === cid);
-      if (item) { setCartQty(cid, item.qty + delta); go('cart'); }
+  function sync() {
+    if (S.cart.length === 0) {
+      c.innerHTML = renderCart();
+      wireCart(c);
+      return;
+    }
+
+    const fee   = S.settings.deliveryFee || 0;
+    const sub   = cartTotal();
+    const total = sub + fee;
+    const cnt   = cartCount();
+
+    const listEl = c.querySelector('.cart-list');
+    if (listEl) { listEl.innerHTML = S.cart.map(renderCartItem).join(''); bindItems(); }
+
+    const titleP = c.querySelector('.view-header-title p');
+    if (titleP) titleP.textContent = `${cnt} ${cnt === 1 ? 'item' : 'itens'}`;
+
+    const rows = c.querySelectorAll('.cart-summary .cart-summary-row');
+    if (rows[0]) rows[0].querySelector('span:last-child').textContent = brl(sub);
+    if (rows[2]) rows[2].querySelector('span:last-child').textContent = brl(total);
+
+    updateCartBadge();
+  }
+
+  function bindItems() {
+    c.querySelectorAll('.cart-qty-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const cid   = btn.dataset.cid;
+        const delta = parseInt(btn.dataset.delta, 10);
+        const item  = S.cart.find(i => i.id === cid);
+        if (item) { setCartQty(cid, item.qty + delta); sync(); }
+      });
     });
-  });
-  c.querySelectorAll('.btn-cart-remove').forEach(btn => {
-    btn.addEventListener('click', () => { removeFromCart(btn.dataset.cid); go('cart'); });
-  });
-  c.querySelector('#btn-wa-cart')?.addEventListener('click', () => {
-    openWhatsApp(buildCartMessage());
-  });
+    c.querySelectorAll('.btn-cart-remove').forEach(btn => {
+      btn.addEventListener('click', () => { removeFromCart(btn.dataset.cid); sync(); });
+    });
+  }
+
+  bindItems();
+  c.querySelector('#btn-wa-cart')?.addEventListener('click', () => openWhatsApp(buildCartMessage()));
   c.querySelector('#btn-go-checkout')?.addEventListener('click', () => {
     if (S.cart.length > 0) go('checkout');
   });
@@ -1206,7 +1290,7 @@ function wireOrders(c) {
 function wireAccount(c) {
   c.querySelector('#btn-wa-account')?.addEventListener('click', () => openWhatsApp('Olá! Gostaria de falar com o Empório GO.'));
   c.querySelector('#btn-clear-cart')?.addEventListener('click', () => {
-    if (confirm('Limpar carrinho?')) { S.cart = []; saveCart(); updateCartBadge(); go('home'); }
+    if (confirm('Limpar carrinho?')) { S.cart = []; saveCart(); updateCartBadge(); go('home', {}, 'tab'); }
   });
 }
 
@@ -1267,8 +1351,11 @@ async function init() {
   // Carrega dados em paralelo
   await Promise.all([loadProducts(), loadBanners(), loadSettings()]);
 
-  // Substitui skeleton pelo conteúdo real com fade suave
-  go('home');
+  // Pré-carrega imagens em background para que fiquem em cache do browser
+  preloadImages();
+
+  // Substitui skeleton pelo conteúdo real (fade, sem slide)
+  go('home', {}, 'replace');
 }
 
 init().catch(console.error);
