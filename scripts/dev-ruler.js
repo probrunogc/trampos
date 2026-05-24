@@ -562,10 +562,11 @@
   }
   const cBtnUndo    = mkCBtn('↩', 'rgba(140,30,200,0.75)', '36px');
   const cBtnLock    = mkCBtn('🔓', 'rgba(255,255,255,0.1)', '36px');
+  const cBtnParent  = mkCBtn('⬆', 'rgba(255,255,255,0.1)', '36px');
   const cBtnCopyAll = mkCBtn('📋 CSS', 'rgba(30,100,255,0.85)');
   const cBtnRevert  = mkCBtn('↺ Orig', 'rgba(200,30,30,0.65)');
   const cBtnOk      = mkCBtn('✓', 'rgba(30,160,30,0.75)', '36px');
-  cBtnRow.append(cBtnUndo, cBtnLock, cBtnCopyAll, cBtnRevert, cBtnOk);
+  cBtnRow.append(cBtnUndo, cBtnLock, cBtnParent, cBtnCopyAll, cBtnRevert, cBtnOk);
 
   updateUndoBtn();
 
@@ -575,6 +576,20 @@
     cProportional = !cProportional;
     cBtnLock.textContent = cProportional ? '🔒' : '🔓';
     cBtnLock.style.background = cProportional ? 'rgba(255,200,0,0.3)' : 'rgba(255,255,255,0.1)';
+  });
+
+  cBtnParent.addEventListener('click', () => {
+    if (!cTarget) return;
+    let par = cTarget.parentElement;
+    /* sobe ignorando os próprios nós da ferramenta */
+    while (par && (par === document.body || par === document.documentElement || par.closest('[data-ruler]'))) {
+      par = par.parentElement;
+    }
+    if (!par) { flash('já está no topo'); return; }
+    selectCanvasElement(par, false);
+    if (window.gsap) {
+      window.gsap.fromTo(cBorderEl, { scale:1.06 }, { scale:1, duration:0.18, ease:'power2.out' });
+    }
   });
 
   function copyToClipboard(txt) {
@@ -774,13 +789,10 @@
   }
 
   /* ── Seleção de elemento ──────────────────────────────────── */
-  cSelLayer.addEventListener('touchend', e => {
-    const t = e.changedTouches[0];
-    cSelLayer.style.pointerEvents = 'none';
-    const el = document.elementFromPoint(t.clientX, t.clientY);
-    cSelLayer.style.pointerEvents = 'auto';
-    if (!el || el === document.body || el === document.documentElement) return;
-    if (el.closest('#dev-ruler-btn') || el.closest('[data-ruler]')) return;
+  /* ── Seleciona um elemento no canvas mode ─────────────────── */
+  function selectCanvasElement(el, animate) {
+    if (!el || el === document.body || el === document.documentElement) return false;
+    if (el.closest('#dev-ruler-btn') || el.closest('[data-ruler]')) return false;
 
     clearCanvasSelection();
     cTarget = el;
@@ -801,14 +813,32 @@
     const classes = Array.from(el.classList).slice(0, 3).join(' .');
     cClassName.textContent = (classes ? '.' + classes : el.tagName.toLowerCase()) + '  ⠿';
 
+    /* Atualiza botão ⬆: desabilita se não tem pai válido */
+    const par = el.parentElement;
+    const hasParent = par && par !== document.body && par !== document.documentElement && !par.closest('[data-ruler]');
+    cBtnParent.style.opacity = hasParent ? '1' : '0.25';
+
     updateCanvasUI();
     positionCPanel();
     cPanel.style.display = 'flex';
-    if (window.gsap) {
+    if (animate && window.gsap) {
       window.gsap.fromTo(cPanel, { y:24, opacity:0 }, { y:0, opacity:1, duration:0.22, ease:'power2.out' });
       window.gsap.fromTo([cBorderEl, ...Object.values(handles), moveHandle],
         { scale:0.6, opacity:0 }, { scale:1, opacity:1, duration:0.2, ease:'back.out(2)', stagger:0.015 });
+    } else if (animate && !window.gsap) {
+      /* fallback sem GSAP: pisca a borda */
+      cBorderEl.style.opacity = '0.3';
+      setTimeout(() => { cBorderEl.style.opacity = '1'; }, 120);
     }
+    return true;
+  }
+
+  cSelLayer.addEventListener('touchend', e => {
+    const t = e.changedTouches[0];
+    cSelLayer.style.pointerEvents = 'none';
+    const el = document.elementFromPoint(t.clientX, t.clientY);
+    cSelLayer.style.pointerEvents = 'auto';
+    selectCanvasElement(el, true);
     e.preventDefault();
   }, { passive:false });
 
