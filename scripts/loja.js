@@ -70,6 +70,7 @@ const S = {
   },
   lastOrderId: null,
   layout: parseInt(localStorage.getItem('eg:layout') || '2', 10),
+  imgTimer: null,
 };
 
 /* ─── Cart helpers ───────────────────────────────────────────── */
@@ -224,10 +225,10 @@ function openWhatsApp(message) {
 
 /* ─── Image shimmer while loading ───────────────────────────── */
 function shimmerImages(container) {
-  container.querySelectorAll('.banner-art img, .product-card-img img, .cat-chip-icon img').forEach(img => {
+  container.querySelectorAll('.banner-art img, .product-card-img img, .cat-chip-icon img, .pd-img-section img').forEach(img => {
     if (img.complete && img.naturalWidth) return;
 
-    const imgWrap = img.closest('.banner-art, .product-card-img, .cat-chip-icon');
+    const imgWrap = img.closest('.banner-art, .product-card-img, .cat-chip-icon, .pd-img-section');
 
     img.style.opacity = '0';
     img.style.transition = 'opacity .3s';
@@ -298,6 +299,8 @@ function go(view, params = {}, type = 'push') {
   } else {
     S.navStack = [];
   }
+  clearInterval(S.imgTimer);
+  S.imgTimer = null;
   S.view       = view;
   S.viewParams = params;
   if (view === 'product') S.qty = 1;
@@ -627,82 +630,76 @@ function renderProductCard(p) {
 
 /* PRODUCT DETAIL */
 function renderProductDetail(p) {
-  const cat     = CATS.find(c => c.id === p.category) || { label: p.category || '' };
   const inStock = (p.stock ?? 1) > 0;
   const images  = getProductImages(p);
+  const firstImg = images[0] || '';
+
+  const trBrush = `<svg width="160" height="200" viewBox="0 0 160 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="130" cy="28" rx="92" ry="40" transform="rotate(-38 130 28)" fill="#7C3AED" opacity="0.11"/>
+    <ellipse cx="112" cy="78" rx="76" ry="31" transform="rotate(-38 112 78)" fill="#9333EA" opacity="0.08"/>
+    <ellipse cx="90" cy="122" rx="56" ry="22" transform="rotate(-38 90 122)" fill="#6D28D9" opacity="0.06"/>
+  </svg>`;
+
+  const blBrush = `<svg width="160" height="200" viewBox="0 0 160 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="30" cy="172" rx="92" ry="40" transform="rotate(-38 30 172)" fill="#7C3AED" opacity="0.11"/>
+    <ellipse cx="48" cy="122" rx="76" ry="31" transform="rotate(-38 48 122)" fill="#9333EA" opacity="0.08"/>
+    <ellipse cx="70" cy="78" rx="56" ry="22" transform="rotate(-38 70 78)" fill="#6D28D9" opacity="0.06"/>
+  </svg>`;
 
   return `
-    <div class="product-detail-hero">
-      <div class="product-hero-topbar">
-        <button class="btn-back" id="btn-back">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M19 12H5M12 19l-7-7 7-7"/>
-          </svg>
-        </button>
-        <div style="width:36px"></div>
+    <div class="pd-page">
+      <div class="pd-deco pd-deco-tr">${trBrush}</div>
+      <div class="pd-deco pd-deco-bl">${blBrush}</div>
+      <button class="pd-back" id="btn-back">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="22" height="22">
+          <path d="M19 12H5M12 19l-7-7 7-7"/>
+        </svg>
+      </button>
+      <div class="pd-split">
+        <div class="pd-img-section" id="pd-img-section">
+          ${firstImg
+            ? `<img id="pd-main-img" src="${esc(firstImg)}" alt="${esc(p.name)}" loading="eager" />`
+            : productImage(p)
+          }
+        </div>
+        <div class="pd-info">
+          ${p.brand ? `<p class="pd-brand">${esc(p.brand)}</p>` : ''}
+          <h2 class="pd-name">${esc(p.name)}</h2>
+          <p class="pd-price">${brl(p.price)}</p>
+          ${inStock ? `
+            <div class="pd-qty-ctrl">
+              <button class="pd-qty-btn" id="qty-minus" ${S.qty <= 1 ? 'disabled' : ''}>−</button>
+              <span class="pd-qty-val" id="qty-val">${S.qty}</span>
+              <button class="pd-qty-btn" id="qty-plus">+</button>
+            </div>
+          ` : `<p class="pd-out-of-stock">Esgotado</p>`}
+        </div>
       </div>
-      ${images.length > 1 ? `
-        <div class="product-carousel">
-          <div class="carousel-track" id="carousel-track">
-            ${images.map(url => `
-              <div class="carousel-slide">
-                <div class="product-hero-img">
-                  <div class="prod-img">
-                    <img src="${esc(url)}" alt="" loading="lazy" />
-                  </div>
-                </div>
-              </div>
-            `).join('')}
-          </div>
-          <div class="carousel-dots" id="carousel-dots">
-            ${images.map((_, i) => `<span class="dot${i === 0 ? ' active' : ''}"></span>`).join('')}
-          </div>
-        </div>
-      ` : `
-        <div class="product-hero-img">${productImage(p)}</div>
-      `}
-    </div>
-    <div class="product-detail-body">
-      <span class="product-category-chip">${esc(cat.label)}</span>
-      <h2 class="product-detail-name">${esc(p.name)}</h2>
-      ${p.brand ? `<p class="product-detail-brand">${esc(p.brand)}</p>` : ''}
-      ${(p.teor || p.origem) ? `
-        <div class="product-info-tags">
-          ${p.teor   ? `<span class="product-info-tag">${esc(p.teor)}</span>` : ''}
-          ${p.origem ? `<span class="product-info-tag">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="11" height="11"><circle cx="12" cy="10" r="3"/><path d="M12 21.7C17.3 17 20 13 20 10a8 8 0 10-16 0c0 3 2.7 6.9 8 11.7z"/></svg>
-            ${esc(p.origem)}
-          </span>` : ''}
-        </div>
-      ` : ''}
-      <div class="product-detail-price">${brl(p.price)}</div>
-      ${p.description ? `<p class="product-detail-desc">${esc(p.description)}</p>` : ''}
       ${inStock ? `
-        <div class="qty-row">
-          <div class="qty-ctrl">
-            <button class="qty-btn" id="qty-minus" ${S.qty <= 1 ? 'disabled' : ''}>−</button>
-            <span class="qty-val" id="qty-val">${S.qty}</span>
-            <button class="qty-btn" id="qty-plus">+</button>
-          </div>
-          <div class="qty-quick-btns">
-            <button class="qty-quick" data-add="2">+2</button>
-            <button class="qty-quick" data-add="6">+6</button>
-            <button class="qty-quick" data-add="12">+12</button>
-          </div>
-        </div>
-        <button class="btn-add-cart" id="btn-add-to-cart">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
-            <path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/>
-          </svg>
-          <span id="btn-add-label">Adicionar — ${brl(p.price * S.qty)}</span>
+        <button class="pd-add-btn" id="btn-add-to-cart">
+          ADICIONAR AO CARRINHO — ${brl(p.price * S.qty)}
         </button>
-      ` : `
-        <div class="empty-state" style="padding:24px 0">
-          <h4>Produto esgotado</h4>
-          <p>Não disponível no momento.</p>
-        </div>
-      `}
+      ` : ''}
+      <div class="pd-sections">
+        ${p.description ? `
+          <div class="pd-section">
+            <p class="pd-section-label">Descrição</p>
+            <p class="pd-section-body">${esc(p.description)}</p>
+          </div>
+        ` : ''}
+        ${p.teor ? `
+          <div class="pd-section">
+            <p class="pd-section-label">Teor Alcoólico</p>
+            <p class="pd-section-body">${esc(p.teor)}</p>
+          </div>
+        ` : ''}
+        ${p.origem ? `
+          <div class="pd-section">
+            <p class="pd-section-label">Origem</p>
+            <p class="pd-section-body">${esc(p.origem)}</p>
+          </div>
+        ` : ''}
+      </div>
     </div>
   `;
 }
@@ -1073,50 +1070,43 @@ function wireProductList(c, catId) {
 }
 
 function wireProductDetail(c, product) {
-  // Carousel
-  const track  = c.querySelector('#carousel-track');
-  const dotsEl = c.querySelector('#carousel-dots');
-  if (track && dotsEl) {
-    const dots = dotsEl.querySelectorAll('.dot');
-    track.addEventListener('scroll', () => {
-      const idx = Math.round(track.scrollLeft / track.clientWidth);
-      dots.forEach((d, i) => d.classList.toggle('active', i === idx));
-    }, { passive: true });
-    dots.forEach((dot, i) => {
-      dot.addEventListener('click', () => {
-        track.scrollTo({ left: i * track.clientWidth, behavior: 'smooth' });
-      });
-    });
+  // Bounce animation between multiple product images
+  const images = getProductImages(product);
+  if (images.length > 1) {
+    const imgEl = c.querySelector('#pd-main-img');
+    let idx = 0;
+    S.imgTimer = setInterval(() => {
+      if (!imgEl) return;
+      idx = (idx + 1) % images.length;
+      imgEl.style.opacity = '0';
+      imgEl.style.transform = 'scale(0.90)';
+      setTimeout(() => {
+        imgEl.src = images[idx];
+        imgEl.style.opacity = '1';
+        imgEl.style.transform = 'scale(1)';
+      }, 350);
+    }, 2800);
   }
 
   const btnMinus = c.querySelector('#qty-minus');
   const btnPlus  = c.querySelector('#qty-plus');
   const qtyVal   = c.querySelector('#qty-val');
-  const addLabel = c.querySelector('#btn-add-label');
-  const btnAdd   = c.querySelector('#btn-add-to-cart');
+  const addBtn   = c.querySelector('#btn-add-to-cart');
 
   function syncQty() {
     if (qtyVal)   qtyVal.textContent = S.qty;
     if (btnMinus) btnMinus.disabled  = S.qty <= 1;
-    if (addLabel) addLabel.textContent = `Adicionar — ${brl(product.price * S.qty)}`;
+    if (addBtn)   addBtn.textContent = `ADICIONAR AO CARRINHO — ${brl(product.price * S.qty)}`;
   }
 
   btnMinus?.addEventListener('click', () => { if (S.qty > 1) { S.qty--; syncQty(); } });
   btnPlus?.addEventListener('click',  () => { S.qty++; syncQty(); });
 
-  c.querySelectorAll('.qty-quick').forEach(btn => {
-    btn.addEventListener('click', () => {
-      S.qty += parseInt(btn.dataset.add, 10);
-      syncQty();
-    });
-  });
-
-  btnAdd?.addEventListener('click', () => {
+  addBtn?.addEventListener('click', () => {
     addToCart(product, S.qty);
-    if (btnAdd) {
-      btnAdd.innerHTML = '✓ Adicionado!';
-      btnAdd.style.cssText = 'background:var(--c-green);color:white';
-    }
+    addBtn.textContent = '✓ Adicionado!';
+    addBtn.style.background = 'var(--c-green)';
+    addBtn.style.color = 'white';
     setTimeout(() => go('cart'), 750);
   });
 }
