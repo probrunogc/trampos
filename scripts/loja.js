@@ -634,22 +634,8 @@ function renderProductDetail(p) {
   const images  = getProductImages(p);
   const firstImg = images[0] || '';
 
-  const tlBrush = `<svg width="160" height="200" viewBox="0 0 170 220" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M8 6 C22 28, 42 46, 64 64 C86 82, 110 96, 128 114 C148 134, 162 156, 168 178" stroke="#7C3AED" stroke-width="34" stroke-linecap="round" fill="none" opacity="0.16"/>
-    <path d="M0 18 C15 38, 34 55, 56 72 C78 89, 102 103, 120 120 C140 140, 156 162, 162 185" stroke="#9333EA" stroke-width="24" stroke-linecap="round" fill="none" opacity="0.11"/>
-    <path d="M16 0 C30 22, 50 40, 71 58 C92 76, 116 90, 134 108 C154 128, 167 150, 172 172" stroke="#6D28D9" stroke-width="15" stroke-linecap="round" fill="none" opacity="0.08"/>
-  </svg>`;
-
-  const brBrush = `<svg width="160" height="200" viewBox="0 0 170 220" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M162 6 C148 28, 128 46, 106 64 C84 82, 60 96, 42 114 C22 134, 8 156, 2 178" stroke="#7C3AED" stroke-width="34" stroke-linecap="round" fill="none" opacity="0.16"/>
-    <path d="M170 18 C155 38, 136 55, 114 72 C92 89, 68 103, 50 120 C30 140, 14 162, 6 185" stroke="#9333EA" stroke-width="24" stroke-linecap="round" fill="none" opacity="0.11"/>
-    <path d="M154 0 C140 22, 120 40, 99 58 C78 76, 54 90, 36 108 C16 128, 3 150, 0 172" stroke="#6D28D9" stroke-width="15" stroke-linecap="round" fill="none" opacity="0.08"/>
-  </svg>`;
-
   return `
     <div class="pd-page">
-      <div class="pd-deco pd-deco-tl">${tlBrush}</div>
-      <div class="pd-deco pd-deco-br">${brBrush}</div>
       <button class="pd-back" id="btn-back">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="22" height="22">
           <path d="M19 12H5M12 19l-7-7 7-7"/>

@@ -71,7 +71,7 @@
   --r-full: 9999px;
 
   /* Layout */
-  --bottom-nav-h:  60px;
+  --bottom-nav-h:  54px;
   --safe-top:    env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
 
@@ -192,10 +192,10 @@ html, body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 4px;
+  gap: 3px;
   background: none;
   border: none;
-  color: rgba(0, 0, 0, 0.30);
+  color: rgba(0, 0, 0, 0.28);
   cursor: pointer;
   position: relative;
   transition: color var(--dur-fast) var(--ease-out);
@@ -226,9 +226,9 @@ html, body {
   transform: translateX(-50%) scaleX(1);
 }
 
-.nav-btn svg    { width: 22px; height: 22px; transition: transform var(--dur-fast) var(--ease-spring); }
-.nav-btn.active svg { transform: scale(1.10); }
-.nav-btn > span { font-size: .62rem; font-weight: 700; letter-spacing: .4px; }
+.nav-btn svg    { width: 19px; height: 19px; transition: transform var(--dur-fast) var(--ease-spring); }
+.nav-btn.active svg { transform: scale(1.08); }
+.nav-btn > span { font-size: .58rem; font-weight: 600; letter-spacing: .3px; }
 
 .cart-badge {
   position: absolute;
@@ -1136,7 +1136,7 @@ html, body {
   position: relative;
   min-height: 100%;
   background: #FFFFFF;
-  padding-top: calc(var(--safe-top) + 12px);
+  padding-top: calc(var(--safe-top) + 6px);
   overflow-x: hidden;
 }
 
@@ -1186,8 +1186,8 @@ html, body {
 }
 
 .pd-img-section {
-  flex: 0 0 57%;
-  aspect-ratio: 0.90;
+  flex: 0 0 50%;
+  aspect-ratio: 0.82;
   background: transparent;
   border-radius: 12px;
   overflow: hidden;
@@ -1293,14 +1293,14 @@ html, body {
 
 .pd-add-btn {
   display: block;
-  width: calc(100% - 20px);
-  margin: 10px 10px 0;
-  padding: 19px 16px;
+  width: calc(100% - 32px);
+  margin: 10px 16px 0;
+  padding: 15px 16px;
   background: var(--c-yellow);
   color: var(--text-on-yellow);
   border: none;
   border-radius: var(--r-full);
-  font-size: 1.0rem;
+  font-size: 0.88rem;
   font-weight: 900;
   text-transform: uppercase;
   letter-spacing: .5px;
@@ -1348,6 +1348,8 @@ html, body {
   font-size: .88rem;
   color: var(--text-secondary);
   line-height: 1.6;
+  text-align: justify;
+  hyphens: auto;
 }
 
 @keyframes pd-img-bounce {
