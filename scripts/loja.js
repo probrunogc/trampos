@@ -489,8 +489,7 @@ function renderCategories() {
           <div class="cat-banner-card" data-catid="${esc(c.id)}">
             <div class="cat-banner-text">
               <span class="cat-banner-name">${esc(c.label.toUpperCase())}</span>
-              ${c.tagline ? `<span class="cat-banner-tagline">${esc(c.tagline)}</span>` : ''}
-              <span class="cat-banner-link">Ver opções &rsaquo;</span>
+              <span class="cat-banner-link">${esc(c.tagline || 'Ver opções')} &rsaquo;</span>
             </div>
             <div class="cat-banner-visual">${imgHtml}</div>
           </div>`;
