@@ -20,6 +20,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700;800;900&family=Inter:wght@400;500;600;700;800&family=Dancing+Script:wght@600;700&display=swap" rel="stylesheet">
 
   <link rel="stylesheet" href="styles/theme.css" />
+  <link rel="stylesheet" href="styles/glass.css" />
   <link rel="stylesheet" href="styles/layout.css" />
   <link rel="stylesheet" href="styles/components.css" />
   <link rel="stylesheet" href="styles/modules.css" />
@@ -35,6 +36,23 @@
   </script>
 </head>
 <body>
+  <!-- SVG filter definitions for liquid glass effects -->
+  <svg aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden">
+    <defs>
+      <!-- Liquid displacement: subtle warp on decorative layers -->
+      <filter id="lg-liquid" x="-12%" y="-12%" width="124%" height="124%">
+        <feTurbulence type="fractalNoise" baseFrequency="0.011 0.007" numOctaves="4" seed="3" result="noise"/>
+        <feDisplacementMap in="SourceGraphic" in2="noise" scale="5" xChannelSelector="R" yChannelSelector="G"/>
+      </filter>
+      <!-- Frosted grain: extra micro-texture on glass surfaces -->
+      <filter id="lg-grain" x="0%" y="0%" width="100%" height="100%">
+        <feTurbulence type="fractalNoise" baseFrequency="0.72" numOctaves="2" seed="9" result="noise"/>
+        <feColorMatrix type="saturate" values="0" in="noise" result="gray"/>
+        <feBlend in="SourceGraphic" in2="gray" mode="screen" result="blended"/>
+        <feComposite in="blended" in2="SourceGraphic" operator="in"/>
+      </filter>
+    </defs>
+  </svg>
   <!-- Boot splash -->
   <div id="boot-splash" class="boot-splash">
     <div class="boot-medallion">

@@ -219,10 +219,12 @@ textarea.input:focus {
 .card {
   position: relative;
   background: var(--grad-navy-card);
-  border: 1px solid var(--line);
+  border: 1px solid rgba(212,175,55,0.20);
   border-radius: var(--r-lg);
   padding: var(--sp-5);
-  box-shadow: var(--shadow-md), inset 0 1px 0 rgba(255,255,255,0.04);
+  backdrop-filter: blur(20px) saturate(190%) brightness(1.05);
+  -webkit-backdrop-filter: blur(20px) saturate(190%) brightness(1.05);
+  box-shadow: inset 0 1.5px 0 rgba(255,255,255,0.10), var(--shadow-md), inset 0 1px 0 rgba(255,255,255,0.04);
   transition: border-color var(--t-base) var(--ease),
               transform var(--t-base) var(--ease),
               box-shadow var(--t-base) var(--ease);
@@ -230,7 +232,7 @@ textarea.input:focus {
 .card:hover {
   border-color: var(--line-strong);
   transform: translateY(-2px);
-  box-shadow: var(--shadow-lg), 0 0 0 1px rgba(212,175,55,0.14), inset 0 1px 0 rgba(255,255,255,0.06);
+  box-shadow: inset 0 1.5px 0 rgba(255,255,255,0.18), 0 0 0 1px rgba(212,175,55,0.22), var(--shadow-lg), 0 0 0 1px rgba(212,175,55,0.14), inset 0 1px 0 rgba(255,255,255,0.06);
 }
 .card-title {
   font-family: var(--font-brand);
@@ -386,8 +388,8 @@ table.data-table tbody tr.clickable { cursor: pointer; }
   position: absolute;
   inset: 0;
   background: var(--bg-overlay);
-  backdrop-filter: blur(10px) saturate(60%);
-  -webkit-backdrop-filter: blur(10px) saturate(60%);
+  backdrop-filter: blur(18px) saturate(80%) brightness(0.7);
+  -webkit-backdrop-filter: blur(18px) saturate(80%) brightness(0.7);
 }
 .modal-window {
   position: relative;
@@ -400,10 +402,10 @@ table.data-table tbody tr.clickable { cursor: pointer; }
   border: 1px solid var(--line-strong);
   border-top: 1px solid rgba(212,175,55,0.4);
   border-radius: var(--r-xl);
-  box-shadow:
-    var(--shadow-lg),
-    0 0 0 1px rgba(212,175,55,0.08),
-    inset 0 1px 0 rgba(255,255,255,0.06);
+  backdrop-filter: blur(52px) saturate(260%) brightness(1.10);
+  -webkit-backdrop-filter: blur(52px) saturate(260%) brightness(1.10);
+  box-shadow: inset 0 2px 0 rgba(255,255,255,0.18), inset 0 -1px 0 rgba(0,0,0,0.10), 0 40px 100px rgba(0,0,0,0.6), 0 12px 36px rgba(0,0,0,0.35);
+  border: 1px solid rgba(255,255,255,0.16);
   animation: fadeInUp 320ms var(--ease-out);
 }
 .modal-window.wide { max-width: 880px; }

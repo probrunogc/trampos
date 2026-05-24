@@ -1,0 +1,286 @@
+/* =====================================================================
+   LIQUID GLASS — Empório GO
+   Sistema de vidro líquido inspirado no Apple Liquid Glass (visionOS)
+
+   Classes de composição:
+     .lg-card    — card interativo com anel iridescente no hover
+     .lg-panel   — painel/sheet/drawer com blur profundo
+     .lg-modal   — modal com glass máximo e borda espectral
+     .lg-nav     — barra de navegação glass
+     .lg-surface — superfície glass plana (sem animação de borda)
+     .lg-btn     — botão glass
+   ===================================================================== */
+
+/* ── Registrar propriedades animáveis ─────────────────────────────── */
+@property --lg-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+/* ── Tokens do sistema glass ──────────────────────────────────────── */
+:root {
+  /* Blur levels */
+  --lg-blur-sm: blur(14px)  saturate(180%) brightness(1.04);
+  --lg-blur-md: blur(28px)  saturate(210%) brightness(1.07);
+  --lg-blur-lg: blur(44px)  saturate(240%) brightness(1.09);
+  --lg-blur-xl: blur(64px)  saturate(280%) brightness(1.12);
+
+  /* Glass fill */
+  --lg-fill-1: rgba(255,255,255,0.06);
+  --lg-fill-2: rgba(255,255,255,0.10);
+  --lg-fill-3: rgba(255,255,255,0.16);
+  --lg-fill-4: rgba(255,255,255,0.24);
+
+  /* Fresnel (specular edge highlight) */
+  --lg-fresnel-top:  inset 0 1.5px 0 rgba(255,255,255,0.32);
+  --lg-fresnel-full: inset 0 1.5px 0 rgba(255,255,255,0.32),
+                     inset 0 -1px  0 rgba(0,0,0,0.12),
+                     inset 1px  0  0 rgba(255,255,255,0.09),
+                     inset -1px 0  0 rgba(255,255,255,0.06);
+
+  /* Depth shadows */
+  --lg-shadow-sm: 0 4px  16px rgba(0,0,0,0.22), 0 1px  4px rgba(0,0,0,0.14);
+  --lg-shadow-md: 0 10px 36px rgba(0,0,0,0.36), 0 3px 10px rgba(0,0,0,0.18);
+  --lg-shadow-lg: 0 24px 72px rgba(0,0,0,0.55), 0 8px 24px rgba(0,0,0,0.28);
+  --lg-shadow-xl: 0 40px 100px rgba(0,0,0,0.70), 0 14px 40px rgba(0,0,0,0.38);
+
+  /* Iridescent spectrum — 6-stop rainbow ring */
+  --lg-a: rgba(120, 200, 255, 0.65);
+  --lg-b: rgba(180, 120, 255, 0.60);
+  --lg-c: rgba(255, 100, 180, 0.58);
+  --lg-d: rgba(255, 210,  90, 0.55);
+  --lg-e: rgba(100, 255, 160, 0.55);
+  --lg-f: rgba( 90, 180, 255, 0.60);
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   lg-card — card interativo
+   ══════════════════════════════════════════════════════════════════ */
+.lg-card {
+  position: relative;
+  background: var(--lg-fill-2);
+  backdrop-filter: var(--lg-blur-md);
+  -webkit-backdrop-filter: var(--lg-blur-md);
+  border: 1px solid rgba(255,255,255,0.13);
+  box-shadow: var(--lg-fresnel-full), var(--lg-shadow-sm);
+  overflow: hidden;
+  transition:
+    transform  0.22s cubic-bezier(.34,1.56,.64,1),
+    box-shadow 0.22s ease,
+    border-color 0.22s ease;
+}
+
+/* Fresnel specular line no topo */
+.lg-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg,
+    transparent 4%,
+    rgba(255,255,255,0.50) 28%,
+    rgba(200,220,255,0.70) 50%,
+    rgba(255,255,255,0.50) 72%,
+    transparent 96%
+  );
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* Anel iridescente girante — aparece no hover */
+.lg-card::after {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: conic-gradient(
+    from var(--lg-angle, 0deg),
+    var(--lg-a), var(--lg-b), var(--lg-c),
+    var(--lg-d), var(--lg-e), var(--lg-f), var(--lg-a)
+  );
+  -webkit-mask: linear-gradient(#fff 0 0) content-box,
+                linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+  z-index: 1;
+  animation: lg-irid-spin 5s linear infinite paused;
+}
+
+.lg-card:hover::after {
+  opacity: 1;
+  animation-play-state: running;
+}
+.lg-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(255,255,255,0.22);
+  box-shadow: var(--lg-fresnel-full), var(--lg-shadow-md);
+}
+.lg-card:active {
+  transform: scale(0.975) translateY(0);
+  transition-duration: 0.07s;
+}
+
+@keyframes lg-irid-spin {
+  from { --lg-angle: 0deg;   }
+  to   { --lg-angle: 360deg; }
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   lg-panel — painel/drawer com blur profundo
+   ══════════════════════════════════════════════════════════════════ */
+.lg-panel {
+  position: relative;
+  background: var(--lg-fill-2);
+  backdrop-filter: var(--lg-blur-lg);
+  -webkit-backdrop-filter: var(--lg-blur-lg);
+  border: 1px solid rgba(255,255,255,0.16);
+  border-bottom: 1px solid rgba(0,0,0,0.12);
+  box-shadow: var(--lg-fresnel-top), var(--lg-shadow-lg);
+}
+
+/* Barra especular no topo do painel */
+.lg-panel::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 8%; right: 8%;
+  height: 1px;
+  background: linear-gradient(90deg,
+    transparent,
+    rgba(255,255,255,0.60) 25%,
+    rgba(180,210,255,0.80) 50%,
+    rgba(255,255,255,0.60) 75%,
+    transparent
+  );
+  pointer-events: none;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   lg-modal — modal com glass máximo e borda espectral
+   ══════════════════════════════════════════════════════════════════ */
+.lg-modal {
+  position: relative;
+  background: rgba(255,255,255,0.09);
+  backdrop-filter: var(--lg-blur-xl);
+  -webkit-backdrop-filter: var(--lg-blur-xl);
+  border: 1px solid rgba(255,255,255,0.20);
+  box-shadow: var(--lg-fresnel-full), var(--lg-shadow-xl);
+  overflow: hidden;
+}
+
+/* Borda espectral iridescente no topo */
+.lg-modal::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 5%; right: 5%;
+  height: 1px;
+  background: linear-gradient(90deg,
+    transparent,
+    var(--lg-a) 15%,
+    rgba(255,255,255,0.85) 38%,
+    rgba(255,255,255,0.85) 62%,
+    var(--lg-b) 85%,
+    transparent
+  );
+  pointer-events: none;
+}
+
+/* Sutil brilho de reflexo no interior */
+.lg-modal::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 55%;
+  background: linear-gradient(180deg, rgba(255,255,255,0.04) 0%, transparent 100%);
+  pointer-events: none;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   lg-nav — barra de navegação glass
+   ══════════════════════════════════════════════════════════════════ */
+.lg-nav {
+  background: rgba(255,255,255,0.06) !important;
+  backdrop-filter: blur(32px) saturate(200%) !important;
+  -webkit-backdrop-filter: blur(32px) saturate(200%) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.22) !important;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   lg-surface — superfície plana sem hover/animação
+   ══════════════════════════════════════════════════════════════════ */
+.lg-surface {
+  background: var(--lg-fill-1);
+  backdrop-filter: var(--lg-blur-md);
+  -webkit-backdrop-filter: var(--lg-blur-md);
+  border: 1px solid rgba(255,255,255,0.11);
+  box-shadow: var(--lg-fresnel-top), var(--lg-shadow-sm);
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   lg-btn — botão glass
+   ══════════════════════════════════════════════════════════════════ */
+.lg-btn {
+  position: relative;
+  background: rgba(255,255,255,0.11);
+  backdrop-filter: blur(18px) saturate(180%);
+  -webkit-backdrop-filter: blur(18px) saturate(180%);
+  border: 1px solid rgba(255,255,255,0.22);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.28), 0 2px 8px rgba(0,0,0,0.22);
+  color: white;
+  overflow: hidden;
+  transition:
+    background 0.16s ease,
+    border-color 0.16s ease,
+    box-shadow 0.16s ease,
+    transform 0.14s cubic-bezier(.34,1.56,.64,1);
+}
+/* Specular top line */
+.lg-btn::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.45), transparent);
+  pointer-events: none;
+}
+.lg-btn:hover {
+  background: rgba(255,255,255,0.17);
+  border-color: rgba(255,255,255,0.32);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.35), 0 4px 14px rgba(0,0,0,0.28);
+}
+.lg-btn:active {
+  transform: scale(0.93);
+  background: rgba(255,255,255,0.22);
+  transition-duration: 0.07s;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   TEMA CLARO — glass lê diferente em fundo claro
+   ══════════════════════════════════════════════════════════════════ */
+[data-theme="light"] .lg-card,
+[data-theme="light"] .lg-surface {
+  background: rgba(255,255,255,0.62);
+  border-color: rgba(255,255,255,0.88);
+  box-shadow:
+    inset 0 1.5px 0 rgba(255,255,255,0.95),
+    inset 0 -1px  0 rgba(0,0,0,0.04),
+    0 4px 16px rgba(0,0,0,0.08),
+    0 1px  4px rgba(0,0,0,0.04);
+}
+[data-theme="light"] .lg-panel {
+  background: rgba(255,255,255,0.72);
+  border-color: rgba(255,255,255,0.92);
+}
+[data-theme="light"] .lg-modal {
+  background: rgba(255,255,255,0.82);
+  border-color: rgba(255,255,255,0.96);
+}
+[data-theme="light"] .lg-nav {
+  background: rgba(255,255,255,0.78) !important;
+  border-color: rgba(255,255,255,0.92) !important;
+  box-shadow: inset 0 -1px 0 rgba(0,0,0,0.06) !important;
+}
