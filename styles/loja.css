@@ -1148,7 +1148,7 @@ html, body {
   justify-content: center;
   width: 38px;
   height: 38px;
-  margin: 0 0 8px 12px;
+  margin: 0 0 4px 8px;
   background: transparent;
   border: none;
   cursor: pointer;
@@ -1179,15 +1179,15 @@ html, body {
 .pd-split {
   display: flex;
   align-items: flex-start;
-  gap: 14px;
-  padding: 0 16px 16px;
+  gap: 10px;
+  padding: 0 10px 16px;
   position: relative;
   z-index: 1;
 }
 
 .pd-img-section {
-  flex: 0 0 54%;
-  aspect-ratio: 1;
+  flex: 0 0 57%;
+  aspect-ratio: 0.90;
   background: transparent;
   border-radius: 12px;
   overflow: hidden;
@@ -1200,7 +1200,7 @@ html, body {
   width: 100%;
   height: 100%;
   object-fit: contain;
-  padding: 8px;
+  padding: 6px;
   box-sizing: border-box;
 }
 
@@ -1213,12 +1213,12 @@ html, body {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 3px;
-  padding-top: 4px;
+  gap: 2px;
+  padding-top: 6px;
 }
 
 .pd-brand {
-  font-size: .72rem;
+  font-size: .78rem;
   color: var(--text-secondary);
   font-weight: 600;
   text-transform: uppercase;
@@ -1226,20 +1226,20 @@ html, body {
 }
 
 .pd-name {
-  font-size: 1.30rem;
+  font-size: 1.50rem;
   font-weight: 900;
   color: var(--text-primary);
-  line-height: 1.20;
+  line-height: 1.18;
   letter-spacing: -.025em;
   margin-top: 3px;
 }
 
 .pd-price {
-  font-size: 1.85rem;
+  font-size: 2.10rem;
   font-weight: 900;
   color: var(--c-purple-600);
-  letter-spacing: -.035em;
-  margin-top: 8px;
+  letter-spacing: -.04em;
+  margin-top: 10px;
 }
 
 .pd-out-of-stock {
@@ -1262,13 +1262,13 @@ html, body {
 }
 
 .pd-qty-btn {
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   border-radius: var(--r-full);
   background: white;
   color: var(--c-purple-600);
   border: none;
-  font-size: 1.2rem;
+  font-size: 1.3rem;
   font-weight: 700;
   cursor: pointer;
   display: flex;
@@ -1286,7 +1286,7 @@ html, body {
 .pd-qty-val {
   flex: 1;
   text-align: center;
-  font-size: 1.05rem;
+  font-size: 1.10rem;
   font-weight: 900;
   color: var(--text-primary);
 }
@@ -1294,7 +1294,7 @@ html, body {
 .pd-add-btn {
   display: block;
   width: calc(100% - 32px);
-  margin: 4px 16px 0;
+  margin: 6px 16px 0;
   padding: 15px 16px;
   background: var(--c-yellow);
   color: var(--text-on-yellow);
