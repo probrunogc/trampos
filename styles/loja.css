@@ -83,7 +83,7 @@
   --dur-med:     220ms;
   --dur-slow:    340ms;
 
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-family: 'Nunito', system-ui, -apple-system, sans-serif;
 }
 
 html, body {
@@ -1917,4 +1917,14 @@ html, body {
   justify-content: center;
   flex-shrink: 0;
   color: var(--c-purple-600);
+}
+
+/* ─── Animations/transitions desativados ─────────────────────── */
+*, *::before, *::after {
+  transition-duration: 0.01ms !important;
+  animation-duration:  0.01ms !important;
+}
+/* Exceção: shimmer de carregamento fica ativo */
+.skel-pulse, .img-loading {
+  animation-duration: 1.5s !important;
 }

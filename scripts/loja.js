@@ -315,28 +315,14 @@ function go(view, params = {}, type = 'push') {
   }
 
   if (prev) {
+    root.appendChild(div);
     const removePrev = prev;
-    const cleanup = (ms) => setTimeout(() => {
-      if (removePrev.parentNode && removePrev.id !== 'current-view') removePrev.remove();
-    }, ms);
-
     if (type === 'replace') {
-      root.appendChild(div);
-      prev.remove();
-    } else if (type === 'tab') {
-      if (!cached) div.classList.add('fade-in');
-      root.appendChild(div);
-      cleanup(200);
-    } else if (type === 'back') {
-      prev.classList.add('slide-bk-out');
-      div.classList.add('slide-bk-in');
-      root.appendChild(div);
-      cleanup(300);
+      removePrev.remove();
     } else {
-      prev.classList.add('slide-out');
-      div.classList.add('slide-in');
-      root.appendChild(div);
-      cleanup(300);
+      requestAnimationFrame(() => {
+        if (removePrev.parentNode && removePrev.id !== 'current-view') removePrev.remove();
+      });
     }
   } else {
     root.appendChild(div);
