@@ -466,22 +466,32 @@ function renderHome() {
 function renderCategories() {
   const activeCats = CATS.filter(c => S.products.some(p => p.category === c.id));
   return `
-    <div class="view-header">
-      <div class="view-header-title">
-        <h2>Cardápio</h2>
-        <p>Escolha uma categoria</p>
-      </div>
+    <div class="cat-page-header">
+      <button class="btn-back" id="btn-back">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="22" height="22">
+          <path d="M19 12H5M12 19l-7-7 7-7"/>
+        </svg>
+      </button>
+      <h2>CATEGORIAS</h2>
+      <button class="cat-page-search" id="btn-cat-search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="22" height="22">
+          <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
+        </svg>
+      </button>
     </div>
-    <div class="cat-grid">
+    <div class="cat-banner-list">
       ${activeCats.map(c => {
-        const n = S.products.filter(p => p.category === c.id).length;
+        const prod = S.products.find(p => p.category === c.id && p.image);
+        const imgHtml = prod?.image
+          ? `<img src="${esc(prod.image)}" alt="${esc(c.label)}" class="cat-banner-img" />`
+          : `<span class="cat-banner-emoji">${c.emoji || '🛒'}</span>`;
         return `
-          <div class="cat-card" data-catid="${esc(c.id)}">
-            <div class="cat-card-icon">${catThumb(c.id)}</div>
-            <div class="cat-card-info">
-              <h4>${c.label}</h4>
-              <p>${n} produto${n !== 1 ? 's' : ''}</p>
+          <div class="cat-banner-card" data-catid="${esc(c.id)}">
+            <div class="cat-banner-text">
+              <span class="cat-banner-name">${esc(c.label.toUpperCase())}</span>
+              <span class="cat-banner-link">Ver opções &rsaquo;</span>
             </div>
+            <div class="cat-banner-visual">${imgHtml}</div>
           </div>`;
       }).join('')}
     </div>
@@ -920,9 +930,11 @@ function wireHome(c) {
 }
 
 function wireCats(c) {
-  c.querySelectorAll('.cat-card').forEach(card =>
+  c.querySelectorAll('.cat-card, .cat-banner-card').forEach(card =>
     card.addEventListener('click', () => go('products', { catId: card.dataset.catid }))
   );
+  c.querySelector('#btn-back')?.addEventListener('click', () => go('home'));
+  c.querySelector('#btn-cat-search')?.addEventListener('click', () => go('home'));
 }
 
 function wireProductCards(c) {
