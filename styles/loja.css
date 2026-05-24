@@ -729,7 +729,7 @@ html, body {
   flex-direction: column;
   align-items: center;
   gap: 6px;
-  min-width: 70px;
+  min-width: 75px;
   cursor: pointer;
   background: none;
   border: none;
@@ -738,8 +738,8 @@ html, body {
 }
 
 .cat-chip-icon {
-  width: 70px;
-  height: 70px;
+  width: 75px;
+  height: 75px;
   border-radius: 18px;
   background: var(--bg-card);
   border: 1.5px solid var(--border);
