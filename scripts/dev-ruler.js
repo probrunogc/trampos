@@ -51,10 +51,13 @@
   let cTransX       = 0, cTransY = 0;
   let cBorderRadius = 0;
 
-  /* ── Novos: undo stack + cadeado proporcional ─────────────── */
-  let cHistory        = [];   /* [{ w, h, flexBasis, maxWidth, minHeight, aspectRatio, transform, borderRadius, transX, transY, br }] */
+  /* ── Undo, proporção, escala ──────────────────────────────── */
+  let cHistory        = [];
   let cProportional   = false;
-  let cRadiusSnapTaken = false; /* impede múltiplos snaps enquanto desliza o slider */
+  let cRadiusSnapTaken = false;
+  /* Resize via scale: filhos escalam junto com o pai */
+  let cScaleX  = 1, cScaleY  = 1;   /* escala atual */
+  let cOrigW   = 0, cOrigH   = 0;   /* tamanho natural capturado na seleção */
 
   /* ══════════════════════════════════════════════════════════════
      LIBS EXTERNAS
@@ -410,16 +413,22 @@
   const distL = mkDistLine(), distR = mkDistLine();
 
   /* ── Snapshot helpers ─────────────────────────────────────── */
+  function applyTransform() {
+    if (!cTarget) return;
+    cTarget.style.transformOrigin = '0 0';
+    cTarget.style.transform =
+      `translate(${cTransX}px, ${cTransY}px) scale(${cScaleX}, ${cScaleY})`;
+  }
+
   function pushCSnapshot() {
     if (!cTarget) return;
     cHistory.push({
-      width: cTarget.style.width, height: cTarget.style.height,
-      flexBasis: cTarget.style.flexBasis, maxWidth: cTarget.style.maxWidth,
-      minWidth: cTarget.style.minWidth, minHeight: cTarget.style.minHeight,
-      aspectRatio: cTarget.style.aspectRatio,
       transform: cTarget.style.transform,
+      transformOrigin: cTarget.style.transformOrigin,
       borderRadius: cTarget.style.borderRadius,
-      transX: cTransX, transY: cTransY, br: cBorderRadius,
+      transX: cTransX, transY: cTransY,
+      scaleX: cScaleX, scaleY: cScaleY,
+      br: cBorderRadius,
     });
     if (cHistory.length > 30) cHistory.shift();
     updateUndoBtn();
@@ -428,15 +437,11 @@
   function undoCanvasChange() {
     if (!cTarget || !cHistory.length) return;
     const snap = cHistory.pop();
-    Object.assign(cTarget.style, {
-      width: snap.width, height: snap.height,
-      flexBasis: snap.flexBasis, maxWidth: snap.maxWidth,
-      minWidth: snap.minWidth, minHeight: snap.minHeight,
-      aspectRatio: snap.aspectRatio,
-      transform: snap.transform,
-      borderRadius: snap.borderRadius,
-    });
+    cTarget.style.transform       = snap.transform;
+    cTarget.style.transformOrigin = snap.transformOrigin;
+    cTarget.style.borderRadius    = snap.borderRadius;
     cTransX = snap.transX; cTransY = snap.transY;
+    cScaleX = snap.scaleX; cScaleY = snap.scaleY;
     cBorderRadius = snap.br;
     radiusSlider.value = Math.min(80, cBorderRadius);
     radiusVal.textContent = cBorderRadius + 'px';
@@ -605,17 +610,27 @@
   cBtnCopyAll.addEventListener('click', () => {
     if (!cTarget) return;
     const rect = cTarget.getBoundingClientRect();
-    const lines = [`width: ${Math.round(rect.width)}px;`, `height: ${Math.round(rect.height)}px;`];
-    if (cTransX || cTransY) lines.push(`transform: translate(${Math.round(cTransX)}px, ${Math.round(cTransY)}px);`);
-    if (cBorderRadius)       lines.push(`border-radius: ${cBorderRadius}px;`);
+    const lines = [
+      `/* tamanho visual final */`,
+      `width: ${Math.round(rect.width)}px;`,
+      `height: ${Math.round(rect.height)}px;`,
+    ];
+    if (cScaleX !== 1 || cScaleY !== 1)
+      lines.push(`transform: scale(${+cScaleX.toFixed(3)}, ${+cScaleY.toFixed(3)});`);
+    if (cTransX || cTransY)
+      lines.push(`transform: translate(${Math.round(cTransX)}px, ${Math.round(cTransY)}px);`);
+    if (cBorderRadius) lines.push(`border-radius: ${cBorderRadius}px;`);
     copyToClipboard(lines.join('\n'));
     cBtnCopyAll.textContent = '✓ copiado';
     setTimeout(() => cBtnCopyAll.textContent = '📋 CSS', 1400);
   });
   cBtnRevert.addEventListener('click', () => {
     if (!cTarget) return;
-    Object.assign(cTarget.style, cOrigStyles);
-    cTransX = 0; cTransY = 0; cBorderRadius = parseInt(cOrigStyles.borderRadius) || 0;
+    cTarget.style.transform       = cOrigStyles.transform;
+    cTarget.style.transformOrigin = cOrigStyles.transformOrigin || '';
+    cTarget.style.borderRadius    = cOrigStyles.borderRadius;
+    cTransX = 0; cTransY = 0; cScaleX = 1; cScaleY = 1;
+    cBorderRadius = parseInt(cOrigStyles.borderRadius) || 0;
     radiusSlider.value = cBorderRadius;
     radiusVal.textContent = cBorderRadius + 'px';
     cHistory = []; updateUndoBtn();
@@ -703,45 +718,39 @@
       const dx = t.clientX - startTouch.clientX;
       const dy = t.clientY - startTouch.clientY;
 
-      let newW = startRect.width, newH = startRect.height;
+      /* Dimensão visual no início do drag (inclui escala atual) */
+      const vW = startRect.width, vH = startRect.height;
+
+      let newW = vW, newH = vH;
       let newTX = startTransX, newTY = startTransY;
 
-      if (cfg.x === 1)       newW = Math.max(20, startRect.width  + dx);
-      else if (cfg.x === -1) { newW = Math.max(20, startRect.width  - dx); newTX = startTransX + dx; }
-      if (cfg.y === 1)       newH = Math.max(20, startRect.height + dy);
-      else if (cfg.y === -1) { newH = Math.max(20, startRect.height - dy); newTY = startTransY + dy; }
+      if (cfg.x ===  1) newW = Math.max(20, vW + dx);
+      if (cfg.x === -1) { newW = Math.max(20, vW - dx); newTX = startTransX + (vW - newW); }
+      if (cfg.y ===  1) newH = Math.max(20, vH + dy);
+      if (cfg.y === -1) { newH = Math.max(20, vH - dy); newTY = startTransY + (vH - newH); }
 
       /* ── Cadeado proporcional ── */
-      if (cProportional && startRect.width > 0 && startRect.height > 0) {
-        const ratio = startRect.width / startRect.height;
+      if (cProportional && vW > 0 && vH > 0) {
+        const ratio = vW / vH;
         if (cfg.x !== 0 && cfg.y !== 0) {
-          /* canto: escala pelo eixo de maior deslocamento */
-          if (Math.abs(dx) >= Math.abs(dy)) newH = newW / ratio;
-          else { newW = newH * ratio; if (cfg.x === -1) newTX = startTransX + (startRect.width - newW); }
+          if (Math.abs(dx) >= Math.abs(dy)) { newH = newW / ratio; if (cfg.y === -1) newTY = startTransY + (vH - newH); }
+          else { newW = newH * ratio; if (cfg.x === -1) newTX = startTransX + (vW - newW); }
         } else if (cfg.x !== 0) {
-          /* só horizontal → ajusta altura */
           newH = newW / ratio;
+          if (cfg.y === -1) newTY = startTransY + (vH - newH);
         } else if (cfg.y !== 0) {
-          /* só vertical → ajusta largura */
           newW = newH * ratio;
-          if (cfg.x === -1) newTX = startTransX + (startRect.width - newW);
+          if (cfg.x === -1) newTX = startTransX + (vW - newW);
         }
       }
 
-      /* Pina as duas dimensões explicitamente.
-         flex-basis = 'auto' é crítico: em flex-column o flex-basis afeta
-         a ALTURA (eixo principal), não a largura — se colocarmos newW aqui
-         num container coluna, a altura fica igual à largura → quadrado.
-         Com 'auto', o flex item usa width/height normalmente. */
-      cTarget.style.aspectRatio = 'auto';
-      cTarget.style.flexBasis   = 'auto';
-      cTarget.style.width       = newW + 'px';
-      cTarget.style.maxWidth    = newW + 'px';
-      cTarget.style.minWidth    = '0';
-      cTarget.style.height      = newH + 'px';
-      cTarget.style.minHeight   = '0';
+      /* Resize via scale: os filhos escalam junto com o pai.
+         cOrigW/cOrigH = tamanho natural do elemento (sem qualquer scale).
+         Calcula a escala necessária para que o visual fique newW × newH. */
+      cScaleX = newW / cOrigW;
+      cScaleY = newH / cOrigH;
       cTransX = newTX; cTransY = newTY;
-      cTarget.style.transform = `translate(${cTransX}px, ${cTransY}px)`;
+      applyTransform();
       updateCanvasUI();
       e.stopPropagation(); e.preventDefault();
     }, { passive:false });
@@ -764,7 +773,7 @@
       const t = e.touches[0];
       cTransX = startTX + (t.clientX - startTouch.clientX);
       cTransY = startTY + (t.clientY - startTouch.clientY);
-      cTarget.style.transform = `translate(${cTransX}px, ${cTransY}px)`;
+      applyTransform();
       updateCanvasUI();
       e.stopPropagation(); e.preventDefault();
     }, { passive:false });
@@ -797,13 +806,15 @@
     clearCanvasSelection();
     cTarget = el;
     cOrigStyles = {
-      width:el.style.width, height:el.style.height,
-      flexBasis:el.style.flexBasis, maxWidth:el.style.maxWidth,
-      minWidth:el.style.minWidth, minHeight:el.style.minHeight,
-      aspectRatio:el.style.aspectRatio,
-      transform:el.style.transform, borderRadius:el.style.borderRadius,
+      transform: el.style.transform,
+      transformOrigin: el.style.transformOrigin,
+      borderRadius: el.style.borderRadius,
     };
     cTransX = 0; cTransY = 0;
+    cScaleX = 1; cScaleY = 1;
+    /* tamanho natural do elemento ANTES de qualquer scale da ferramenta */
+    const natRect = el.getBoundingClientRect();
+    cOrigW = natRect.width; cOrigH = natRect.height;
     cHistory = []; updateUndoBtn();
     cPanelManualPos = false;
     const computed = getComputedStyle(el);
