@@ -71,7 +71,7 @@
   --r-full: 9999px;
 
   /* Layout */
-  --bottom-nav-h:  68px;
+  --bottom-nav-h:  60px;
   --safe-top:    env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
 
@@ -150,7 +150,7 @@ html, body {
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
   background: var(--bg-app);
-  padding-bottom: calc(var(--bottom-nav-h) + var(--safe-bottom) + 16px);
+  padding-bottom: calc(var(--bottom-nav-h) + var(--safe-bottom) + 4px);
   scroll-behavior: smooth;
 }
 
@@ -518,7 +518,8 @@ html, body {
 
 /* ─── Banners ────────────────────────────────────────────────── */
 .banners {
-  padding: 10px 0 0;
+  padding: 0;
+  background: #FFFFFF;
 }
 
 .banner-wrap {
@@ -532,7 +533,7 @@ html, body {
   scroll-snap-type: x mandatory;
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
-  padding: 4px 16px 6px;
+  padding: 4px 16px 10px;
 }
 
 .banner-track::-webkit-scrollbar { display: none; }
@@ -582,12 +583,12 @@ html, body {
 .banner-art {
   overflow: hidden;
   width: 100%;
-  aspect-ratio: 16 / 7;
-  background: var(--c-purple-800);
+  aspect-ratio: 16 / 9;
+  background: #FFFFFF;
   position: relative;
   border-radius: var(--r-lg);
-  border: 1px solid rgba(255,255,255,0.10);
-  box-shadow: var(--shadow-lg), inset 0 1px 0 rgba(255,255,255,0.14);
+  border: 1px solid rgba(0,0,0,0.07);
+  box-shadow: 0 2px 10px rgba(0,0,0,0.10);
 }
 
 .banner-art img {
@@ -1777,8 +1778,8 @@ html, body {
 }
 
 .skel-banner {
-  margin: 12px 16px;
-  height: 175px;
+  margin: 4px 16px 10px;
+  height: 195px;
   border-radius: var(--r-lg);
 }
 
