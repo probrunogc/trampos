@@ -1,14 +1,15 @@
-/* ─── DEV RULER v4 ────────────────────────────────────────────
-   Ferramenta temporária de alinhamento.
-   Para remover: apague este arquivo e o <script> no loja.html.
+/* ─── DEV RULER v5 ────────────────────────────────────────────
+   Ferramenta de design — temporária, remover antes do launch.
 
-   • Grid + guias arrastáveis (precisão 1 px)
-   • Auto-seleciona guia ao soltar o arraste
-   • ↩  Desfazer última guia
-   • 💾 / 📂  Salvar / carregar esquemas (localStorage)
-   • 🖼  Imagem de referência em tela cheia
-   • 📐  Modo resize: toca qualquer elemento → borda + handles
-         Arrasta para redimensionar → copia o valor em px
+   v5 — novidades:
+   • 8 handles de resize (cantos + bordas)
+   • Move livre via transform: translate
+   • Editor de border-radius com slider
+   • Régua de distâncias até bordas do viewport
+   • Captura de tela (html2canvas)
+   • Modo "wide view" (esconde UI pra ver só o grid)
+   • Animações com GSAP
+   • Painel lateral animado
    ─────────────────────────────────────────────────────────────── */
 
 (function () {
@@ -26,18 +27,62 @@
   const STORAGE_KEY = 'dev-ruler-schemes';
   const OPACITIES   = [0.4, 0.7, 1.0];
 
-  let toolActive    = false;   // régua ligada/desligada
+  const GSAP_URL = 'https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js';
+  const H2C_URL  = 'https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js';
+
+  /* config dos 8 handles + handle de movimento (centro) */
+  const HCONF = {
+    nw: { x:-1, y:-1, cursor:'nwse-resize', size:[24,24] },
+    n : { x: 0, y:-1, cursor:'ns-resize',   size:[44,18] },
+    ne: { x: 1, y:-1, cursor:'nesw-resize', size:[24,24] },
+    e : { x: 1, y: 0, cursor:'ew-resize',   size:[18,44] },
+    se: { x: 1, y: 1, cursor:'nwse-resize', size:[24,24] },
+    s : { x: 0, y: 1, cursor:'ns-resize',   size:[44,18] },
+    sw: { x:-1, y: 1, cursor:'nesw-resize', size:[24,24] },
+    w : { x:-1, y: 0, cursor:'ew-resize',   size:[18,44] },
+  };
+
+  let toolActive    = false;
   let addMode       = 'h';
   let currentColor  = COLORS[0];
   let guides        = [];
   let addHistory    = [];
-  let selected      = null;   // guia selecionada
-  let resizeMode    = false;  // modo resize ativo
-  let rTarget       = null;   // elemento selecionado para resize
-  let rOrigStyles   = {};     // estilos originais (para reverter)
-  let rStartTouch   = null;
-  let rStartRect    = null;
-  let rDragType     = '';     // 'w' | 'h' | 'wh'
+  let selected      = null;
+
+  let canvasMode    = false;
+  let distRulerOn   = false;
+  let wideViewOn    = false;
+  let cTarget       = null;
+  let cOrigStyles   = {};
+  let cTransX       = 0, cTransY = 0;
+  let cBorderRadius = 0;
+
+  /* ══════════════════════════════════════════════════════════════
+     CARREGADOR DE LIBS EXTERNAS (GSAP, html2canvas)
+  ══════════════════════════════════════════════════════════════ */
+  function loadScript(url) {
+    return new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = url; s.async = true;
+      s.onload = () => resolve(s); s.onerror = reject;
+      document.head.appendChild(s);
+    });
+  }
+  loadScript(GSAP_URL).catch(() => console.warn('[dev-ruler] GSAP não carregou'));
+  loadScript(H2C_URL ).catch(() => console.warn('[dev-ruler] html2canvas não carregou'));
+
+  /* helper anim */
+  function anim(target, props, dur, ease) {
+    if (window.gsap) {
+      window.gsap.to(target, { ...props, duration: dur ?? 0.22, ease: ease || 'power2.out' });
+    } else {
+      Object.assign(target.style, props);
+    }
+  }
+  function animSet(target, props) {
+    if (window.gsap) window.gsap.set(target, props);
+    else Object.assign(target.style, props);
+  }
 
   /* ══════════════════════════════════════════════════════════════
      STORAGE
@@ -49,12 +94,12 @@
   function putSchemes(o) { localStorage.setItem(STORAGE_KEY, JSON.stringify(o)); }
 
   /* ══════════════════════════════════════════════════════════════
-     CANVAS (GRID AZUL)
+     CANVAS (GRID)
   ══════════════════════════════════════════════════════════════ */
   const canvas = document.createElement('canvas');
   Object.assign(canvas.style, {
-    position: 'fixed', inset: '0', width: '100%', height: '100%',
-    pointerEvents: 'none', zIndex: '8990', display: 'none',
+    position:'fixed', inset:'0', width:'100%', height:'100%',
+    pointerEvents:'none', zIndex:'8990', display:'none',
   });
   function drawGrid() {
     const W = window.innerWidth, H = window.innerHeight;
@@ -84,10 +129,10 @@
   ══════════════════════════════════════════════════════════════ */
   const refImg = document.createElement('img');
   Object.assign(refImg.style, {
-    position: 'fixed', inset: '0', width: '100%', height: '100%',
-    objectFit: 'contain', zIndex: '8985',
-    display: 'none', opacity: '0.7', pointerEvents: 'none',
-    background: 'rgba(0,0,0,0.05)',
+    position:'fixed', inset:'0', width:'100%', height:'100%',
+    objectFit:'contain', zIndex:'8985',
+    display:'none', opacity:'0.7', pointerEvents:'none',
+    background:'rgba(0,0,0,0.05)',
   });
   const fileInput = document.createElement('input');
   fileInput.type = 'file'; fileInput.accept = 'image/*';
@@ -106,42 +151,41 @@
   }
 
   /* ══════════════════════════════════════════════════════════════
-     CAMADA DE GUIAS
+     GUIDE LAYER + GUIA SELECIONADA (painel)
   ══════════════════════════════════════════════════════════════ */
   const guideLayer = document.createElement('div');
   Object.assign(guideLayer.style, {
-    position: 'fixed', inset: '0', pointerEvents: 'none',
-    zIndex: '9000', display: 'none',
+    position:'fixed', inset:'0', pointerEvents:'none',
+    zIndex:'9000', display:'none',
   });
 
-  /* ── Painel de seleção de guia ────────────────────────────── */
   const selPanel = document.createElement('div');
   Object.assign(selPanel.style, {
-    position: 'fixed', zIndex: '9003', display: 'none',
-    flexDirection: 'column', gap: '7px', alignItems: 'center',
-    background: 'rgba(8,4,28,0.96)', borderRadius: '13px', padding: '9px 11px',
-    boxShadow: '0 4px 20px rgba(0,0,0,0.55)',
-    border: '1px solid rgba(255,255,255,0.13)',
+    position:'fixed', zIndex:'9003', display:'none',
+    flexDirection:'column', gap:'7px', alignItems:'center',
+    background:'rgba(8,4,28,0.96)', borderRadius:'13px', padding:'9px 11px',
+    boxShadow:'0 4px 20px rgba(0,0,0,0.55)',
+    border:'1px solid rgba(255,255,255,0.13)',
   });
 
   const nudgeRow = document.createElement('div');
-  Object.assign(nudgeRow.style, { display: 'flex', gap: '4px', alignItems: 'center' });
+  Object.assign(nudgeRow.style, { display:'flex', gap:'4px', alignItems:'center' });
   const posLabel = document.createElement('span');
   Object.assign(posLabel.style, {
-    color: '#fff', fontFamily: 'monospace', fontSize: '12px', fontWeight: '900',
-    minWidth: '48px', textAlign: 'center',
+    color:'#fff', fontFamily:'monospace', fontSize:'12px', fontWeight:'900',
+    minWidth:'48px', textAlign:'center',
   });
 
   function mkSmBtn(txt, bg) {
     const b = document.createElement('button');
     b.textContent = txt;
     Object.assign(b.style, {
-      height: '30px', padding: '0 7px', borderRadius: '7px',
+      height:'30px', padding:'0 7px', borderRadius:'7px',
       background: bg || 'rgba(255,255,255,0.12)',
-      border: '1px solid rgba(255,255,255,0.16)',
-      color: '#fff', fontSize: '11px', fontWeight: '800',
-      fontFamily: 'monospace', cursor: 'pointer',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      border:'1px solid rgba(255,255,255,0.16)',
+      color:'#fff', fontSize:'11px', fontWeight:'800',
+      fontFamily:'monospace', cursor:'pointer',
+      display:'flex', alignItems:'center', justifyContent:'center',
     });
     return b;
   }
@@ -167,13 +211,13 @@
   nudgeRow.append(bM10, bM1, posLabel, bP1, bP10, bDel, bClose);
 
   const selColorRow = document.createElement('div');
-  Object.assign(selColorRow.style, { display: 'flex', gap: '5px' });
+  Object.assign(selColorRow.style, { display:'flex', gap:'5px' });
   const selSwatches = COLORS.map(c => {
     const sw = document.createElement('button');
     Object.assign(sw.style, {
-      width: '20px', height: '20px', borderRadius: '50%',
-      background: c.solid, border: '2px solid rgba(255,255,255,0.2)',
-      cursor: 'pointer', padding: '0',
+      width:'20px', height:'20px', borderRadius:'50%',
+      background:c.solid, border:'2px solid rgba(255,255,255,0.2)',
+      cursor:'pointer', padding:'0',
     });
     sw.addEventListener('click', () => {
       if (!selected) return;
@@ -219,7 +263,6 @@
   }
   function deselect() { selected = null; selPanel.style.display = 'none'; }
 
-  /* ── Funções de guia ──────────────────────────────────────── */
   function syncGuideDOM(g) {
     if (g.type === 'h') { g.line.style.top  = g.pos + 'px'; g.hit.style.top  = (g.pos-14)+'px'; }
     else                { g.line.style.left = g.pos + 'px'; g.hit.style.left = (g.pos-14)+'px'; }
@@ -233,10 +276,10 @@
     const badge = document.createElement('span');
     badge.textContent = pos + 'px';
     Object.assign(badge.style, {
-      position: 'absolute', fontSize: '10px', fontFamily: 'monospace', fontWeight: '800',
-      color: colorDef.solid, background: 'rgba(255,255,255,0.92)',
-      padding: '1px 5px', borderRadius: '3px',
-      whiteSpace: 'nowrap', pointerEvents: 'none', lineHeight: '1.5',
+      position:'absolute', fontSize:'10px', fontFamily:'monospace', fontWeight:'800',
+      color:colorDef.solid, background:'rgba(255,255,255,0.92)',
+      padding:'1px 5px', borderRadius:'3px',
+      whiteSpace:'nowrap', pointerEvents:'none', lineHeight:'1.5',
     });
     if (type === 'h') {
       Object.assign(line.style, { position:'absolute', left:'0', right:'0', top:pos+'px', height:'1px', background:colorDef.line, pointerEvents:'none' });
@@ -253,16 +296,16 @@
     guides.push(g);
     if (!skipHistory) addHistory.push(g);
 
-    let t0, p0, hasMoved;
-    hit.addEventListener('touchstart', e => { t0 = e.touches[0]; p0 = g.pos; hasMoved = false; e.stopPropagation(); }, { passive: true });
+    let t0, p0;
+    hit.addEventListener('touchstart', e => { t0 = e.touches[0]; p0 = g.pos; e.stopPropagation(); }, { passive:true });
     hit.addEventListener('touchmove', e => {
-      const t = e.touches[0]; hasMoved = true;
+      const t = e.touches[0];
       if (type === 'h') g.pos = Math.max(0, Math.round(p0 + t.clientY - t0.clientY));
       else              g.pos = Math.max(0, Math.round(p0 + t.clientX - t0.clientX));
       syncGuideDOM(g);
       if (selected === g) { posLabel.textContent = g.pos + 'px'; positionSelPanel(); }
       e.stopPropagation(); e.preventDefault();
-    }, { passive: false });
+    }, { passive:false });
     hit.addEventListener('touchend', e => { selectGuide(g); e.stopPropagation(); });
     return g;
   }
@@ -296,106 +339,197 @@
     deselect();
     addGuide(addMode, addMode === 'h' ? t.clientY : t.clientX);
     e.preventDefault();
-  }, { passive: false });
+  }, { passive:false });
 
   /* ══════════════════════════════════════════════════════════════
-     MODO RESIZE — selecionar e redimensionar elementos
+     MODO CANVAS — seleção, 8 handles, move, border-radius
   ══════════════════════════════════════════════════════════════ */
-
-  /* Camada transparente que captura toques para selecionar elemento */
-  const rSelLayer = document.createElement('div');
-  Object.assign(rSelLayer.style, {
-    position: 'fixed', inset: '0', zIndex: '8996', display: 'none',
-    background: 'transparent',
-    touchAction: 'none',
-    userSelect: 'none', webkitUserSelect: 'none',
+  const cSelLayer = document.createElement('div');
+  Object.assign(cSelLayer.style, {
+    position:'fixed', inset:'0', zIndex:'8996', display:'none',
+    background:'transparent', touchAction:'none',
+    userSelect:'none', webkitUserSelect:'none',
   });
-  // Impede seleção de texto e menu de contexto no mobile
-  rSelLayer.addEventListener('touchstart', e => e.preventDefault(), { passive: false });
-  rSelLayer.addEventListener('contextmenu', e => e.preventDefault());
+  cSelLayer.addEventListener('touchstart', e => e.preventDefault(), { passive:false });
+  cSelLayer.addEventListener('contextmenu', e => e.preventDefault());
 
-  /* Borda verde ao redor do elemento selecionado */
-  const rBorderEl = document.createElement('div');
-  Object.assign(rBorderEl.style, {
-    position: 'fixed', display: 'none', pointerEvents: 'none', zIndex: '9004',
-    border: '2px solid rgba(30,210,80,0.9)', borderRadius: '4px',
-    background: 'rgba(30,210,80,0.05)', boxSizing: 'border-box',
+  /* Borda do elemento selecionado */
+  const cBorderEl = document.createElement('div');
+  Object.assign(cBorderEl.style, {
+    position:'fixed', display:'none', pointerEvents:'none', zIndex:'9004',
+    border:'2px solid rgba(30,210,80,0.95)', borderRadius:'4px',
+    background:'rgba(30,210,80,0.04)', boxSizing:'border-box',
+    boxShadow:'0 0 0 1px rgba(255,255,255,0.25), 0 4px 18px rgba(0,0,0,0.18)',
   });
 
   /* Badge de dimensões */
-  const rDimBadge = document.createElement('div');
-  Object.assign(rDimBadge.style, {
-    position: 'fixed', display: 'none', pointerEvents: 'none', zIndex: '9004',
-    background: 'rgba(20,180,60,0.95)', color: '#fff',
-    fontFamily: 'monospace', fontSize: '12px', fontWeight: '900',
-    padding: '3px 9px', borderRadius: '5px', whiteSpace: 'nowrap',
+  const cDimBadge = document.createElement('div');
+  Object.assign(cDimBadge.style, {
+    position:'fixed', display:'none', pointerEvents:'none', zIndex:'9004',
+    background:'rgba(20,180,60,0.97)', color:'#fff',
+    fontFamily:'monospace', fontSize:'12px', fontWeight:'900',
+    padding:'3px 9px', borderRadius:'5px', whiteSpace:'nowrap',
   });
 
-  /* Handles */
-  function mkHandle(cursor, label) {
+  /* 8 handles + move */
+  const handles = {};
+  Object.keys(HCONF).forEach(id => {
+    const cfg = HCONF[id];
     const h = document.createElement('div');
     Object.assign(h.style, {
-      position: 'fixed', display: 'none', zIndex: '9005',
-      background: 'rgba(20,200,70,0.92)',
-      border: '2px solid rgba(255,255,255,0.7)',
-      borderRadius: '5px', cursor,
-      alignItems: 'center', justifyContent: 'center',
-      color: '#fff', fontSize: '11px', fontWeight: '900',
-      fontFamily: 'monospace', userSelect: 'none',
+      position:'fixed', display:'none', zIndex:'9005',
+      background:'rgba(255,255,255,0.97)',
+      border:'2px solid rgba(20,180,60,0.95)',
+      borderRadius:'5px', cursor:cfg.cursor,
+      width:cfg.size[0]+'px', height:cfg.size[1]+'px',
+      boxSizing:'border-box', touchAction:'none',
+      boxShadow:'0 2px 6px rgba(0,0,0,0.28)',
     });
-    h.textContent = label;
-    return h;
-  }
-  const rHandleR = mkHandle('ew-resize', '↔'); Object.assign(rHandleR.style, { width:'22px', height:'44px' });
-  const rHandleB = mkHandle('ns-resize', '↕'); Object.assign(rHandleB.style, { width:'44px', height:'22px' });
-  const rHandleC = mkHandle('nwse-resize','⤡'); Object.assign(rHandleC.style, { width:'28px', height:'28px' });
-
-  /* Painel de resultado (classe + copiar valores) */
-  const rInfoPanel = document.createElement('div');
-  Object.assign(rInfoPanel.style, {
-    position: 'fixed', zIndex: '9006', display: 'none',
-    flexDirection: 'column', gap: '6px',
-    background: 'rgba(8,4,28,0.96)',
-    borderRadius: '13px', padding: '10px 12px',
-    boxShadow: '0 4px 20px rgba(0,0,0,0.55)',
-    border: '1px solid rgba(255,255,255,0.13)',
-    bottom: '150px', left: '10px', right: '60px',
+    handles[id] = h;
   });
 
-  const rClassName  = document.createElement('div');
-  Object.assign(rClassName.style, { color:'rgba(30,210,80,0.9)', fontFamily:'monospace', fontSize:'11px', fontWeight:'900', letterSpacing:'.4px' });
+  const moveHandle = document.createElement('div');
+  Object.assign(moveHandle.style, {
+    position:'fixed', display:'none', zIndex:'9005',
+    width:'40px', height:'40px',
+    background:'rgba(20,180,60,0.97)',
+    border:'2.5px solid rgba(255,255,255,0.9)',
+    borderRadius:'50%', cursor:'move',
+    boxSizing:'border-box', touchAction:'none',
+    alignItems:'center', justifyContent:'center',
+    color:'#fff', fontSize:'18px', fontWeight:'900',
+    boxShadow:'0 3px 12px rgba(0,0,0,0.38)',
+  });
+  moveHandle.textContent = '✥';
 
-  const rValRow = document.createElement('div');
-  Object.assign(rValRow.style, { display:'flex', gap:'6px', alignItems:'center' });
+  /* Linhas de distância (ruler de espaçamento) */
+  function mkDistLine() {
+    const wrap = document.createElement('div');
+    Object.assign(wrap.style, {
+      position:'fixed', display:'none', pointerEvents:'none', zIndex:'9003',
+    });
+    const line = document.createElement('div');
+    Object.assign(line.style, {
+      position:'absolute', background:'rgba(255,140,0,0.88)',
+      boxShadow:'0 0 4px rgba(255,140,0,0.5)',
+    });
+    const label = document.createElement('span');
+    Object.assign(label.style, {
+      position:'absolute', background:'rgba(255,140,0,0.97)', color:'#fff',
+      fontFamily:'monospace', fontSize:'10px', fontWeight:'900',
+      padding:'2px 6px', borderRadius:'4px', whiteSpace:'nowrap',
+      transform:'translate(-50%, -50%)',
+    });
+    wrap.append(line, label);
+    return { wrap, line, label };
+  }
+  const distT = mkDistLine(), distB = mkDistLine();
+  const distL = mkDistLine(), distR = mkDistLine();
 
-  const rWLabel = document.createElement('span');
-  Object.assign(rWLabel.style, { color:'rgba(255,255,255,0.55)', fontFamily:'monospace', fontSize:'11px', minWidth:'14px' });
-  rWLabel.textContent = 'W';
-  const rWVal = document.createElement('span');
-  Object.assign(rWVal.style, { color:'#fff', fontFamily:'monospace', fontSize:'13px', fontWeight:'900', minWidth:'56px' });
-  const rWCopy = document.createElement('button');
-  rWCopy.textContent = '📋';
-  Object.assign(rWCopy.style, { background:'rgba(255,255,255,0.1)', border:'1px solid rgba(255,255,255,0.2)', borderRadius:'5px', padding:'3px 7px', cursor:'pointer', fontSize:'12px' });
+  /* ── Painel lateral de info do elemento ──────────────────── */
+  const cPanel = document.createElement('div');
+  Object.assign(cPanel.style, {
+    position:'fixed', zIndex:'9006', display:'none',
+    flexDirection:'column', gap:'8px',
+    background:'rgba(8,4,28,0.97)',
+    borderRadius:'14px', padding:'11px 13px',
+    boxShadow:'0 6px 24px rgba(0,0,0,0.6)',
+    border:'1px solid rgba(255,255,255,0.14)',
+    left:'10px', right:'10px',
+    bottom:'140px',
+    maxWidth:'560px', margin:'0 auto',
+  });
 
-  const rHLabel = document.createElement('span');
-  Object.assign(rHLabel.style, { color:'rgba(255,255,255,0.55)', fontFamily:'monospace', fontSize:'11px', minWidth:'14px', marginLeft:'6px' });
-  rHLabel.textContent = 'H';
-  const rHVal = document.createElement('span');
-  Object.assign(rHVal.style, { color:'#fff', fontFamily:'monospace', fontSize:'13px', fontWeight:'900', minWidth:'56px' });
-  const rHCopy = document.createElement('button');
-  rHCopy.textContent = '📋';
-  Object.assign(rHCopy.style, { background:'rgba(255,255,255,0.1)', border:'1px solid rgba(255,255,255,0.2)', borderRadius:'5px', padding:'3px 7px', cursor:'pointer', fontSize:'12px' });
+  const cClassName = document.createElement('div');
+  Object.assign(cClassName.style, {
+    color:'rgba(30,210,80,0.95)', fontFamily:'monospace',
+    fontSize:'11px', fontWeight:'900', letterSpacing:'.4px',
+    whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis',
+  });
 
-  const rBtnRow = document.createElement('div');
-  Object.assign(rBtnRow.style, { display:'flex', gap:'6px' });
+  function mkValueChip(label) {
+    const wrap = document.createElement('div');
+    Object.assign(wrap.style, { display:'flex', gap:'5px', alignItems:'center' });
+    const lbl = document.createElement('span');
+    lbl.textContent = label;
+    Object.assign(lbl.style, {
+      color:'rgba(255,255,255,0.5)', fontFamily:'monospace',
+      fontSize:'10px', minWidth:'12px',
+    });
+    const val = document.createElement('span');
+    Object.assign(val.style, {
+      color:'#fff', fontFamily:'monospace',
+      fontSize:'12px', fontWeight:'900', minWidth:'52px',
+    });
+    const copy = document.createElement('button');
+    copy.textContent = '📋';
+    Object.assign(copy.style, {
+      background:'rgba(255,255,255,0.1)',
+      border:'1px solid rgba(255,255,255,0.2)', borderRadius:'5px',
+      padding:'3px 6px', cursor:'pointer', fontSize:'11px',
+    });
+    copy.addEventListener('click', () => {
+      copyToClipboard(val.textContent);
+      copy.textContent = '✓';
+      setTimeout(() => copy.textContent = '📋', 1100);
+    });
+    wrap.append(lbl, val, copy);
+    return { wrap, val, copy };
+  }
 
-  const rBtnRevert = document.createElement('button');
-  rBtnRevert.textContent = '↩ Reverter';
-  Object.assign(rBtnRevert.style, { flex:'1', padding:'6px 10px', borderRadius:'7px', background:'rgba(200,30,30,0.55)', border:'none', color:'#fff', fontFamily:'monospace', fontSize:'11px', fontWeight:'700', cursor:'pointer' });
+  const valRow1 = document.createElement('div');
+  Object.assign(valRow1.style, { display:'flex', gap:'10px', flexWrap:'wrap' });
+  const chipW = mkValueChip('W'); const chipH = mkValueChip('H');
+  const chipX = mkValueChip('X'); const chipY = mkValueChip('Y');
+  valRow1.append(chipW.wrap, chipH.wrap, chipX.wrap, chipY.wrap);
 
-  const rBtnDesel = document.createElement('button');
-  rBtnDesel.textContent = '✓ OK';
-  Object.assign(rBtnDesel.style, { flex:'1', padding:'6px 10px', borderRadius:'7px', background:'rgba(30,160,30,0.65)', border:'none', color:'#fff', fontFamily:'monospace', fontSize:'11px', fontWeight:'700', cursor:'pointer' });
+  /* Slider de border-radius */
+  const radiusRow = document.createElement('div');
+  Object.assign(radiusRow.style, { display:'flex', gap:'7px', alignItems:'center' });
+  const radiusLbl = document.createElement('span');
+  radiusLbl.textContent = '◖';
+  Object.assign(radiusLbl.style, { color:'rgba(255,255,255,0.5)', fontSize:'13px' });
+  const radiusSlider = document.createElement('input');
+  radiusSlider.type = 'range'; radiusSlider.min = '0'; radiusSlider.max = '80'; radiusSlider.value = '0';
+  Object.assign(radiusSlider.style, { flex:'1', accentColor:'rgb(30,210,80)' });
+  const radiusVal = document.createElement('span');
+  Object.assign(radiusVal.style, { color:'#fff', fontFamily:'monospace', fontSize:'12px', fontWeight:'900', minWidth:'48px' });
+  radiusVal.textContent = '0px';
+  const radiusCopy = document.createElement('button');
+  radiusCopy.textContent = '📋';
+  Object.assign(radiusCopy.style, { background:'rgba(255,255,255,0.1)', border:'1px solid rgba(255,255,255,0.2)', borderRadius:'5px', padding:'3px 6px', cursor:'pointer', fontSize:'11px' });
+  radiusSlider.addEventListener('input', () => {
+    if (!cTarget) return;
+    cBorderRadius = +radiusSlider.value;
+    cTarget.style.borderRadius = cBorderRadius + 'px';
+    radiusVal.textContent = cBorderRadius + 'px';
+  });
+  radiusCopy.addEventListener('click', () => {
+    copyToClipboard(radiusVal.textContent);
+    radiusCopy.textContent = '✓';
+    setTimeout(() => radiusCopy.textContent = '📋', 1100);
+  });
+  radiusRow.append(radiusLbl, radiusSlider, radiusVal, radiusCopy);
+
+  /* Botões do painel: copiar CSS / reverter / OK */
+  const cBtnRow = document.createElement('div');
+  Object.assign(cBtnRow.style, { display:'flex', gap:'6px' });
+  function mkCBtn(txt, bg) {
+    const b = document.createElement('button');
+    b.textContent = txt;
+    Object.assign(b.style, {
+      flex:'1', padding:'7px 10px', borderRadius:'8px',
+      background:bg, border:'none', color:'#fff',
+      fontFamily:'monospace', fontSize:'11px', fontWeight:'700', cursor:'pointer',
+    });
+    return b;
+  }
+  const cBtnCopyAll = mkCBtn('📋 CSS', 'rgba(30,100,255,0.85)');
+  const cBtnRevert  = mkCBtn('↩ Reverter', 'rgba(200,30,30,0.65)');
+  const cBtnOk      = mkCBtn('✓ OK', 'rgba(30,160,30,0.75)');
+  cBtnRow.append(cBtnCopyAll, cBtnRevert, cBtnOk);
+
+  cPanel.append(cClassName, valRow1, radiusRow, cBtnRow);
 
   function copyToClipboard(txt) {
     if (navigator.clipboard) {
@@ -408,173 +542,355 @@
     inp.select(); document.execCommand('copy'); inp.remove();
   }
 
-  function updateRInfoPanel() {
-    if (!rTarget) return;
-    const rect = rTarget.getBoundingClientRect();
-    const w = Math.round(rect.width), h = Math.round(rect.height);
-    rWVal.textContent = w + 'px';
-    rHVal.textContent = h + 'px';
-  }
-
-  rWCopy.addEventListener('click', () => { copyToClipboard(rWVal.textContent); rWCopy.textContent = '✓'; setTimeout(() => rWCopy.textContent = '📋', 1200); });
-  rHCopy.addEventListener('click', () => { copyToClipboard(rHVal.textContent); rHCopy.textContent = '✓'; setTimeout(() => rHCopy.textContent = '📋', 1200); });
-  rBtnRevert.addEventListener('click', () => {
-    if (!rTarget) return;
-    Object.assign(rTarget.style, rOrigStyles);
-    updateResizeUI();
-    updateRInfoPanel();
+  cBtnCopyAll.addEventListener('click', () => {
+    if (!cTarget) return;
+    const rect = cTarget.getBoundingClientRect();
+    const lines = [
+      `width: ${Math.round(rect.width)}px;`,
+      `height: ${Math.round(rect.height)}px;`,
+    ];
+    if (cTransX || cTransY) lines.push(`transform: translate(${Math.round(cTransX)}px, ${Math.round(cTransY)}px);`);
+    if (cBorderRadius)       lines.push(`border-radius: ${cBorderRadius}px;`);
+    copyToClipboard(lines.join('\n'));
+    cBtnCopyAll.textContent = '✓ copiado';
+    setTimeout(() => cBtnCopyAll.textContent = '📋 CSS', 1400);
   });
-  rBtnDesel.addEventListener('click', clearResizeSelection);
+  cBtnRevert.addEventListener('click', () => {
+    if (!cTarget) return;
+    Object.assign(cTarget.style, cOrigStyles);
+    cTransX = 0; cTransY = 0; cBorderRadius = parseInt(cOrigStyles.borderRadius) || 0;
+    radiusSlider.value = cBorderRadius;
+    radiusVal.textContent = cBorderRadius + 'px';
+    updateCanvasUI();
+  });
+  cBtnOk.addEventListener('click', clearCanvasSelection);
 
-  rValRow.append(rWLabel, rWVal, rWCopy, rHLabel, rHVal, rHCopy);
-  rBtnRow.append(rBtnRevert, rBtnDesel);
-  rInfoPanel.append(rClassName, rValRow, rBtnRow);
+  /* Posicionar tudo em torno do elemento */
+  function updateCanvasUI() {
+    if (!cTarget) return;
+    const rect = cTarget.getBoundingClientRect();
 
-  /* Posicionar borda + handles em torno do elemento */
-  function updateResizeUI() {
-    if (!rTarget) return;
-    const rect = rTarget.getBoundingClientRect();
-    const W = window.innerWidth, H = window.innerHeight;
-
-    Object.assign(rBorderEl.style, {
-      display: 'block',
+    Object.assign(cBorderEl.style, {
+      display:'block',
       left: rect.left + 'px', top: rect.top + 'px',
       width: rect.width + 'px', height: rect.height + 'px',
     });
 
     const badgeY = rect.top > 28 ? rect.top - 24 : rect.bottom + 6;
-    Object.assign(rDimBadge.style, {
-      display: 'block',
+    Object.assign(cDimBadge.style, {
+      display:'block',
       left: rect.left + 'px', top: badgeY + 'px',
     });
-    rDimBadge.textContent = Math.round(rect.width) + ' × ' + Math.round(rect.height) + ' px';
+    cDimBadge.textContent =
+      Math.round(rect.width) + ' × ' + Math.round(rect.height) + ' px';
 
-    // Handle direito (largura)
-    Object.assign(rHandleR.style, {
-      display: 'flex',
-      left: (rect.right - 11) + 'px',
-      top:  (rect.top + (rect.height - 44) / 2) + 'px',
+    Object.keys(HCONF).forEach(id => {
+      const cfg = HCONF[id], [w, h] = cfg.size;
+      let x, y;
+      if (cfg.x === -1)      x = rect.left  - w/2;
+      else if (cfg.x === 1)  x = rect.right - w/2;
+      else                   x = rect.left + (rect.width - w) / 2;
+      if (cfg.y === -1)      y = rect.top    - h/2;
+      else if (cfg.y === 1)  y = rect.bottom - h/2;
+      else                   y = rect.top + (rect.height - h) / 2;
+      Object.assign(handles[id].style, {
+        display:'flex', left: x + 'px', top: y + 'px',
+      });
     });
-    // Handle inferior (altura)
-    Object.assign(rHandleB.style, {
-      display: 'flex',
-      left: (rect.left + (rect.width - 44) / 2) + 'px',
-      top:  (rect.bottom - 11) + 'px',
+
+    Object.assign(moveHandle.style, {
+      display:'flex',
+      left: (rect.left + (rect.width - 40) / 2) + 'px',
+      top:  (rect.top  + (rect.height - 40) / 2) + 'px',
     });
-    // Handle canto inferior-direito
-    Object.assign(rHandleC.style, {
-      display: 'flex',
-      left: (rect.right - 14) + 'px',
-      top:  (rect.bottom - 14) + 'px',
-    });
+
+    /* Painel: atualizar valores */
+    chipW.val.textContent = Math.round(rect.width)  + 'px';
+    chipH.val.textContent = Math.round(rect.height) + 'px';
+    chipX.val.textContent = Math.round(cTransX)     + 'px';
+    chipY.val.textContent = Math.round(cTransY)     + 'px';
+
+    updateDistRuler();
   }
 
-  /* Lógica de arrastar os handles */
-  function setupHandleDrag(handle, type) {
-    handle.addEventListener('touchstart', e => {
-      rDragType = type;
-      rStartTouch = e.touches[0];
-      rStartRect  = rTarget.getBoundingClientRect();
+  /* Régua de distância — linhas até as bordas do viewport */
+  function updateDistRuler() {
+    const arr = [distT, distB, distL, distR];
+    if (!distRulerOn || !cTarget) {
+      arr.forEach(d => d.wrap.style.display = 'none');
+      return;
+    }
+    const r = cTarget.getBoundingClientRect();
+    const W = window.innerWidth, H = window.innerHeight;
+    const cx = r.left + r.width/2, cy = r.top + r.height/2;
+
+    /* topo */
+    Object.assign(distT.wrap.style, {
+      display:'block', left: cx + 'px', top:'0',
+      width:'1px', height: r.top + 'px',
+    });
+    Object.assign(distT.line.style, { left:'0', top:'0', width:'1px', height:'100%' });
+    Object.assign(distT.label.style, { left:'8px', top: (r.top/2) + 'px', transform:'translate(0, -50%)' });
+    distT.label.textContent = Math.round(r.top) + 'px';
+
+    /* base */
+    Object.assign(distB.wrap.style, {
+      display:'block', left: cx + 'px', top: r.bottom + 'px',
+      width:'1px', height: (H - r.bottom) + 'px',
+    });
+    Object.assign(distB.line.style, { left:'0', top:'0', width:'1px', height:'100%' });
+    Object.assign(distB.label.style, { left:'8px', top: ((H - r.bottom)/2) + 'px', transform:'translate(0, -50%)' });
+    distB.label.textContent = Math.round(H - r.bottom) + 'px';
+
+    /* esquerda */
+    Object.assign(distL.wrap.style, {
+      display:'block', left:'0', top: cy + 'px',
+      width: r.left + 'px', height:'1px',
+    });
+    Object.assign(distL.line.style, { left:'0', top:'0', height:'1px', width:'100%' });
+    Object.assign(distL.label.style, { top:'-8px', left: (r.left/2) + 'px', transform:'translate(-50%, -100%)' });
+    distL.label.textContent = Math.round(r.left) + 'px';
+
+    /* direita */
+    Object.assign(distR.wrap.style, {
+      display:'block', left: r.right + 'px', top: cy + 'px',
+      width: (W - r.right) + 'px', height:'1px',
+    });
+    Object.assign(distR.line.style, { left:'0', top:'0', height:'1px', width:'100%' });
+    Object.assign(distR.label.style, { top:'-8px', left: ((W - r.right)/2) + 'px', transform:'translate(-50%, -100%)' });
+    distR.label.textContent = Math.round(W - r.right) + 'px';
+  }
+
+  /* Drag — 8 handles */
+  function setupHandleDrag(handleEl, id) {
+    const cfg = HCONF[id];
+    let startTouch = null, startRect = null;
+    let startTransX = 0, startTransY = 0;
+
+    handleEl.addEventListener('touchstart', e => {
+      if (!cTarget) return;
+      startTouch = e.touches[0];
+      startRect  = cTarget.getBoundingClientRect();
+      startTransX = cTransX; startTransY = cTransY;
       e.stopPropagation();
-    }, { passive: true });
+    }, { passive:true });
 
-    handle.addEventListener('touchmove', e => {
-      if (!rTarget || !rStartRect) return;
+    handleEl.addEventListener('touchmove', e => {
+      if (!cTarget || !startTouch || !startRect) return;
       const t = e.touches[0];
-      const dX = t.clientX - rStartTouch.clientX;
-      const dY = t.clientY - rStartTouch.clientY;
-      const newW = Math.max(20, Math.round(rStartRect.width  + dX));
-      const newH = Math.max(20, Math.round(rStartRect.height + dY));
+      const dx = t.clientX - startTouch.clientX;
+      const dy = t.clientY - startTouch.clientY;
 
-      if (type === 'w' || type === 'wh') {
-        rTarget.style.width     = newW + 'px';
-        rTarget.style.flexBasis = newW + 'px';
-        rTarget.style.maxWidth  = newW + 'px';
-        rTarget.style.minWidth  = '';
+      let newW = startRect.width, newH = startRect.height;
+      let newTX = startTransX, newTY = startTransY;
+
+      if (cfg.x === 1)        newW = Math.max(20, startRect.width + dx);
+      else if (cfg.x === -1)  { newW = Math.max(20, startRect.width - dx); newTX = startTransX + dx; }
+
+      if (cfg.y === 1)        newH = Math.max(20, startRect.height + dy);
+      else if (cfg.y === -1)  { newH = Math.max(20, startRect.height - dy); newTY = startTransY + dy; }
+
+      if (cfg.x !== 0) {
+        cTarget.style.width     = newW + 'px';
+        cTarget.style.flexBasis = newW + 'px';
+        cTarget.style.maxWidth  = newW + 'px';
+        cTarget.style.minWidth  = '';
       }
-      if (type === 'h' || type === 'wh') {
-        rTarget.style.height    = newH + 'px';
-        rTarget.style.minHeight = newH + 'px';
-        rTarget.style.aspectRatio = 'unset';
+      if (cfg.y !== 0) {
+        cTarget.style.height      = newH + 'px';
+        cTarget.style.minHeight   = newH + 'px';
+        cTarget.style.aspectRatio = 'unset';
       }
-      updateResizeUI();
-      updateRInfoPanel();
+      cTransX = newTX; cTransY = newTY;
+      cTarget.style.transform = `translate(${cTransX}px, ${cTransY}px)`;
+
+      updateCanvasUI();
       e.stopPropagation(); e.preventDefault();
-    }, { passive: false });
+    }, { passive:false });
 
-    handle.addEventListener('touchend', e => { e.stopPropagation(); });
+    handleEl.addEventListener('touchend', e => { e.stopPropagation(); });
   }
-  setupHandleDrag(rHandleR, 'w');
-  setupHandleDrag(rHandleB, 'h');
-  setupHandleDrag(rHandleC, 'wh');
+  Object.keys(handles).forEach(id => setupHandleDrag(handles[id], id));
 
-  /* Selecionar elemento ao tocar */
-  rSelLayer.addEventListener('touchend', e => {
+  /* Drag — move handle (centro) */
+  (function setupMoveDrag() {
+    let startTouch = null, startTX = 0, startTY = 0;
+    moveHandle.addEventListener('touchstart', e => {
+      if (!cTarget) return;
+      startTouch = e.touches[0];
+      startTX = cTransX; startTY = cTransY;
+      e.stopPropagation();
+    }, { passive:true });
+    moveHandle.addEventListener('touchmove', e => {
+      if (!cTarget || !startTouch) return;
+      const t = e.touches[0];
+      cTransX = startTX + (t.clientX - startTouch.clientX);
+      cTransY = startTY + (t.clientY - startTouch.clientY);
+      cTarget.style.transform = `translate(${cTransX}px, ${cTransY}px)`;
+      updateCanvasUI();
+      e.stopPropagation(); e.preventDefault();
+    }, { passive:false });
+    moveHandle.addEventListener('touchend', e => { e.stopPropagation(); });
+  })();
+
+  /* Seleção do elemento ao tocar */
+  cSelLayer.addEventListener('touchend', e => {
     const t = e.changedTouches[0];
-    // pointer-events:none é mais confiável que visibility:hidden para elementFromPoint
-    rSelLayer.style.pointerEvents = 'none';
+    cSelLayer.style.pointerEvents = 'none';
     const el = document.elementFromPoint(t.clientX, t.clientY);
-    rSelLayer.style.pointerEvents = 'auto';
+    cSelLayer.style.pointerEvents = 'auto';
 
     if (!el || el === document.body || el === document.documentElement) return;
-    // Ignorar elementos do próprio ruler
-    if (el.closest('#dev-ruler-btn') ||
-        el.closest('[data-ruler]')) return;
+    if (el.closest('#dev-ruler-btn') || el.closest('[data-ruler]')) return;
 
-    clearResizeSelection();
-    rTarget = el;
-    rOrigStyles = {
+    clearCanvasSelection();
+    cTarget = el;
+    cOrigStyles = {
       width: el.style.width, height: el.style.height,
       flexBasis: el.style.flexBasis, maxWidth: el.style.maxWidth,
       minWidth: el.style.minWidth, minHeight: el.style.minHeight,
       aspectRatio: el.style.aspectRatio,
+      transform: el.style.transform,
+      borderRadius: el.style.borderRadius,
     };
+    cTransX = 0; cTransY = 0;
+    const computed = getComputedStyle(el);
+    cBorderRadius = parseInt(computed.borderTopLeftRadius) || 0;
+    radiusSlider.value = Math.min(80, cBorderRadius);
+    radiusVal.textContent = cBorderRadius + 'px';
 
-    // Nome do elemento para o painel
     const classes = Array.from(el.classList).slice(0, 3).join(' .');
-    rClassName.textContent = (classes ? '.' + classes : el.tagName.toLowerCase());
+    cClassName.textContent = classes ? '.' + classes : el.tagName.toLowerCase();
 
-    updateResizeUI();
-    updateRInfoPanel();
-    rInfoPanel.style.display = 'flex';
+    updateCanvasUI();
+    cPanel.style.display = 'flex';
+    if (window.gsap) {
+      window.gsap.fromTo(cPanel, { y: 24, opacity: 0 }, { y: 0, opacity: 1, duration: 0.22, ease: 'power2.out' });
+      window.gsap.fromTo([cBorderEl, ...Object.values(handles), moveHandle],
+        { scale: 0.6, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.2, ease: 'back.out(2)', stagger: 0.015 });
+    }
     e.preventDefault();
-  }, { passive: false });
+  }, { passive:false });
 
-  function clearResizeSelection() {
-    rTarget = null;
-    rBorderEl.style.display = 'none';
-    rDimBadge.style.display = 'none';
-    rHandleR.style.display = rHandleB.style.display = rHandleC.style.display = 'none';
-    rInfoPanel.style.display = 'none';
+  function clearCanvasSelection() {
+    cTarget = null;
+    cBorderEl.style.display = 'none';
+    cDimBadge.style.display = 'none';
+    Object.values(handles).forEach(h => h.style.display = 'none');
+    moveHandle.style.display = 'none';
+    cPanel.style.display = 'none';
+    [distT, distB, distL, distR].forEach(d => d.wrap.style.display = 'none');
   }
 
-  function setResizeMode(on) {
-    resizeMode = on;
-    rSelLayer.style.display  = on ? 'block' : 'none';
-    tapLayer.style.display   = on ? 'none'  : (toolActive ? 'block' : 'none');
-    if (!on) clearResizeSelection();
-    btnResize.style.background = on ? 'rgba(20,200,70,0.85)' : 'rgba(55,55,55,0.78)';
-    // Bloqueia seleção de texto da página inteira enquanto resize estiver ativo
+  function setCanvasMode(on) {
+    canvasMode = on;
+    cSelLayer.style.display = on ? 'block' : 'none';
+    tapLayer.style.display  = on ? 'none'  : (toolActive ? 'block' : 'none');
+    if (!on) clearCanvasSelection();
+    btnCanvas.style.background = on ? 'rgba(20,200,70,0.88)' : 'rgba(55,55,55,0.78)';
     document.body.style.userSelect = on ? 'none' : '';
     document.body.style.webkitUserSelect = on ? 'none' : '';
     document.body.style.webkitTouchCallout = on ? 'none' : '';
   }
 
+  function setDistRuler(on) {
+    distRulerOn = on;
+    btnDist.style.background = on ? 'rgba(255,140,0,0.88)' : 'rgba(55,55,55,0.78)';
+    updateDistRuler();
+  }
+
   /* ══════════════════════════════════════════════════════════════
-     MODAL SALVAR / CARREGAR
+     SCREENSHOT (html2canvas)
+  ══════════════════════════════════════════════════════════════ */
+  async function takeScreenshot() {
+    if (!window.html2canvas) {
+      flash('html2canvas ainda carregando, tenta de novo…');
+      return;
+    }
+    /* Esconde UI da ruler */
+    const rulerNodes = document.querySelectorAll('[data-ruler]');
+    const prevDisplay = [];
+    rulerNodes.forEach(n => { prevDisplay.push(n.style.display); n.style.display = 'none'; });
+    canvas.style.display = 'none';
+    guideLayer.style.display = 'none';
+
+    await new Promise(r => requestAnimationFrame(r));
+    try {
+      const cnv = await window.html2canvas(document.body, {
+        backgroundColor: '#ffffff', scale: 2, useCORS: true,
+        windowWidth: window.innerWidth, windowHeight: window.innerHeight,
+        x: 0, y: window.scrollY,
+        width: window.innerWidth, height: window.innerHeight,
+      });
+      cnv.toBlob(blob => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = `dev-ruler-${Date.now()}.png`;
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        flash('📸 screenshot salva!');
+      }, 'image/png');
+    } catch (err) {
+      console.error(err); flash('Erro ao capturar tela');
+    }
+    /* Restaura UI */
+    rulerNodes.forEach((n, i) => n.style.display = prevDisplay[i]);
+    if (toolActive) {
+      canvas.style.display = 'block';
+      guideLayer.style.display = 'block';
+    }
+  }
+
+  /* Toast simples */
+  const toast = document.createElement('div');
+  toast.setAttribute('data-ruler', '1');
+  Object.assign(toast.style, {
+    position:'fixed', bottom:'42px', left:'50%', transform:'translateX(-50%)',
+    background:'rgba(8,4,28,0.96)', color:'#fff',
+    fontFamily:'monospace', fontSize:'12px', fontWeight:'800',
+    padding:'9px 14px', borderRadius:'9px',
+    boxShadow:'0 4px 16px rgba(0,0,0,0.5)',
+    border:'1px solid rgba(255,255,255,0.16)',
+    zIndex:'9020', display:'none',
+  });
+  function flash(msg) {
+    toast.textContent = msg;
+    toast.style.display = 'block';
+    if (window.gsap) window.gsap.fromTo(toast, { y:14, opacity:0 }, { y:0, opacity:1, duration:0.2 });
+    clearTimeout(flash._t);
+    flash._t = setTimeout(() => {
+      if (window.gsap) {
+        window.gsap.to(toast, { opacity:0, y:14, duration:0.2,
+          onComplete: () => { toast.style.display = 'none'; toast.style.opacity = '1'; toast.style.transform = 'translateX(-50%)'; } });
+      } else { toast.style.display = 'none'; }
+    }, 1600);
+  }
+
+  /* ══════════════════════════════════════════════════════════════
+     WIDE VIEW (esconde os botões/painel pra ver só o grid)
+  ══════════════════════════════════════════════════════════════ */
+  function setWideView(on) {
+    wideViewOn = on;
+    const els = [panel, toggleBtn, cPanel, selPanel];
+    els.forEach(el => { el.style.opacity = on ? '0.07' : ''; });
+    btnWide.style.background = on ? 'rgba(140,30,200,0.88)' : 'rgba(55,55,55,0.78)';
+  }
+
+  /* ══════════════════════════════════════════════════════════════
+     MODAL SAVE / LOAD
   ══════════════════════════════════════════════════════════════ */
   const modal = document.createElement('div');
   Object.assign(modal.style, {
-    position: 'fixed', inset: '0', background: 'rgba(0,0,0,0.68)',
-    zIndex: '9010', display: 'none', alignItems: 'center', justifyContent: 'center',
+    position:'fixed', inset:'0', background:'rgba(0,0,0,0.68)',
+    zIndex:'9010', display:'none', alignItems:'center', justifyContent:'center',
   });
   const mBox = document.createElement('div');
   Object.assign(mBox.style, {
-    background: 'rgba(10,5,32,0.98)', border: '1px solid rgba(255,255,255,0.14)',
-    borderRadius: '16px', padding: '18px', width: '268px', maxWidth: '88vw',
-    color: '#fff', fontFamily: 'monospace',
-    display: 'flex', flexDirection: 'column', gap: '10px',
-    boxShadow: '0 6px 28px rgba(0,0,0,0.65)',
+    background:'rgba(10,5,32,0.98)', border:'1px solid rgba(255,255,255,0.14)',
+    borderRadius:'16px', padding:'18px', width:'268px', maxWidth:'88vw',
+    color:'#fff', fontFamily:'monospace',
+    display:'flex', flexDirection:'column', gap:'10px',
+    boxShadow:'0 6px 28px rgba(0,0,0,0.65)',
   });
   const mTitle = document.createElement('div');
   Object.assign(mTitle.style, { fontWeight:'900', fontSize:'12px', letterSpacing:'.8px', color:'rgba(255,255,255,0.6)' });
@@ -605,6 +921,7 @@
     const s = getSchemes();
     s[name] = guides.map(g => ({ type:g.type, pos:g.pos, colorId:g.colorDef.id }));
     putSchemes(s); modal.style.display = 'none';
+    flash('💾 esquema salvo');
   });
   mActions.append(mCancel, mSaveOK);
   mBox.append(mTitle, mInput, mList, mActions);
@@ -634,6 +951,7 @@
             clearAll();
             schemes[name].forEach(d => { const c = COLORS.find(x => x.id === d.colorId) || COLORS[0]; addGuide(d.type, d.pos, c, true); });
             modal.style.display = 'none';
+            flash('📂 esquema carregado');
           });
           const dBtn = document.createElement('button');
           dBtn.textContent = '✕';
@@ -649,14 +967,14 @@
   }
 
   /* ══════════════════════════════════════════════════════════════
-     PAINEL DE CONTROLES
+     PAINEL DE BOTÕES
   ══════════════════════════════════════════════════════════════ */
   const panel = document.createElement('div');
   panel.setAttribute('data-ruler', '1');
   Object.assign(panel.style, {
-    position: 'fixed', right: '12px', bottom: '140px',
-    zIndex: '9001', display: 'none',
-    flexDirection: 'column', gap: '6px', alignItems: 'center',
+    position:'fixed', right:'12px', bottom:'140px',
+    zIndex:'9001', display:'none',
+    flexDirection:'column', gap:'6px', alignItems:'center',
   });
 
   function mkPBtn(label, bg) {
@@ -680,9 +998,11 @@
   const btnSav    = mkPBtn('💾', 'rgba(25,90,200,0.82)');
   const btnLod    = mkPBtn('📂', 'rgba(15,130,15,0.82)');
   const btnRef    = mkPBtn('🖼', 'rgba(55,55,55,0.78)');
-  const btnResize = mkPBtn('📐', 'rgba(55,55,55,0.78)');
+  const btnCanvas = mkPBtn('⊞',  'rgba(55,55,55,0.78)');
+  const btnDist   = mkPBtn('📏', 'rgba(55,55,55,0.78)');
+  const btnShot   = mkPBtn('📸', 'rgba(55,55,55,0.78)');
+  const btnWide   = mkPBtn('👁', 'rgba(55,55,55,0.78)');
 
-  // Dot indicador de cor atual no botão H
   const colorDot = document.createElement('div');
   Object.assign(colorDot.style, {
     width:'9px', height:'9px', borderRadius:'50%',
@@ -694,7 +1014,6 @@
   Object.assign(btnHWrap.style, { position:'relative', display:'inline-flex' });
   btnHWrap.append(btnH, colorDot);
 
-  // Mini seletor de cor (segurar H ou V)
   const colorPick = document.createElement('div');
   colorPick.setAttribute('data-ruler', '1');
   Object.assign(colorPick.style, {
@@ -741,12 +1060,18 @@
     if (!refLoaded) { fileInput.click(); }
     else { refVisible = !refVisible; refImg.style.display = refVisible ? 'block' : 'none'; updateRefBtn(); }
   });
-  btnResize.addEventListener('click', () => setResizeMode(!resizeMode));
+  btnCanvas.addEventListener('click', () => setCanvasMode(!canvasMode));
+  btnDist.addEventListener  ('click', () => setDistRuler(!distRulerOn));
+  btnShot.addEventListener  ('click', takeScreenshot);
+  btnWide.addEventListener  ('click', () => setWideView(!wideViewOn));
 
-  panel.append(btnResize, btnRef, btnLod, btnSav, btnUndo, btnClr, btnV, btnHWrap);
+  panel.append(
+    btnWide, btnShot, btnDist, btnCanvas,
+    btnRef, btnLod, btnSav, btnUndo, btnClr, btnV, btnHWrap
+  );
 
   /* ══════════════════════════════════════════════════════════════
-     BOTÃO DE ATIVAÇÃO PRINCIPAL
+     BOTÃO PRINCIPAL DE ATIVAÇÃO
   ══════════════════════════════════════════════════════════════ */
   const toggleBtn = document.createElement('button');
   toggleBtn.id = 'dev-ruler-btn';
@@ -775,30 +1100,50 @@
     colorPick.style.display  = 'none';
     if (!toolActive) {
       deselect();
-      setResizeMode(false);
+      setCanvasMode(false);
+      setDistRuler(false);
+      setWideView(false);
       refImg.style.display = 'none';
     } else {
       if (refLoaded && refVisible) refImg.style.display = 'block';
-      tapLayer.style.display = resizeMode ? 'none' : 'block';
-      rSelLayer.style.display = resizeMode ? 'block' : 'none';
+      tapLayer.style.display = canvasMode ? 'none' : 'block';
+      cSelLayer.style.display = canvasMode ? 'block' : 'none';
       drawGrid();
+      if (window.gsap) {
+        window.gsap.fromTo(panel,
+          { x: 30, opacity: 0 },
+          { x: 0, opacity: 1, duration: 0.25, ease: 'power2.out' });
+        window.gsap.fromTo(panel.children,
+          { x: 14, opacity: 0 },
+          { x: 0, opacity: 1, duration: 0.22, ease: 'power2.out', stagger: 0.02 });
+      }
     }
     toggleBtn.style.background = toolActive ? 'rgba(220,20,20,0.85)' : 'rgba(6,2,26,0.78)';
   });
 
-  window.addEventListener('resize', () => { if (toolActive) drawGrid(); });
+  window.addEventListener('resize', () => {
+    if (toolActive) drawGrid();
+    if (cTarget)   updateCanvasUI();
+  });
+  window.addEventListener('scroll', () => {
+    if (cTarget) updateCanvasUI();
+  }, { passive:true });
 
   /* ══════════════════════════════════════════════════════════════
      MONTAR NO DOM
   ══════════════════════════════════════════════════════════════ */
-  [panel, selPanel, colorPick, modal, rInfoPanel].forEach(el => el.setAttribute('data-ruler', '1'));
-  [rBorderEl, rDimBadge, rHandleR, rHandleB, rHandleC, rSelLayer].forEach(el => el.setAttribute('data-ruler', '1'));
+  [panel, selPanel, colorPick, modal, cPanel].forEach(el => el.setAttribute('data-ruler', '1'));
+  [cBorderEl, cDimBadge, moveHandle, cSelLayer, distT.wrap, distB.wrap, distL.wrap, distR.wrap]
+    .forEach(el => el.setAttribute('data-ruler', '1'));
+  Object.values(handles).forEach(h => h.setAttribute('data-ruler', '1'));
 
   document.body.append(
     refImg, fileInput,
     canvas, guideLayer, tapLayer,
-    rSelLayer, rBorderEl, rDimBadge, rHandleR, rHandleB, rHandleC,
-    panel, colorPick, selPanel, rInfoPanel, modal,
-    toggleBtn
+    cSelLayer, cBorderEl, cDimBadge,
+    distT.wrap, distB.wrap, distL.wrap, distR.wrap,
+    ...Object.values(handles), moveHandle,
+    panel, colorPick, selPanel, cPanel, modal,
+    toast, toggleBtn
   );
 })();
