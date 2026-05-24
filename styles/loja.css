@@ -1928,6 +1928,40 @@ html, body {
   color: var(--c-purple-600);
 }
 
+/* ─── Layout toggle button ───────────────────────────────────── */
+.layout-toggle-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: var(--r-xs);
+  background: rgba(0,0,0,0.04);
+  border: 1.5px solid var(--border);
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.view-header .layout-toggle-btn {
+  background: rgba(255,255,255,0.10);
+  border-color: rgba(255,255,255,0.18);
+  color: rgba(255,255,255,0.75);
+}
+
+/* ─── Compact (4-col) grid overrides ────────────────────────── */
+.products-grid.compact {
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  padding: 8px 12px 16px;
+}
+.products-grid.compact .product-card-img     { height: 90px; }
+.products-grid.compact .product-card-body    { padding: 6px 8px 8px; }
+.products-grid.compact .product-card-name    { font-size: .65rem; font-weight: 700; }
+.products-grid.compact .product-card-brand   { font-size: .58rem; }
+.products-grid.compact .product-card-divider { margin: 5px 0; }
+.products-grid.compact .product-card-price   { font-size: .70rem; }
+.products-grid.compact .btn-add-card         { width: 26px; height: 26px; border-radius: 7px; font-size: .85rem; }
+
 /* ─── Animations/transitions desativados ─────────────────────── */
 *, *::before, *::after {
   transition-duration: 0.01ms !important;

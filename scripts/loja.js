@@ -31,6 +31,9 @@ const CATS = [
   { id: 'Outros',       label: 'Outros',         tagline: 'Completa seu pedido',   emoji: '🛒', color: '#6B7280' },
 ];
 
+const ICON_COMPACT = `<svg viewBox="0 0 16 16" fill="currentColor" width="13" height="13"><rect x="1" y="1" width="3.5" height="3.5" rx=".6"/><rect x="6.25" y="1" width="3.5" height="3.5" rx=".6"/><rect x="11.5" y="1" width="3.5" height="3.5" rx=".6"/><rect x="1" y="6.25" width="3.5" height="3.5" rx=".6"/><rect x="6.25" y="6.25" width="3.5" height="3.5" rx=".6"/><rect x="11.5" y="6.25" width="3.5" height="3.5" rx=".6"/><rect x="1" y="11.5" width="3.5" height="3.5" rx=".6"/><rect x="6.25" y="11.5" width="3.5" height="3.5" rx=".6"/><rect x="11.5" y="11.5" width="3.5" height="3.5" rx=".6"/></svg>`;
+const ICON_EXPAND  = `<svg viewBox="0 0 16 16" fill="currentColor" width="13" height="13"><rect x="1" y="1" width="6.5" height="6.5" rx="1"/><rect x="8.5" y="1" width="6.5" height="6.5" rx="1"/><rect x="1" y="8.5" width="6.5" height="6.5" rx="1"/><rect x="8.5" y="8.5" width="6.5" height="6.5" rx="1"/></svg>`;
+
 function catThumb(catId) {
   const prod = S.products.find(p => p.category === catId && p.image);
   if (prod?.image) return `<img src="${esc(prod.image)}" alt="" loading="lazy" />`;
@@ -66,6 +69,7 @@ const S = {
     number: '', complement: '', payment: 'pix', notes: ''
   },
   lastOrderId: null,
+  layout: parseInt(localStorage.getItem('eg:layout') || '2', 10),
 };
 
 /* ─── Cart helpers ───────────────────────────────────────────── */
@@ -307,6 +311,12 @@ function go(view, params = {}, type = 'push') {
     div = cached;
     div.id = 'current-view';
     div.classList.remove('slide-in', 'slide-out', 'slide-bk-in', 'slide-bk-out', 'fade-in');
+    const cachedGrid = div.querySelector('.products-grid');
+    if (cachedGrid) {
+      cachedGrid.classList.toggle('compact', S.layout === 4);
+      const toggleBtn = div.querySelector('#btn-layout-toggle');
+      if (toggleBtn) toggleBtn.innerHTML = S.layout === 2 ? ICON_COMPACT : ICON_EXPAND;
+    }
   } else {
     div = document.createElement('div');
     div.className = 'view-page';
@@ -510,8 +520,9 @@ function renderHome() {
 
     <div class="section-header" id="featured-header">
       <h3>Destaques</h3>
+      <button class="layout-toggle-btn" id="btn-layout-toggle">${S.layout === 2 ? ICON_COMPACT : ICON_EXPAND}</button>
     </div>
-    <div class="products-grid" id="products-grid">
+    <div class="products-grid${S.layout === 4 ? ' compact' : ''}" id="products-grid">
       ${featured.length > 0
         ? featured.map(renderProductCard).join('')
         : `<div style="grid-column:span 2"><div class="loading-state">Carregando produtos…</div></div>`
@@ -572,6 +583,7 @@ function renderProductList(catId) {
         <h2>${esc(cat.label)}</h2>
         <p>${prods.length} produto${prods.length !== 1 ? 's' : ''}</p>
       </div>
+      <button class="layout-toggle-btn" id="btn-layout-toggle">${S.layout === 2 ? ICON_COMPACT : ICON_EXPAND}</button>
     </div>
     ${filters.length > 0 ? `
       <div class="filter-chips">
@@ -579,7 +591,7 @@ function renderProductList(catId) {
       </div>
     ` : ''}
     ${prods.length > 0
-      ? `<div class="products-grid" id="prod-list-grid">${prods.map(renderProductCard).join('')}</div>`
+      ? `<div class="products-grid${S.layout === 4 ? ' compact' : ''}" id="prod-list-grid">${prods.map(renderProductCard).join('')}</div>`
       : `<div class="empty-state">
            <div class="empty-state-icon">
              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -966,6 +978,7 @@ function wireHome(c) {
 
   const grid = c.querySelector('#products-grid');
   if (grid) wireProductCards(grid);
+  wireLayoutToggle(c, '#products-grid');
 
   c.querySelector('#home-search')?.addEventListener('input', e => {
     const val = e.target.value.trim().toLowerCase();
@@ -1019,6 +1032,18 @@ function wireProductCards(c) {
   });
 }
 
+function wireLayoutToggle(c, gridSel) {
+  const btn  = c.querySelector('#btn-layout-toggle');
+  const grid = c.querySelector(gridSel);
+  if (!btn || !grid) return;
+  btn.addEventListener('click', () => {
+    S.layout = S.layout === 2 ? 4 : 2;
+    localStorage.setItem('eg:layout', String(S.layout));
+    grid.classList.toggle('compact', S.layout === 4);
+    btn.innerHTML = S.layout === 2 ? ICON_COMPACT : ICON_EXPAND;
+  });
+}
+
 function wireProductList(c, catId) {
   const prods = S.products.filter(p => p.category === catId);
   const grid  = c.querySelector('#prod-list-grid');
@@ -1044,6 +1069,7 @@ function wireProductList(c, catId) {
   });
 
   if (grid) wireProductCards(grid);
+  wireLayoutToggle(c, '#prod-list-grid');
 }
 
 function wireProductDetail(c, product) {
