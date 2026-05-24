@@ -1136,6 +1136,7 @@
   [cBorderEl, cDimBadge, moveHandle, cSelLayer, distT.wrap, distB.wrap, distL.wrap, distR.wrap]
     .forEach(el => el.setAttribute('data-ruler', '1'));
   Object.values(handles).forEach(h => h.setAttribute('data-ruler', '1'));
+  [refImg, tapLayer, canvas, guideLayer].forEach(el => el.setAttribute('data-ruler', '1'));
 
   document.body.append(
     refImg, fileInput,
