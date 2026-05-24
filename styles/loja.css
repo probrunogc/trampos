@@ -531,15 +531,23 @@ html, body {
   gap: 12px;
   overflow-x: auto;
   scroll-snap-type: x mandatory;
+  scroll-padding-left: 16px;
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
-  padding: 4px 16px 10px;
+  padding: 4px 0 10px;
+}
+
+/* Spacers garantem margem esquerda/direita em todos os browsers, inclusive Safari */
+.banner-track::before,
+.banner-track::after {
+  content: '';
+  flex: 0 0 16px;
 }
 
 .banner-track::-webkit-scrollbar { display: none; }
 
 .banner-slide {
-  flex: 0 0 calc(100% - 48px);
+  flex: 0 0 calc(100% - 80px);
   scroll-snap-align: start;
   cursor: pointer;
   transition: transform var(--dur-med) var(--ease-spring);
@@ -586,9 +594,12 @@ html, body {
   aspect-ratio: 16 / 8;
   background: #FFFFFF;
   position: relative;
-  border-radius: var(--r-lg);
+  border-radius: 18px;
   border: 1px solid rgba(0,0,0,0.07);
   box-shadow: 0 2px 10px rgba(0,0,0,0.10);
+  /* Fix Safari: force compositing layer so overflow:hidden clips border-radius */
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
 }
 
 .banner-art img {
