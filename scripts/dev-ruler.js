@@ -713,17 +713,15 @@
         }
       }
 
-      if (cfg.x !== 0 || (cProportional && cfg.y !== 0)) {
-        cTarget.style.width     = newW + 'px';
-        cTarget.style.flexBasis = newW + 'px';
-        cTarget.style.maxWidth  = newW + 'px';
-        cTarget.style.minWidth  = '';
-      }
-      if (cfg.y !== 0 || (cProportional && cfg.x !== 0)) {
-        cTarget.style.height      = newH + 'px';
-        cTarget.style.minHeight   = newH + 'px';
-        cTarget.style.aspectRatio = 'unset';
-      }
+      /* Sempre pina as duas dimensões — impede que aspect-ratio do CSS
+         ou conteúdo force quadrado quando só um eixo é arrastado */
+      cTarget.style.aspectRatio = 'auto';
+      cTarget.style.width       = newW + 'px';
+      cTarget.style.flexBasis   = newW + 'px';
+      cTarget.style.maxWidth    = newW + 'px';
+      cTarget.style.minWidth    = '';
+      cTarget.style.height      = newH + 'px';
+      cTarget.style.minHeight   = newH + 'px';
       cTransX = newTX; cTransY = newTY;
       cTarget.style.transform = `translate(${cTransX}px, ${cTransY}px)`;
       updateCanvasUI();
