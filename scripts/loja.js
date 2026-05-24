@@ -17,18 +17,18 @@ const db    = getFirestore(fbApp);
 
 /* ─── Categories definition ─────────────────────────────────── */
 const CATS = [
-  { id: 'Cerveja',      label: 'Cervejas',      emoji: '🍺', color: '#F5A623' },
-  { id: 'Destilado',    label: 'Destilados',     emoji: '🥃', color: '#8B5CF6' },
-  { id: 'Energético',   label: 'Energéticos',    emoji: '⚡', color: '#EF4444' },
-  { id: 'Refrigerante', label: 'Refrigerantes',  emoji: '🥤', color: '#06B6D4' },
-  { id: 'Água',         label: 'Águas',          emoji: '💧', color: '#3B82F6' },
-  { id: 'Vinho',        label: 'Vinhos',         emoji: '🍷', color: '#7C3AED' },
-  { id: 'Gelo',         label: 'Gelo',           emoji: '🧊', color: '#93C5FD' },
-  { id: 'Carvão',       label: 'Carvão',         emoji: '🔥', color: '#374151' },
-  { id: 'Dose',         label: 'Doses',          emoji: '🍸', color: '#EC4899' },
-  { id: 'Combo',        label: 'Combos',         emoji: '🎁', color: '#10B981' },
-  { id: 'Conveniência', label: 'Conveniência',   emoji: '🛍️', color: '#F59E0B' },
-  { id: 'Outros',       label: 'Outros',         emoji: '🛒', color: '#6B7280' },
+  { id: 'Cerveja',      label: 'Cervejas',      tagline: 'Gelada garantida',      emoji: '🍺', color: '#F5A623' },
+  { id: 'Destilado',    label: 'Destilados',     tagline: 'Pra ocasião certa',     emoji: '🥃', color: '#8B5CF6' },
+  { id: 'Energético',   label: 'Energéticos',    tagline: 'Liga o modo turbo',     emoji: '⚡', color: '#EF4444' },
+  { id: 'Refrigerante', label: 'Refrigerantes',  tagline: 'Refrescante e gelado',  emoji: '🥤', color: '#06B6D4' },
+  { id: 'Água',         label: 'Águas',          tagline: 'Hidratação na hora',    emoji: '💧', color: '#3B82F6' },
+  { id: 'Vinho',        label: 'Vinhos',         tagline: 'Brinde especial',       emoji: '🍷', color: '#7C3AED' },
+  { id: 'Gelo',         label: 'Gelo',           tagline: 'Deixa tudo mais frio',  emoji: '🧊', color: '#93C5FD' },
+  { id: 'Carvão',       label: 'Carvão',         tagline: 'Churrasco perfeito',    emoji: '🔥', color: '#374151' },
+  { id: 'Dose',         label: 'Doses',          tagline: 'Dose certa pra você',   emoji: '🍸', color: '#EC4899' },
+  { id: 'Combo',        label: 'Combos',         tagline: 'Mais por menos',        emoji: '🎁', color: '#10B981' },
+  { id: 'Conveniência', label: 'Conveniência',   tagline: 'Tudo que você precisa', emoji: '🛍️', color: '#F59E0B' },
+  { id: 'Outros',       label: 'Outros',         tagline: 'Completa seu pedido',   emoji: '🛒', color: '#6B7280' },
 ];
 
 function catThumb(catId) {
@@ -489,6 +489,7 @@ function renderCategories() {
           <div class="cat-banner-card" data-catid="${esc(c.id)}">
             <div class="cat-banner-text">
               <span class="cat-banner-name">${esc(c.label.toUpperCase())}</span>
+              ${c.tagline ? `<span class="cat-banner-tagline">${esc(c.tagline)}</span>` : ''}
               <span class="cat-banner-link">Ver opções &rsaquo;</span>
             </div>
             <div class="cat-banner-visual">${imgHtml}</div>
