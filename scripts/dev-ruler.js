@@ -427,46 +427,70 @@
   const distL = mkDistLine(), distR = mkDistLine();
 
   /* ── Painel lateral de info do elemento ──────────────────── */
+  let cPanelManualPos = false;  // se usuário arrastou, parar de posicionar auto
   const cPanel = document.createElement('div');
   Object.assign(cPanel.style, {
     position:'fixed', zIndex:'9006', display:'none',
-    flexDirection:'column', gap:'8px',
+    flexDirection:'column', gap:'5px',
     background:'rgba(8,4,28,0.97)',
-    borderRadius:'14px', padding:'11px 13px',
+    borderRadius:'12px', padding:'8px 10px',
     boxShadow:'0 6px 24px rgba(0,0,0,0.6)',
     border:'1px solid rgba(255,255,255,0.14)',
-    left:'10px', right:'10px',
+    left:'8px', right:'8px',
     bottom:'140px',
-    maxWidth:'560px', margin:'0 auto',
+    maxWidth:'520px', margin:'0 auto',
   });
 
   const cClassName = document.createElement('div');
   Object.assign(cClassName.style, {
     color:'rgba(30,210,80,0.95)', fontFamily:'monospace',
-    fontSize:'11px', fontWeight:'900', letterSpacing:'.4px',
+    fontSize:'10px', fontWeight:'900', letterSpacing:'.4px',
     whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis',
+    cursor:'move', touchAction:'none', padding:'2px 0',
   });
+  /* drag do painel pelo cabeçalho */
+  (function setupCPanelDrag() {
+    let startTouch = null, startLeft = 0, startTop = 0;
+    cClassName.addEventListener('touchstart', e => {
+      startTouch = e.touches[0];
+      const r = cPanel.getBoundingClientRect();
+      startLeft = r.left; startTop = r.top;
+      e.stopPropagation();
+    }, { passive:true });
+    cClassName.addEventListener('touchmove', e => {
+      if (!startTouch) return;
+      const t = e.touches[0];
+      const dx = t.clientX - startTouch.clientX;
+      const dy = t.clientY - startTouch.clientY;
+      cPanel.style.left = Math.max(4, Math.min(window.innerWidth - cPanel.offsetWidth - 4, startLeft + dx)) + 'px';
+      cPanel.style.top  = Math.max(4, Math.min(window.innerHeight - cPanel.offsetHeight - 4, startTop + dy)) + 'px';
+      cPanel.style.right = 'auto'; cPanel.style.bottom = 'auto'; cPanel.style.margin = '0';
+      cPanelManualPos = true;
+      e.stopPropagation(); e.preventDefault();
+    }, { passive:false });
+    cClassName.addEventListener('touchend', e => { startTouch = null; e.stopPropagation(); });
+  })();
 
   function mkValueChip(label) {
     const wrap = document.createElement('div');
-    Object.assign(wrap.style, { display:'flex', gap:'5px', alignItems:'center' });
+    Object.assign(wrap.style, { display:'flex', gap:'3px', alignItems:'center' });
     const lbl = document.createElement('span');
     lbl.textContent = label;
     Object.assign(lbl.style, {
       color:'rgba(255,255,255,0.5)', fontFamily:'monospace',
-      fontSize:'10px', minWidth:'12px',
+      fontSize:'9px', minWidth:'10px',
     });
     const val = document.createElement('span');
     Object.assign(val.style, {
       color:'#fff', fontFamily:'monospace',
-      fontSize:'12px', fontWeight:'900', minWidth:'52px',
+      fontSize:'11px', fontWeight:'900', minWidth:'42px',
     });
     const copy = document.createElement('button');
     copy.textContent = '📋';
     Object.assign(copy.style, {
       background:'rgba(255,255,255,0.1)',
-      border:'1px solid rgba(255,255,255,0.2)', borderRadius:'5px',
-      padding:'3px 6px', cursor:'pointer', fontSize:'11px',
+      border:'1px solid rgba(255,255,255,0.2)', borderRadius:'4px',
+      padding:'2px 5px', cursor:'pointer', fontSize:'10px',
     });
     copy.addEventListener('click', () => {
       copyToClipboard(val.textContent);
@@ -478,7 +502,7 @@
   }
 
   const valRow1 = document.createElement('div');
-  Object.assign(valRow1.style, { display:'flex', gap:'10px', flexWrap:'wrap' });
+  Object.assign(valRow1.style, { display:'flex', gap:'7px', flexWrap:'wrap' });
   const chipW = mkValueChip('W'); const chipH = mkValueChip('H');
   const chipX = mkValueChip('X'); const chipY = mkValueChip('Y');
   valRow1.append(chipW.wrap, chipH.wrap, chipX.wrap, chipY.wrap);
@@ -518,9 +542,9 @@
     const b = document.createElement('button');
     b.textContent = txt;
     Object.assign(b.style, {
-      flex:'1', padding:'7px 10px', borderRadius:'8px',
+      flex:'1', padding:'5px 8px', borderRadius:'7px',
       background:bg, border:'none', color:'#fff',
-      fontFamily:'monospace', fontSize:'11px', fontWeight:'700', cursor:'pointer',
+      fontFamily:'monospace', fontSize:'10px', fontWeight:'700', cursor:'pointer',
     });
     return b;
   }
@@ -733,6 +757,31 @@
     moveHandle.addEventListener('touchend', e => { e.stopPropagation(); });
   })();
 
+  /* Posicionamento inteligente: painel longe do elemento selecionado */
+  function positionCPanel() {
+    if (!cTarget || cPanelManualPos) return;
+    const rect = cTarget.getBoundingClientRect();
+    const H = window.innerHeight, W = window.innerWidth;
+    /* mostra o painel pra medir altura real */
+    cPanel.style.visibility = 'hidden';
+    cPanel.style.display = 'flex';
+    const pH = cPanel.offsetHeight || 160;
+    cPanel.style.visibility = '';
+    const centerY = rect.top + rect.height / 2;
+    /* elemento no terço inferior → painel no topo; senão → no fundo */
+    cPanel.style.left = '8px'; cPanel.style.right = '8px';
+    cPanel.style.maxWidth = '520px'; cPanel.style.margin = '0 auto';
+    if (centerY > H * 0.55) {
+      /* topo */
+      cPanel.style.top    = '46px';
+      cPanel.style.bottom = 'auto';
+    } else {
+      /* fundo (default) */
+      cPanel.style.bottom = '140px';
+      cPanel.style.top    = 'auto';
+    }
+  }
+
   /* Seleção do elemento ao tocar */
   cSelLayer.addEventListener('touchend', e => {
     const t = e.changedTouches[0];
@@ -754,15 +803,17 @@
       borderRadius: el.style.borderRadius,
     };
     cTransX = 0; cTransY = 0;
+    cPanelManualPos = false;  /* reset pra próxima seleção */
     const computed = getComputedStyle(el);
     cBorderRadius = parseInt(computed.borderTopLeftRadius) || 0;
     radiusSlider.value = Math.min(80, cBorderRadius);
     radiusVal.textContent = cBorderRadius + 'px';
 
     const classes = Array.from(el.classList).slice(0, 3).join(' .');
-    cClassName.textContent = classes ? '.' + classes : el.tagName.toLowerCase();
+    cClassName.textContent = (classes ? '.' + classes : el.tagName.toLowerCase()) + '  ⠿';
 
     updateCanvasUI();
+    positionCPanel();
     cPanel.style.display = 'flex';
     if (window.gsap) {
       window.gsap.fromTo(cPanel, { y: 24, opacity: 0 }, { y: 0, opacity: 1, duration: 0.22, ease: 'power2.out' });
