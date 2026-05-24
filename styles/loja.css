@@ -607,7 +607,7 @@ html, body {
   inset: 0;
   width: 100%;
   height: 100%;
-  object-fit: contain;
+  object-fit: cover;
   display: block;
 }
 
@@ -744,8 +744,8 @@ html, body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
-  min-width: 75px;
+  gap: 5px;
+  min-width: 64px;
   cursor: pointer;
   background: none;
   border: none;
@@ -754,9 +754,9 @@ html, body {
 }
 
 .cat-chip-icon {
-  width: 75px;
-  height: 75px;
-  border-radius: 18px;
+  width: 64px;
+  height: 64px;
+  border-radius: 15px;
   background: var(--bg-card);
   border: 1.5px solid var(--border);
   display: flex;
@@ -1022,7 +1022,7 @@ html, body {
 
 .product-card-img {
   width: 100%;
-  height: 120px;
+  height: 100px;
   overflow: hidden;
   background: #F8F8F8;
   position: relative;
@@ -1830,7 +1830,7 @@ html, body {
 
 .skel-card-img {
   width: 100%;
-  height: 120px;
+  height: 100px;
   background: rgba(200, 190, 240, 0.32);
 }
 
