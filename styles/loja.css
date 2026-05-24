@@ -1182,7 +1182,7 @@ html, body {
   display: flex;
   align-items: flex-start;
   gap: 18px;
-  padding: 0 51px 16px 43px;
+  padding: 0 calc(100vw - 350px) 16px 43px;
   position: relative;
   z-index: 1;
 }
@@ -1296,7 +1296,7 @@ html, body {
 
 .pd-add-btn {
   display: block;
-  margin: 8px 51px 0 43px;
+  margin: 8px calc(100vw - 350px) 0 43px;
   padding: 25px 16px;
   background: var(--c-yellow);
   color: var(--text-on-yellow);
@@ -1325,7 +1325,7 @@ html, body {
 }
 
 .pd-sections {
-  padding: 12px 51px 36px 43px;
+  padding: 12px calc(100vw - 350px) 36px 43px;
   position: relative;
   z-index: 1;
 }
