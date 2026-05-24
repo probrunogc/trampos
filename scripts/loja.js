@@ -238,11 +238,54 @@ function shimmerImages(container) {
   });
 }
 
+/* ─── Page cache ─────────────────────────────────────────────── */
+const PAGE_CACHE = new Map();
+
+function pageCacheKey(view, params) {
+  if (view === 'home')       return 'home';
+  if (view === 'categories') return 'categories';
+  if (view === 'products' && params.catId) return `products:${params.catId}`;
+  return null;
+}
+
+// Update only the dynamic parts (cart badge) on a cached home page
+function refreshCachedPage(div, view) {
+  if (view !== 'home') return;
+  const cnt = cartCount();
+  const btn = div.querySelector('#btn-header-cart');
+  if (!btn) return;
+  let badge = btn.querySelector('.header-cart-badge');
+  if (cnt > 0) {
+    if (!badge) { badge = document.createElement('span'); badge.className = 'header-cart-badge'; btn.appendChild(badge); }
+    badge.textContent = cnt;
+  } else {
+    badge?.remove();
+  }
+}
+
+// Kick off image loading in background right after data is ready
+function preloadImages() {
+  const urls = new Set();
+  S.products.slice(0, 24).forEach(p => { const imgs = getProductImages(p); if (imgs[0]) urls.add(imgs[0]); });
+  S.banners.forEach(b => { if (b.imageUrl) urls.add(b.imageUrl); });
+  urls.forEach(url => { (new Image()).src = url; });
+}
+
 /* ─── Navigation ─────────────────────────────────────────────── */
 // type: 'push' (slide in) | 'back' (slide back) | 'tab' (fade) | 'replace' (instant)
 function go(view, params = {}, type = 'push') {
   const root = document.getElementById('view-root');
   const prev = root.querySelector('#current-view');
+
+  // Save outgoing page to cache before leaving (never save skeleton via 'replace')
+  if (prev && type !== 'replace') {
+    const key = pageCacheKey(S.view, S.viewParams);
+    if (key) {
+      prev._savedScrollTop = prev.scrollTop;
+      prev.removeAttribute('id');
+      PAGE_CACHE.set(key, prev);
+    }
+  }
 
   if (type === 'back') {
     S.navStack.pop();
@@ -255,29 +298,45 @@ function go(view, params = {}, type = 'push') {
   S.viewParams = params;
   if (view === 'product') S.qty = 1;
 
-  const div = document.createElement('div');
-  div.className = 'view-page';
-  div.id = 'current-view';
-  div.innerHTML = renderView(view, params);
+  // Restore from cache or render fresh
+  const key    = pageCacheKey(view, params);
+  const cached = key ? PAGE_CACHE.get(key) : null;
+  let div;
+
+  if (cached) {
+    div = cached;
+    div.id = 'current-view';
+    div.classList.remove('slide-in', 'slide-out', 'slide-bk-in', 'slide-bk-out', 'fade-in');
+  } else {
+    div = document.createElement('div');
+    div.className = 'view-page';
+    div.id = 'current-view';
+    div.innerHTML = renderView(view, params);
+  }
 
   if (prev) {
+    const removePrev = prev;
+    const cleanup = (ms) => setTimeout(() => {
+      if (removePrev.parentNode && removePrev.id !== 'current-view') removePrev.remove();
+    }, ms);
+
     if (type === 'replace') {
       root.appendChild(div);
       prev.remove();
     } else if (type === 'tab') {
-      div.classList.add('fade-in');
+      if (!cached) div.classList.add('fade-in');
       root.appendChild(div);
-      setTimeout(() => prev.remove(), 200);
+      cleanup(200);
     } else if (type === 'back') {
       prev.classList.add('slide-bk-out');
       div.classList.add('slide-bk-in');
       root.appendChild(div);
-      setTimeout(() => prev.remove(), 300);
+      cleanup(300);
     } else {
       prev.classList.add('slide-out');
       div.classList.add('slide-in');
       root.appendChild(div);
-      setTimeout(() => prev.remove(), 300);
+      cleanup(300);
     }
   } else {
     root.appendChild(div);
@@ -285,9 +344,15 @@ function go(view, params = {}, type = 'push') {
 
   updateBottomNav(view);
   updateCartBadge();
-  shimmerImages(div);
-  wireView(view, params, div);
-  div.scrollTop = 0;
+
+  if (cached) {
+    refreshCachedPage(div, view);
+  } else {
+    shimmerImages(div);
+    wireView(view, params, div);
+  }
+
+  div.scrollTop = div._savedScrollTop || 0;
 }
 
 function goBack() {
@@ -1239,7 +1304,7 @@ function wireOrders(c) {
 function wireAccount(c) {
   c.querySelector('#btn-wa-account')?.addEventListener('click', () => openWhatsApp('Olá! Gostaria de falar com o Empório GO.'));
   c.querySelector('#btn-clear-cart')?.addEventListener('click', () => {
-    if (confirm('Limpar carrinho?')) { S.cart = []; saveCart(); updateCartBadge(); go('home'); }
+    if (confirm('Limpar carrinho?')) { S.cart = []; saveCart(); updateCartBadge(); go('home', {}, 'tab'); }
   });
 }
 
@@ -1299,6 +1364,9 @@ async function init() {
 
   // Carrega dados em paralelo
   await Promise.all([loadProducts(), loadBanners(), loadSettings()]);
+
+  // Pré-carrega imagens em background para que fiquem em cache do browser
+  preloadImages();
 
   // Substitui skeleton pelo conteúdo real (fade, sem slide)
   go('home', {}, 'replace');
