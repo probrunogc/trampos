@@ -37,7 +37,7 @@
   --c-red-light:    #EF4444;
 
   /* Surfaces */
-  --bg-app:         #F7F7F8;
+  --bg-app:         #FFFFFF;
   --bg-card:        #FFFFFF;
   --bg-card-hover:  #FAFAFA;
   --bg-header:      linear-gradient(150deg, #06021A 0%, #0D0530 55%, #1F0E62 100%);
@@ -881,8 +881,8 @@ html, body {
   background: #FFFFFF;
   border-radius: 14px;
   overflow: hidden;
-  border: 1px solid rgba(0,0,0,0.08);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+  border: 1px solid rgba(0,0,0,0.09);
+  box-shadow: 0 2px 10px rgba(0,0,0,0.10), 0 0 0 0.5px rgba(0,0,0,0.04);
   cursor: pointer;
   transition: transform var(--dur-med) var(--ease-spring),
               box-shadow var(--dur-fast),
