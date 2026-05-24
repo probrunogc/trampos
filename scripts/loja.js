@@ -602,6 +602,7 @@ function renderProductCard(p) {
       <div class="product-card-body">
         <div class="product-card-name">${esc(p.name)}</div>
         ${p.brand ? `<div class="product-card-brand">${esc(p.brand)}</div>` : ''}
+        <div class="product-card-divider"></div>
         <div class="product-card-footer">
           <span class="product-card-price">${brl(p.price)}</span>
           ${inStock
