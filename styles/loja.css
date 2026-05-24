@@ -838,101 +838,133 @@ html, body {
   color: var(--text-primary);
 }
 
+/* Override btn-back for light header */
+.cat-page-header .btn-back {
+  background: rgba(0,0,0,0.05);
+  border-color: rgba(0,0,0,0.10);
+  color: var(--text-primary);
+  box-shadow: none;
+}
+.cat-page-header .btn-back:active { background: rgba(0,0,0,0.10); }
+
 .cat-page-search {
-  background: none;
-  border: none;
+  width: 38px;
+  height: 38px;
+  background: rgba(0,0,0,0.05);
+  border: 1px solid rgba(0,0,0,0.10);
+  border-radius: 50%;
   cursor: pointer;
   color: var(--text-primary);
-  padding: 4px;
   display: flex;
   align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
 /* ─── Category banner list ────────────────────────────────────── */
 .cat-banner-list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 14px 16px 24px;
+  gap: 12px;
+  padding: 24px 16px 28px;
 }
 
+/* Card uses overflow:visible so image can float above */
 .cat-banner-card {
   position: relative;
-  background: linear-gradient(135deg, #1F0E62 0%, #2E1272 40%, #4C1D95 100%);
-  border-radius: 18px;
-  height: 110px;
+  height: 130px;
   display: flex;
   align-items: center;
-  overflow: hidden;
+  overflow: visible;
   cursor: pointer;
   transition: transform var(--dur-med) var(--ease-spring);
-  box-shadow: 0 4px 16px rgba(46,18,114,0.35);
+  margin-top: 16px; /* space for overflowing image */
 }
 
-/* Brush texture overlay */
+/* Purple BG as pseudo — has border-radius + overflow:hidden */
 .cat-banner-card::before {
   content: '';
   position: absolute;
   inset: 0;
-  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='110'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.04 0.12' numOctaves='3' seed='7'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='400' height='110' filter='url(%23n)' opacity='0.12'/%3E%3C/svg%3E") center/cover;
-  pointer-events: none;
-  mix-blend-mode: overlay;
+  border-radius: 18px;
+  background: linear-gradient(120deg, #1F0E62 0%, #2E1272 50%, #4C1D95 100%);
+  box-shadow: 0 6px 20px rgba(46,18,114,0.40);
+  overflow: hidden;
 }
 
-.cat-banner-card:active {
-  transform: scale(.97);
+/* Brush stroke texture */
+.cat-banner-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 18px;
+  background-image: repeating-linear-gradient(
+    -55deg,
+    transparent 0px,
+    transparent 18px,
+    rgba(255,255,255,0.03) 18px,
+    rgba(255,255,255,0.03) 20px,
+    transparent 20px,
+    transparent 38px,
+    rgba(255,255,255,0.05) 38px,
+    rgba(255,255,255,0.05) 42px
+  );
+  pointer-events: none;
 }
+
+.cat-banner-card:active { transform: scale(.97); }
 
 .cat-banner-text {
   flex: 1;
-  padding: 0 0 0 22px;
+  padding: 0 0 0 24px;
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 7px;
   position: relative;
   z-index: 2;
 }
 
 .cat-banner-name {
-  font-size: 1.45rem;
+  font-size: 1.7rem;
   font-weight: 900;
   color: #ffffff;
-  letter-spacing: .5px;
+  letter-spacing: .3px;
   line-height: 1;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.30);
 }
 
 .cat-banner-link {
-  font-size: .78rem;
+  font-size: .82rem;
   font-weight: 700;
   color: var(--c-yellow);
   letter-spacing: .2px;
 }
 
+/* Image floats above card (overflow: visible on parent) */
 .cat-banner-visual {
-  width: 130px;
-  height: 110px;
-  flex-shrink: 0;
-  position: relative;
-  z-index: 2;
+  position: absolute;
+  right: 12px;
+  bottom: 0;
+  height: 168px;   /* taller than card → overflows top */
+  width: 140px;
+  z-index: 3;
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  overflow: visible;
 }
 
 .cat-banner-img {
-  height: 130px;
+  height: 168px;
   width: auto;
-  max-width: 130px;
+  max-width: 140px;
   object-fit: contain;
-  filter: drop-shadow(-4px 4px 12px rgba(0,0,0,0.55));
-  transform: translateY(-10px);
+  filter: drop-shadow(-6px 6px 16px rgba(0,0,0,0.60));
 }
 
 .cat-banner-emoji {
-  font-size: 3.5rem;
+  font-size: 5rem;
   line-height: 1;
-  transform: translateY(-8px);
+  filter: drop-shadow(0 4px 10px rgba(0,0,0,0.40));
 }
 
 /* ─── Legacy cat-card (kept for chip use on home) ─────────────── */
