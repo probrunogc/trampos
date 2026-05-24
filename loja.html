@@ -12,7 +12,9 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Empório GO" />
+  <link rel="apple-touch-icon" sizes="180x180" href="assets/logo.png" />
   <link rel="apple-touch-icon" href="assets/logo.png" />
+  <link rel="icon" type="image/svg+xml" href="assets/logo.svg" />
   <link rel="icon" type="image/png" href="assets/logo.png" />
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -55,6 +57,11 @@
     document.addEventListener('contextmenu', e => e.preventDefault());
     document.addEventListener('gesturestart', e => e.preventDefault());
     document.addEventListener('dblclick', e => e.preventDefault());
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./loja-sw.js').catch(() => {});
+      });
+    }
   </script>
 </body>
 </html>
