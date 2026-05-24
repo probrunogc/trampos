@@ -307,7 +307,12 @@
   Object.assign(rSelLayer.style, {
     position: 'fixed', inset: '0', zIndex: '8996', display: 'none',
     background: 'transparent',
+    touchAction: 'none',
+    userSelect: 'none', webkitUserSelect: 'none',
   });
+  // Impede seleção de texto e menu de contexto no mobile
+  rSelLayer.addEventListener('touchstart', e => e.preventDefault(), { passive: false });
+  rSelLayer.addEventListener('contextmenu', e => e.preventDefault());
 
   /* Borda verde ao redor do elemento selecionado */
   const rBorderEl = document.createElement('div');
@@ -506,9 +511,10 @@
   /* Selecionar elemento ao tocar */
   rSelLayer.addEventListener('touchend', e => {
     const t = e.changedTouches[0];
-    rSelLayer.style.visibility = 'hidden';
+    // pointer-events:none é mais confiável que visibility:hidden para elementFromPoint
+    rSelLayer.style.pointerEvents = 'none';
     const el = document.elementFromPoint(t.clientX, t.clientY);
-    rSelLayer.style.visibility = 'visible';
+    rSelLayer.style.pointerEvents = 'auto';
 
     if (!el || el === document.body || el === document.documentElement) return;
     // Ignorar elementos do próprio ruler
@@ -548,6 +554,10 @@
     tapLayer.style.display   = on ? 'none'  : (toolActive ? 'block' : 'none');
     if (!on) clearResizeSelection();
     btnResize.style.background = on ? 'rgba(20,200,70,0.85)' : 'rgba(55,55,55,0.78)';
+    // Bloqueia seleção de texto da página inteira enquanto resize estiver ativo
+    document.body.style.userSelect = on ? 'none' : '';
+    document.body.style.webkitUserSelect = on ? 'none' : '';
+    document.body.style.webkitTouchCallout = on ? 'none' : '';
   }
 
   /* ══════════════════════════════════════════════════════════════
