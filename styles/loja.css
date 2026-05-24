@@ -1296,7 +1296,6 @@ html, body {
 
 .pd-add-btn {
   display: block;
-  width: calc(100% - 94px);
   margin: 8px 51px 0 43px;
   padding: 25px 16px;
   background: var(--c-yellow);
