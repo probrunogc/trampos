@@ -1187,7 +1187,7 @@ html, body {
 
 .pd-img-section {
   flex: 0 0 50%;
-  aspect-ratio: 0.92;
+  aspect-ratio: 0.85;
   background: transparent;
   border-radius: 12px;
   overflow: hidden;
@@ -1296,7 +1296,7 @@ html, body {
   display: block;
   width: calc(100% - 32px);
   margin: 10px 16px 0;
-  padding: 15px 16px;
+  padding: 25px 16px;
   background: var(--c-yellow);
   color: var(--text-on-yellow);
   border: none;
