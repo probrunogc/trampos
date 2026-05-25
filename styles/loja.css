@@ -1180,15 +1180,16 @@ html, body {
 
 .pd-split {
   display: flex;
+  flex-direction: row-reverse;
   align-items: flex-end;
-  gap: 20px;
-  padding: 0 16px 20px 16px;
+  gap: 16px;
+  padding: 0 16px 20px;
   position: relative;
   z-index: 1;
 }
 
 .pd-img-section {
-  flex: 0 0 148px;
+  flex: 0 0 168px;
   height: 248px;
   background: transparent;
   border-radius: 12px;
@@ -1255,21 +1256,20 @@ html, body {
   justify-content: space-between;
   background: var(--c-purple-50);
   border-radius: var(--r-full);
-  padding: 5px;
-  margin-top: 6px;
-  width: 100%;
-  max-width: 100%;
+  padding: 3px;
+  margin-top: 8px;
+  width: 138px;
   box-sizing: border-box;
 }
 
 .pd-qty-btn {
-  width: 40px;
-  height: 40px;
+  width: 28px;
+  height: 28px;
   border-radius: var(--r-full);
   background: white;
   color: var(--c-purple-600);
   border: none;
-  font-size: 1.3rem;
+  font-size: 1.05rem;
   font-weight: 700;
   cursor: pointer;
   display: flex;
@@ -1287,14 +1287,14 @@ html, body {
 .pd-qty-val {
   flex: 1;
   text-align: center;
-  font-size: 1.10rem;
+  font-size: 0.95rem;
   font-weight: 900;
   color: var(--text-primary);
 }
 
 .pd-add-btn {
   display: block;
-  margin: 0 16px 12px;
+  margin: 0 4px 12px;
   padding: 20px 16px;
   background: var(--c-yellow);
   color: var(--text-on-yellow);
