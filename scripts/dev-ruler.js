@@ -56,8 +56,42 @@
   let cProportional   = false;
   let cRadiusSnapTaken = false;
   /* Resize via scale: filhos escalam junto com o pai */
-  let cScaleX  = 1, cScaleY  = 1;   /* escala atual */
-  let cOrigW   = 0, cOrigH   = 0;   /* tamanho natural capturado na seleção */
+  let cScaleX  = 1, cScaleY  = 1;
+  let cOrigW   = 0, cOrigH   = 0;
+
+  /* ── Save State — registra todas as alterações da sessão ───── */
+  const sessionChanges = new Map(); /* selector → { selector, origW, origH, scaleX, scaleY, transX, transY, borderRadius } */
+
+  function getSelector(el) {
+    if (el.id) return '#' + el.id;
+    const cls = Array.from(el.classList).filter(c => !c.startsWith('gsap')).slice(0, 4);
+    return cls.length ? '.' + cls.join('.') : el.tagName.toLowerCase();
+  }
+
+  function hasCanvasChanges() {
+    return cScaleX !== 1 || cScaleY !== 1 || cTransX !== 0 || cTransY !== 0 || cBorderRadius > 0;
+  }
+
+  function recordChange() {
+    if (!cTarget || !hasCanvasChanges()) return;
+    const sel = getSelector(cTarget);
+    sessionChanges.set(sel, {
+      selector: sel,
+      tag: cTarget.tagName.toLowerCase(),
+      origW: cOrigW, origH: cOrigH,
+      scaleX: cScaleX, scaleY: cScaleY,
+      transX: cTransX, transY: cTransY,
+      borderRadius: cBorderRadius,
+      ts: Date.now(),
+    });
+    updateStateBtn();
+  }
+
+  function updateStateBtn() {
+    const n = sessionChanges.size;
+    btnState.querySelector('.dr-lbl').textContent = n ? `Estado (${n})` : 'Estado';
+    btnState.classList.toggle('dr-active', n > 0);
+  }
 
   /* ══════════════════════════════════════════════════════════════
      LIBS EXTERNAS
@@ -636,7 +670,7 @@
     cHistory = []; updateUndoBtn();
     updateCanvasUI();
   });
-  cBtnOk.addEventListener('click', clearCanvasSelection);
+  cBtnOk.addEventListener('click', () => { recordChange(); clearCanvasSelection(); });
 
   cPanel.append(cClassName, valRow1, radiusRow, cBtnRow);
 
@@ -802,6 +836,7 @@
   function selectCanvasElement(el, animate) {
     if (!el || el === document.body || el === document.documentElement) return false;
     if (el.closest('#dev-ruler-btn') || el.closest('[data-ruler]')) return false;
+    recordChange(); /* grava alterações do elemento anterior antes de trocar */
 
     clearCanvasSelection();
     cTarget = el;
@@ -1025,6 +1060,157 @@
   }
 
   /* ══════════════════════════════════════════════════════════════
+     SAVE STATE — exportar para Claude
+  ══════════════════════════════════════════════════════════════ */
+  function buildStateText() {
+    const entries = Array.from(sessionChanges.values());
+    if (!entries.length) return null;
+    const now = new Date().toLocaleString('pt-BR', { dateStyle:'short', timeStyle:'short' });
+    const lines = [
+      '╔══════════════════════════════════════════╗',
+      '║   DevRuler — Save State para Claude     ║',
+      '╚══════════════════════════════════════════╝',
+      `Data: ${now}`,
+      `Total de alterações: ${entries.length}`,
+      '',
+    ];
+    entries.forEach((r, i) => {
+      const vW = Math.round(r.origW * r.scaleX);
+      const vH = Math.round(r.origH * r.scaleY);
+      const sx  = +r.scaleX.toFixed(4), sy = +r.scaleY.toFixed(4);
+      lines.push(`━━━ [${i+1}] ${r.selector} ━━━`);
+      lines.push(`  Original : ${Math.round(r.origW)} × ${Math.round(r.origH)} px`);
+      lines.push(`  Visual   : ${vW} × ${vH} px`);
+      if (sx !== 1 || sy !== 1) lines.push(`  Scale    : ${sx} × ${sy}`);
+      if (r.transX || r.transY)
+        lines.push(`  Translate: X ${Math.round(r.transX)}px  Y ${Math.round(r.transY)}px`);
+      if (r.borderRadius) lines.push(`  Radius   : ${r.borderRadius}px`);
+      lines.push('');
+      lines.push('  CSS sugerido:');
+      if (sx !== 1 || sy !== 1)
+        lines.push(`    transform: scale(${sx}, ${sy});`);
+      if (r.transX || r.transY)
+        lines.push(`    transform: translate(${Math.round(r.transX)}px, ${Math.round(r.transY)}px);`);
+      if (r.borderRadius) lines.push(`    border-radius: ${r.borderRadius}px;`);
+      lines.push('');
+    });
+    lines.push('══════════════════════════════════════════');
+    lines.push('Cole este bloco no chat com o Claude para');
+    lines.push('aplicar as alterações no CSS do projeto.');
+    return lines.join('\n');
+  }
+
+  /* Modal de Save State */
+  const stateModal = document.createElement('div');
+  stateModal.setAttribute('data-ruler', '1');
+  Object.assign(stateModal.style, {
+    position:'fixed', inset:'0', background:'rgba(0,0,0,0.72)',
+    zIndex:'9011', display:'none', alignItems:'flex-end', justifyContent:'center',
+  });
+  const stateBox = document.createElement('div');
+  stateBox.setAttribute('data-ruler', '1');
+  Object.assign(stateBox.style, {
+    background:'rgba(8,4,28,0.99)', border:'1px solid rgba(255,255,255,0.14)',
+    borderRadius:'18px 18px 0 0', padding:'18px 16px 32px',
+    width:'100%', maxWidth:'520px',
+    color:'#fff', fontFamily:'monospace',
+    display:'flex', flexDirection:'column', gap:'10px',
+    boxShadow:'0 -6px 32px rgba(0,0,0,0.7)',
+    maxHeight:'75vh',
+  });
+
+  const stateTitle = document.createElement('div');
+  Object.assign(stateTitle.style, {
+    fontWeight:'900', fontSize:'13px', letterSpacing:'.6px',
+    color:'rgba(255,255,255,0.75)', paddingBottom:'6px',
+    borderBottom:'1px solid rgba(255,255,255,0.1)',
+    display:'flex', justifyContent:'space-between', alignItems:'center',
+  });
+  const stateTitleLeft = document.createElement('span');
+  stateTitleLeft.textContent = '🗂 Save State';
+  const stateClear = document.createElement('button');
+  stateClear.textContent = '✕ Limpar tudo';
+  Object.assign(stateClear.style, {
+    background:'rgba(200,30,30,0.5)', border:'none', color:'#fff',
+    borderRadius:'6px', padding:'4px 10px', fontSize:'10px',
+    fontFamily:'monospace', cursor:'pointer', fontWeight:'700',
+  });
+  stateTitle.append(stateTitleLeft, stateClear);
+
+  const stateTextArea = document.createElement('textarea');
+  Object.assign(stateTextArea.style, {
+    background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.12)',
+    borderRadius:'10px', padding:'12px', color:'rgba(255,255,255,0.85)',
+    fontFamily:'monospace', fontSize:'11px', lineHeight:'1.6',
+    flex:'1', resize:'none', outline:'none', minHeight:'200px',
+    overflowY:'auto',
+  });
+  stateTextArea.readOnly = true;
+
+  const stateEmpty = document.createElement('div');
+  Object.assign(stateEmpty.style, {
+    color:'rgba(255,255,255,0.3)', fontSize:'12px', textAlign:'center',
+    padding:'32px 0', display:'none',
+  });
+  stateEmpty.textContent = 'Nenhuma alteração salva ainda.\nFaça mudanças no Canvas Mode e clique ✓ OK.';
+
+  const stateBtnRow = document.createElement('div');
+  Object.assign(stateBtnRow.style, { display:'flex', gap:'8px' });
+
+  const stateBtnCopy = document.createElement('button');
+  stateBtnCopy.textContent = '📋 Copiar para Claude';
+  Object.assign(stateBtnCopy.style, {
+    flex:'1', padding:'12px', borderRadius:'10px',
+    background:'rgba(30,100,255,0.9)', border:'none', color:'#fff',
+    fontFamily:'monospace', fontSize:'12px', fontWeight:'900', cursor:'pointer',
+  });
+
+  const stateBtnClose = document.createElement('button');
+  stateBtnClose.textContent = '✓ Fechar';
+  Object.assign(stateBtnClose.style, {
+    padding:'12px 18px', borderRadius:'10px',
+    background:'rgba(255,255,255,0.1)', border:'1px solid rgba(255,255,255,0.15)',
+    color:'#fff', fontFamily:'monospace', fontSize:'12px', cursor:'pointer',
+  });
+
+  stateBtnRow.append(stateBtnCopy, stateBtnClose);
+  stateBox.append(stateTitle, stateTextArea, stateEmpty, stateBtnRow);
+  stateModal.appendChild(stateBox);
+  stateModal.addEventListener('touchend', e => { if (e.target === stateModal) stateModal.style.display = 'none'; });
+
+  function openStateModal() {
+    recordChange(); /* garante que elemento atual está salvo */
+    const txt = buildStateText();
+    if (txt) {
+      stateTextArea.value = txt;
+      stateTextArea.style.display = 'block';
+      stateEmpty.style.display = 'none';
+    } else {
+      stateTextArea.style.display = 'none';
+      stateEmpty.style.display = 'block';
+    }
+    stateModal.style.display = 'flex';
+    if (window.gsap) {
+      window.gsap.fromTo(stateBox, { y: 60, opacity:0 }, { y:0, opacity:1, duration:0.28, ease:'power3.out' });
+    }
+  }
+
+  stateBtnCopy.addEventListener('click', () => {
+    const txt = stateTextArea.value;
+    if (!txt) return;
+    copyToClipboard(txt);
+    stateBtnCopy.textContent = '✓ Copiado!';
+    setTimeout(() => stateBtnCopy.textContent = '📋 Copiar para Claude', 1800);
+  });
+  stateBtnClose.addEventListener('click', () => { stateModal.style.display = 'none'; });
+  stateClear.addEventListener('click', () => {
+    sessionChanges.clear();
+    updateStateBtn();
+    stateModal.style.display = 'none';
+    flash('🗂 estado limpo');
+  });
+
+  /* ══════════════════════════════════════════════════════════════
      ESTILOS GLOBAIS DA FERRAMENTA
   ══════════════════════════════════════════════════════════════ */
   const styleEl = document.createElement('style');
@@ -1117,6 +1303,7 @@
   const btnShot   = mkBtn('📸', 'Print');
   const btnWide   = mkBtn('👁', 'Ocultar');
   const btnRef    = mkBtn('🖼', 'Ref');
+  const btnState  = mkBtn('🗂', 'Estado');
 
   /* Cor ativa — indicador no botão H */
   const colorDot = document.createElement('div');
@@ -1137,7 +1324,7 @@
   row1.append(btnH, btnV, mkSep(), btnUndo, btnClr, mkSep(), btnSav, btnLod);
   /* Row 2: ferramentas */
   const row2 = document.createElement('div'); row2.className = 'dr-row';
-  row2.append(btnCanvas, btnDist, btnShot, btnWide, mkSep(), btnRef);
+  row2.append(btnCanvas, btnDist, btnShot, btnWide, mkSep(), btnRef, mkSep(), btnState);
   /* Row 3: paleta de cores */
   const colorRow = document.createElement('div'); colorRow.className = 'dr-color-row';
   colorRow.setAttribute('data-ruler', '1');
@@ -1193,6 +1380,7 @@
   btnDist.addEventListener  ('click', () => setDistRuler(!distRulerOn));
   btnShot.addEventListener  ('click', takeScreenshot);
   btnWide.addEventListener  ('click', () => setWideView(!wideViewOn));
+  btnState.addEventListener ('click', openStateModal);
 
   /* ══════════════════════════════════════════════════════════════
      BOTÃO DE ATIVAÇÃO
@@ -1246,7 +1434,7 @@
   /* ══════════════════════════════════════════════════════════════
      MONTAR NO DOM
   ══════════════════════════════════════════════════════════════ */
-  [panel, selPanel, modal, cPanel].forEach(el => el.setAttribute('data-ruler', '1'));
+  [panel, selPanel, modal, cPanel, stateModal].forEach(el => el.setAttribute('data-ruler', '1'));
   [cBorderEl, cDimBadge, moveHandle, cSelLayer, distT.wrap, distB.wrap, distL.wrap, distR.wrap]
     .forEach(el => el.setAttribute('data-ruler', '1'));
   Object.values(handles).forEach(h => h.setAttribute('data-ruler', '1'));
@@ -1258,7 +1446,7 @@
     cSelLayer, cBorderEl, cDimBadge,
     distT.wrap, distB.wrap, distL.wrap, distR.wrap,
     ...Object.values(handles), moveHandle,
-    panel, selPanel, cPanel, modal,
+    panel, selPanel, cPanel, modal, stateModal,
     toast, toggleBtn
   );
 })();
