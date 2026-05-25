@@ -651,14 +651,17 @@ function renderProductDetail(p) {
         <div class="pd-info">
           ${p.brand ? `<p class="pd-brand">${esc(p.brand)}</p>` : ''}
           <h2 class="pd-name">${esc(p.name)}</h2>
-          <p class="pd-price">${brl(p.price)}</p>
-          ${inStock ? `
-            <div class="pd-qty-ctrl">
-              <button class="pd-qty-btn" id="qty-minus" ${S.qty <= 1 ? 'disabled' : ''}>−</button>
-              <span class="pd-qty-val" id="qty-val">${S.qty}</span>
-              <button class="pd-qty-btn" id="qty-plus">+</button>
-            </div>
-          ` : `<p class="pd-out-of-stock">Esgotado</p>`}
+          <div class="pd-price-row">
+            <p class="pd-price">${brl(p.price)}</p>
+            ${inStock ? `
+              <div class="pd-qty-ctrl">
+                <button class="pd-qty-btn" id="qty-minus" ${S.qty <= 1 ? 'disabled' : ''}>−</button>
+                <span class="pd-qty-val" id="qty-val">${S.qty}</span>
+                <button class="pd-qty-btn" id="qty-plus">+</button>
+              </div>
+            ` : ''}
+          </div>
+          ${!inStock ? `<p class="pd-out-of-stock">Esgotado</p>` : ''}
         </div>
       </div>
       ${inStock ? `
