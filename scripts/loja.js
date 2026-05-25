@@ -276,6 +276,51 @@ function preloadImages() {
   urls.forEach(url => { (new Image()).src = url; });
 }
 
+/* ─── GSAP entrance animations ──────────────────────────────── */
+function animatePageIn(div, view) {
+  const g = window.gsap;
+  if (!g) return;
+  const q = s => div.querySelectorAll(s);
+  const f = s => div.querySelector(s);
+
+  if (view === 'home') {
+    const banner = f('.home-banner');
+    if (banner) g.from(banner, { opacity: 0, y: 28, duration: 0.55, ease: 'power3.out' });
+    const chips = q('.cat-chip');
+    if (chips.length) g.from(chips, { opacity: 0, y: 18, duration: 0.4, stagger: 0.055, ease: 'power2.out', delay: 0.1 });
+    const cards = q('.product-card');
+    if (cards.length) g.from(cards, { opacity: 0, y: 22, duration: 0.45, stagger: 0.07, ease: 'power2.out', delay: 0.18 });
+  }
+
+  if (view === 'categories') {
+    const banners = q('.cat-banner-card');
+    if (banners.length) g.from(banners, { opacity: 0, x: -22, duration: 0.4, stagger: 0.07, ease: 'power2.out' });
+  }
+
+  if (view === 'products') {
+    const header = f('.view-header');
+    if (header) g.from(header, { opacity: 0, y: -16, duration: 0.35, ease: 'power2.out' });
+    const cards = q('.product-card');
+    if (cards.length) g.from(cards, { opacity: 0, y: 20, duration: 0.4, stagger: 0.065, ease: 'power2.out', delay: 0.08 });
+  }
+
+  if (view === 'product') {
+    const hero = f('.pd-img-section');
+    const info = f('.pd-info');
+    const btn  = f('.pd-add-btn');
+    if (hero) g.from(hero, { opacity: 0, scale: 0.96, duration: 0.5, ease: 'power3.out' });
+    if (info) g.from(info, { opacity: 0, y: 24, duration: 0.45, delay: 0.1, ease: 'power2.out' });
+    if (btn)  g.from(btn,  { opacity: 0, y: 14, duration: 0.4,  delay: 0.22, ease: 'power3.out' });
+  }
+
+  if (view === 'cart') {
+    const items = q('.cart-item');
+    if (items.length) g.from(items, { opacity: 0, x: -18, duration: 0.35, stagger: 0.07, ease: 'power2.out' });
+    const summary = f('.cart-summary');
+    if (summary) g.from(summary, { opacity: 0, y: 16, duration: 0.35, delay: items.length * 0.07, ease: 'power2.out' });
+  }
+}
+
 /* ─── Navigation ─────────────────────────────────────────────── */
 // type: 'push' (slide in) | 'back' (slide back) | 'tab' (fade) | 'replace' (instant)
 function go(view, params = {}, type = 'push') {
@@ -349,6 +394,7 @@ function go(view, params = {}, type = 'push') {
   } else {
     shimmerImages(div);
     wireView(view, params, div);
+    animatePageIn(div, view);
   }
 
   div.scrollTop = div._savedScrollTop || 0;
@@ -1092,6 +1138,14 @@ function wireProductDetail(c, product) {
     addBtn.textContent = '✓ Adicionado!';
     addBtn.style.background = 'var(--c-green)';
     addBtn.style.color = 'white';
+    if (window.gsap) {
+      window.gsap.fromTo(addBtn,
+        { scale: 0.94 },
+        { scale: 1, duration: 0.5, ease: 'elastic.out(1, 0.5)' }
+      );
+      const badge = document.getElementById('nav-cart-badge');
+      if (badge) window.gsap.fromTo(badge, { scale: 0 }, { scale: 1, duration: 0.4, ease: 'back.out(2.5)' });
+    }
     setTimeout(() => go('cart'), 750);
   });
 }
@@ -1356,7 +1410,17 @@ async function init() {
   // Pré-carrega imagens em background para que fiquem em cache do browser
   preloadImages();
 
-  // Substitui skeleton pelo conteúdo real (fade, sem slide)
+  // Fade-out suave do skeleton antes de substituir pelo conteúdo real
+  await new Promise(resolve => {
+    if (window.gsap) {
+      window.gsap.to(skelDiv, { opacity: 0, duration: 0.2, ease: 'power1.in', onComplete: resolve });
+    } else {
+      skelDiv.style.transition = 'opacity .2s';
+      skelDiv.style.opacity = '0';
+      setTimeout(resolve, 200);
+    }
+  });
+
   go('home', {}, 'replace');
 }
 
