@@ -1157,26 +1157,61 @@
   const stateBtnRow = document.createElement('div');
   Object.assign(stateBtnRow.style, { display:'flex', gap:'8px' });
 
-  const stateBtnCopy = document.createElement('button');
-  stateBtnCopy.textContent = '📋 Copiar para Claude';
-  Object.assign(stateBtnCopy.style, {
-    flex:'1', padding:'12px', borderRadius:'10px',
-    background:'rgba(30,100,255,0.9)', border:'none', color:'#fff',
+  const stateBtnSync = document.createElement('button');
+  stateBtnSync.textContent = '☁ Enviar ao Claude';
+  Object.assign(stateBtnSync.style, {
+    flex:'2', padding:'12px', borderRadius:'10px',
+    background:'rgba(6,182,212,0.9)', border:'none', color:'#000',
     fontFamily:'monospace', fontSize:'12px', fontWeight:'900', cursor:'pointer',
   });
 
-  const stateBtnClose = document.createElement('button');
-  stateBtnClose.textContent = '✓ Fechar';
-  Object.assign(stateBtnClose.style, {
-    padding:'12px 18px', borderRadius:'10px',
-    background:'rgba(255,255,255,0.1)', border:'1px solid rgba(255,255,255,0.15)',
-    color:'#fff', fontFamily:'monospace', fontSize:'12px', cursor:'pointer',
+  const stateBtnCopy = document.createElement('button');
+  stateBtnCopy.textContent = '📋 Copiar';
+  Object.assign(stateBtnCopy.style, {
+    flex:'1', padding:'12px', borderRadius:'10px',
+    background:'rgba(255,255,255,0.1)', border:'1px solid rgba(255,255,255,0.2)',
+    color:'#fff', fontFamily:'monospace', fontSize:'12px', fontWeight:'700', cursor:'pointer',
   });
 
-  stateBtnRow.append(stateBtnCopy, stateBtnClose);
+  const stateBtnClose = document.createElement('button');
+  stateBtnClose.textContent = '✓';
+  Object.assign(stateBtnClose.style, {
+    padding:'12px 16px', borderRadius:'10px',
+    background:'rgba(255,255,255,0.07)', border:'1px solid rgba(255,255,255,0.12)',
+    color:'rgba(255,255,255,0.6)', fontFamily:'monospace', fontSize:'12px', cursor:'pointer',
+  });
+
+  stateBtnRow.append(stateBtnSync, stateBtnCopy, stateBtnClose);
   stateBox.append(stateTitle, stateTextArea, stateEmpty, stateBtnRow);
   stateModal.appendChild(stateBox);
   stateModal.addEventListener('touchend', e => { if (e.target === stateModal) stateModal.style.display = 'none'; });
+
+  async function syncToFirestore() {
+    const entries = Array.from(sessionChanges.values());
+    const text = buildStateText();
+    if (!entries.length) return false;
+    const PROJ = 'adegas-pf';
+    const KEY  = 'AIzaSyCT3BGvNWRzoOc3mT4lDRRfz6GISptkUzc';
+    const url  = `https://firestore.googleapis.com/v1/projects/${PROJ}/databases/(default)/documents/devtools/savestate?key=${KEY}`;
+    try {
+      const r = await fetch(url, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fields: {
+            text:        { stringValue: text || '' },
+            entriesJson: { stringValue: JSON.stringify(entries) },
+            ts:          { integerValue: String(Date.now()) },
+          }
+        }),
+      });
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      return true;
+    } catch (e) {
+      console.error('[DevRuler] sync erro:', e);
+      return false;
+    }
+  }
 
   function openStateModal() {
     recordChange(); /* garante que elemento atual está salvo */
@@ -1195,12 +1230,28 @@
     }
   }
 
+  stateBtnSync.addEventListener('click', async () => {
+    if (!sessionChanges.size) { flash('nenhuma alteração para enviar'); return; }
+    stateBtnSync.textContent = '⏳ Enviando...';
+    stateBtnSync.disabled = true;
+    const ok = await syncToFirestore();
+    stateBtnSync.textContent = ok ? '✓ Enviado!' : '✗ Erro — tente copiar';
+    stateBtnSync.style.background = ok ? 'rgba(5,150,105,0.9)' : 'rgba(180,30,30,0.9)';
+    stateBtnSync.style.color = '#fff';
+    setTimeout(() => {
+      stateBtnSync.textContent = '☁ Enviar ao Claude';
+      stateBtnSync.style.background = 'rgba(6,182,212,0.9)';
+      stateBtnSync.style.color = '#000';
+      stateBtnSync.disabled = false;
+    }, 2500);
+  });
+
   stateBtnCopy.addEventListener('click', () => {
     const txt = stateTextArea.value;
     if (!txt) return;
     copyToClipboard(txt);
     stateBtnCopy.textContent = '✓ Copiado!';
-    setTimeout(() => stateBtnCopy.textContent = '📋 Copiar para Claude', 1800);
+    setTimeout(() => stateBtnCopy.textContent = '📋 Copiar', 1800);
   });
   stateBtnClose.addEventListener('click', () => { stateModal.style.display = 'none'; });
   stateClear.addEventListener('click', () => {

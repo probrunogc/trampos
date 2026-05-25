@@ -107,6 +107,11 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    // === DEV TOOLS (temporário — remover antes de produção) ===
+    match /devtools/{id} {
+      allow read, write: if true;
+    }
+
     // === FALLBACK ===
     match /{document=**} {
       allow read, write: if false;
