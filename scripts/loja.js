@@ -342,18 +342,18 @@ function animatePageIn(div, view) {
     }
 
     if (view === 'product') {
-      const hero = f('.pd-img-section');
-      const info = f('.pd-info');
-      const btn  = f('.pd-add-btn');
+      const hero = f('.pd2-img-wrap');
+      const info = f('.pd2-info');
+      const btn  = f('.pd2-add-btn');
       if (hero) g.from(hero, { ...base, opacity: 0, scale: 0.97, duration: 0.42, ease: 'power3.out' });
       if (info) g.from(info, { ...base, opacity: 0, y: 18, duration: 0.35, delay: 0.09 });
       if (btn)  g.from(btn,  { ...base, opacity: 0, y: 10, duration: 0.3,  delay: 0.18 });
     }
 
     if (view === 'cart') {
-      const items = q('.cart-item');
+      const items = q('.cart2-item');
       if (items.length) g.from(items, { ...base, opacity: 0, x: -12, duration: 0.28, stagger: 0.055 });
-      const summary = f('.cart-summary');
+      const summary = f('.cart2-footer');
       if (summary) g.from(summary, { ...base, opacity: 0, y: 12, duration: 0.28, delay: items.length * 0.055 });
     }
   });
@@ -669,25 +669,26 @@ function renderProductList(catId) {
   const prods   = S.products.filter(p => p.category === catId);
   const filters = buildFilters(catId, prods);
   return `
-    <div class="view-header">
-      <button class="btn-back" id="btn-back">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+    <div class="vhf">
+      <button class="vhf-back" id="btn-back">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="20" height="20">
           <path d="M19 12H5M12 19l-7-7 7-7"/>
         </svg>
       </button>
-      <div class="view-header-title">
-        <h2>${esc(cat.label)}</h2>
-        <p>${prods.length} produto${prods.length !== 1 ? 's' : ''}</p>
-      </div>
-      <button class="layout-toggle-btn" id="btn-layout-toggle">${S.layout === 2 ? ICON_COMPACT : ICON_EXPAND}</button>
+      <span class="vhf-title">${esc(cat.label.toUpperCase())}</span>
+      <button class="vhf-icon" id="btn-pl-search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20">
+          <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
+        </svg>
+      </button>
     </div>
     ${filters.length > 0 ? `
-      <div class="filter-chips">
-        ${filters.map((f, i) => `<button class="filter-chip${i === 0 ? ' active' : ''}" data-fid="${esc(f.id)}">${esc(f.label)}</button>`).join('')}
+      <div class="filter-tabs" id="filter-tabs">
+        ${filters.map((f, i) => `<button class="filter-tab${i === 0 ? ' active' : ''}" data-fid="${esc(f.id)}">${esc(f.label)}</button>`).join('')}
       </div>
     ` : ''}
     ${prods.length > 0
-      ? `<div class="products-grid${S.layout === 4 ? ' compact' : ''}" id="prod-list-grid">${prods.map(renderProductCard).join('')}</div>`
+      ? `<div class="plist" id="prod-list-grid">${prods.map(renderPLI).join('')}</div>`
       : `<div class="empty-state">
            <div class="empty-state-icon">
              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -699,6 +700,23 @@ function renderProductList(catId) {
          </div>`
     }
   `;
+}
+
+/* PRODUCT LIST ITEM (new list layout) */
+function renderPLI(p) {
+  const inStock = (p.stock ?? 1) > 0;
+  return `
+    <div class="pli" data-pid="${esc(p.id)}">
+      <div class="pli-thumb">${productImage(p)}</div>
+      <div class="pli-info">
+        <div class="pli-name">${esc(p.name)}</div>
+        ${p.brand ? `<div class="pli-var">${esc(p.brand)}</div>` : ''}
+        <div class="pli-price">${brl(p.price)}</div>
+      </div>
+      ${inStock
+        ? `<button class="pli-add" data-pid="${esc(p.id)}">+</button>`
+        : `<span class="pli-out">Esgotado</span>`}
+    </div>`;
 }
 
 /* PRODUCT CARD */
@@ -723,62 +741,60 @@ function renderProductCard(p) {
 
 /* PRODUCT DETAIL */
 function renderProductDetail(p) {
-  const inStock = (p.stock ?? 1) > 0;
-  const images  = getProductImages(p);
+  const inStock  = (p.stock ?? 1) > 0;
+  const images   = getProductImages(p);
   const firstImg = images[0] || '';
 
   return `
-    <div class="pd-page">
-      <button class="pd-back" id="btn-back">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="22" height="22">
+    <div class="pd2-page">
+      <button class="pd2-back" id="btn-back">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="20" height="20">
           <path d="M19 12H5M12 19l-7-7 7-7"/>
         </svg>
       </button>
-      <div class="pd-split">
-        <div class="pd-img-section" id="pd-img-section">
-          ${firstImg
-            ? `<img id="pd-main-img" src="${esc(firstImg)}" alt="${esc(p.name)}" loading="eager" />`
-            : productImage(p)
-          }
-        </div>
-        <div class="pd-info">
-          ${p.brand ? `<p class="pd-brand">${esc(p.brand)}</p>` : ''}
-          <h2 class="pd-name">${esc(p.name)}</h2>
-          <div class="pd-price-row">
-            <p class="pd-price">${brl(p.price)}</p>
-            ${inStock ? `
-              <div class="pd-qty-ctrl">
-                <button class="pd-qty-btn" id="qty-minus" ${S.qty <= 1 ? 'disabled' : ''}>−</button>
-                <span class="pd-qty-val" id="qty-val">${S.qty}</span>
-                <button class="pd-qty-btn" id="qty-plus">+</button>
-              </div>
-            ` : ''}
-          </div>
-          ${!inStock ? `<p class="pd-out-of-stock">Esgotado</p>` : ''}
-        </div>
+
+      <div class="pd2-img-wrap">
+        ${firstImg
+          ? `<img id="pd-main-img" src="${esc(firstImg)}" alt="${esc(p.name)}" loading="eager" />`
+          : productImage(p)
+        }
       </div>
+
+      <div class="pd2-info">
+        ${p.brand ? `<p class="pd2-var">${esc(p.brand)}</p>` : ''}
+        <h2 class="pd2-name">${esc(p.name)}</h2>
+        <p class="pd2-price">${brl(p.price)}</p>
+
+        ${inStock ? `
+          <div class="pd2-qty-pill">
+            <button class="pd2-qty-btn" id="qty-minus" ${S.qty <= 1 ? 'disabled' : ''}>−</button>
+            <span class="pd2-qty-val" id="qty-val">${S.qty}</span>
+            <button class="pd2-qty-btn" id="qty-plus">+</button>
+          </div>
+        ` : `<p class="pd2-out">Esgotado</p>`}
+      </div>
+
       ${inStock ? `
-        <button class="pd-add-btn" id="btn-add-to-cart">
-          ADICIONAR AO CARRINHO
-        </button>
+        <button class="pd2-add-btn" id="btn-add-to-cart">ADICIONAR AO CARRINHO</button>
       ` : ''}
-      <div class="pd-sections">
+
+      <div class="pd2-sections">
         ${p.description ? `
-          <div class="pd-section">
-            <p class="pd-section-label">Descrição</p>
-            <p class="pd-section-body">${esc(p.description)}</p>
+          <div class="pd2-section">
+            <p class="pd2-sec-label">DESCRIÇÃO</p>
+            <p class="pd2-sec-body">${esc(p.description)}</p>
           </div>
         ` : ''}
         ${p.teor ? `
-          <div class="pd-section">
-            <p class="pd-section-label">Teor Alcoólico</p>
-            <p class="pd-section-body">${esc(p.teor)}</p>
+          <div class="pd2-section">
+            <p class="pd2-sec-label">TEOR ALCOÓLICO</p>
+            <p class="pd2-sec-body">${esc(p.teor)}</p>
           </div>
         ` : ''}
         ${p.origem ? `
-          <div class="pd-section">
-            <p class="pd-section-label">Origem</p>
-            <p class="pd-section-body">${esc(p.origem)}</p>
+          <div class="pd2-section">
+            <p class="pd2-sec-label">ORIGEM</p>
+            <p class="pd2-sec-body">${esc(p.origem)}</p>
           </div>
         ` : ''}
       </div>
@@ -792,11 +808,20 @@ function renderCart() {
   const sub   = cartTotal();
   const total = sub + fee;
   return `
-    <div class="view-header">
-      <div class="view-header-title">
-        <h2>Carrinho</h2>
-        <p>${S.cart.length === 0 ? 'Vazio' : `${cartCount()} ${cartCount() === 1 ? 'item' : 'itens'}`}</p>
-      </div>
+    <div class="vhf">
+      <button class="vhf-back" id="btn-back">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="20" height="20">
+          <path d="M19 12H5M12 19l-7-7 7-7"/>
+        </svg>
+      </button>
+      <span class="vhf-title">MEU CARRINHO</span>
+      <button class="vhf-icon" id="btn-clear-cart-header" title="Limpar carrinho">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20">
+          <polyline points="3 6 5 6 21 6"/>
+          <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/>
+          <path d="M10 11v6"/><path d="M14 11v6"/>
+        </svg>
+      </button>
     </div>
     ${S.cart.length === 0 ? `
       <div class="empty-state" style="margin-top:40px">
@@ -810,28 +835,23 @@ function renderCart() {
         <p>Adicione produtos para fazer seu pedido.</p>
       </div>
     ` : `
-      <div class="cart-list">
+      <div class="cart2-list" id="cart2-list">
         ${S.cart.map(renderCartItem).join('')}
       </div>
-      <div class="cart-summary">
-        <div class="cart-summary-row">
-          <span>Subtotal</span><span>${brl(sub)}</span>
+      <div class="cart2-footer">
+        <div class="cart2-summary">
+          <div class="cart2-row">
+            <span>Subtotal</span><span>${brl(sub)}</span>
+          </div>
+          ${fee > 0 ? `
+          <div class="cart2-row">
+            <span>Taxa de entrega</span><span>${brl(fee)}</span>
+          </div>` : ''}
+          <div class="cart2-row cart2-total">
+            <span>TOTAL</span><span>${brl(total)}</span>
+          </div>
         </div>
-        <div class="cart-summary-row">
-          <span>Taxa de entrega</span>
-          <span>${fee === 0 ? '<strong style="color:var(--c-green)">Grátis</strong>' : brl(fee)}</span>
-        </div>
-        <div class="cart-summary-row total">
-          <span>Total</span><span>${brl(total)}</span>
-        </div>
-      </div>
-      <div class="cart-actions">
-        <button class="btn-whatsapp" id="btn-wa-cart">
-          ${waIcon(20)} Pedir pelo WhatsApp
-        </button>
-        <button class="btn-checkout" id="btn-go-checkout">
-          Confirmar pedido →
-        </button>
+        <button class="btn-primary-yellow" id="btn-go-checkout">FINALIZAR PEDIDO</button>
       </div>
     `}
   `;
@@ -839,21 +859,18 @@ function renderCart() {
 
 function renderCartItem(item) {
   return `
-    <div class="cart-item-card">
-      <div class="cart-item-thumb">${productImage({ art: item.art, image: item.image, category: item.category, name: item.name })}</div>
-      <div class="cart-item-info">
-        <div class="cart-item-name">${esc(item.name)}</div>
-        <div class="cart-item-unit">${brl(item.price)} / ${item.unit || 'un'}</div>
-        <div class="cart-item-subtotal">${brl(item.price * item.qty)}</div>
-      </div>
-      <div class="cart-item-right">
-        <div class="cart-qty-ctrl">
-          <button class="cart-qty-btn" data-cid="${esc(item.id)}" data-delta="-1">−</button>
-          <span class="cart-qty-val">${item.qty}</span>
-          <button class="cart-qty-btn" data-cid="${esc(item.id)}" data-delta="1">+</button>
+    <div class="cart2-item" data-cid="${esc(item.id)}">
+      <div class="cart2-thumb">${productImage({ art: item.art, image: item.image, category: item.category, name: item.name })}</div>
+      <div class="cart2-info">
+        <div class="cart2-name">${esc(item.name)}</div>
+        ${item.brand ? `<div class="cart2-var">${esc(item.brand)}</div>` : ''}
+        <div class="cart2-qty-ctrl">
+          <button class="cart2-qty-btn" data-cid="${esc(item.id)}" data-delta="-1">−</button>
+          <span class="cart2-qty-val">${item.qty}</span>
+          <button class="cart2-qty-btn" data-cid="${esc(item.id)}" data-delta="1">+</button>
         </div>
-        <button class="btn-cart-remove" data-cid="${esc(item.id)}">Remover</button>
       </div>
+      <div class="cart2-price">${brl(item.price * item.qty)}</div>
     </div>`;
 }
 
@@ -861,30 +878,35 @@ function renderCartItem(item) {
 function renderCheckout() {
   const d   = S.checkout;
   const fee = S.settings.deliveryFee || 0;
-  const total = cartTotal() + fee;
+  const sub   = cartTotal();
+  const total = sub + fee;
   const enabledPays = S.settings.lojaPayments || ['pix', 'credito', 'debito', 'dinheiro'];
   const PAY_OPTS = [
-    { id: 'pix',      label: 'PIX',     icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="5" y="5" width="3" height="3"/><rect x="16" y="5" width="3" height="3"/><rect x="5" y="16" width="3" height="3"/><path d="M14 14h3v3M14 17v3h3M17 14h3M20 17v3"/></svg>` },
-    { id: 'credito',  label: 'Crédito', icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>` },
-    { id: 'debito',   label: 'Débito',  icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/><line x1="5" y1="15" x2="9" y2="15"/></svg>` },
-    { id: 'dinheiro', label: 'Dinheiro',icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></svg>` },
+    { id: 'pix',      label: 'PIX' },
+    { id: 'credito',  label: 'Cartão de Crédito' },
+    { id: 'debito',   label: 'Cartão de Débito' },
+    { id: 'dinheiro', label: 'Dinheiro' },
   ].filter(p => enabledPays.includes(p.id));
 
+  // Determine if we have a saved address to show card vs form
+  const hasAddr = !!(d.address);
+
   return `
-    <div class="view-header">
-      <button class="btn-back" id="btn-back">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+    <div class="vhf">
+      <button class="vhf-back" id="btn-back">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="20" height="20">
           <path d="M19 12H5M12 19l-7-7 7-7"/>
         </svg>
       </button>
-      <div class="view-header-title">
-        <h2>Finalizar pedido</h2>
-        <p>Total: ${brl(total)}</p>
-      </div>
+      <span class="vhf-title">FINALIZAR PEDIDO</span>
+      <span class="vhf-icon"></span>
     </div>
-    <div class="checkout-form">
+
+    <div class="co2-body">
+
+      <!-- Dados do cliente -->
+      <div class="co2-sec-title">DADOS DO CLIENTE</div>
       <div class="checkout-section">
-        <div class="checkout-section-title">Seus dados</div>
         <div class="form-field">
           <label>Nome completo *</label>
           <input type="text" id="co-name" placeholder="Ex.: João Silva" value="${esc(d.name)}" autocomplete="name" />
@@ -895,53 +917,71 @@ function renderCheckout() {
         </div>
       </div>
 
-      <div class="checkout-section">
-        <div class="checkout-section-title">Endereço de entrega</div>
-        <div class="form-field">
-          <label>Rua / Avenida *</label>
-          <input type="text" id="co-address" placeholder="Ex.: Rua das Acácias" value="${esc(d.address)}" autocomplete="street-address" />
-        </div>
-        <div class="form-row">
-          <div class="form-field">
-            <label>Número</label>
-            <input type="text" id="co-number" placeholder="123" value="${esc(d.number)}" />
+      <!-- Endereço de entrega -->
+      <div class="co2-sec-title">ENDEREÇO DE ENTREGA</div>
+
+      ${hasAddr ? `
+        <div class="co2-addr-card" id="co2-addr-card">
+          <div class="co2-addr-info">
+            <div class="co2-addr-street">${esc(d.address)}${d.number ? ', ' + esc(d.number) : ''}</div>
+            ${d.complement ? `<div class="co2-addr-compl">${esc(d.complement)}</div>` : ''}
           </div>
+          <button class="co2-addr-change" id="btn-addr-change">Alterar</button>
+        </div>
+      ` : ''}
+
+      <div class="co2-addr-form${hasAddr ? ' hidden' : ''}" id="co2-addr-form">
+        <div class="checkout-section">
           <div class="form-field">
-            <label>Complemento</label>
-            <input type="text" id="co-complement" placeholder="Apto, Bairro…" value="${esc(d.complement)}" />
+            <label>Rua / Avenida *</label>
+            <input type="text" id="co-address" placeholder="Ex.: Rua das Acácias" value="${esc(d.address)}" autocomplete="street-address" />
+          </div>
+          <div class="form-row">
+            <div class="form-field">
+              <label>Número</label>
+              <input type="text" id="co-number" placeholder="123" value="${esc(d.number)}" />
+            </div>
+            <div class="form-field">
+              <label>Complemento</label>
+              <input type="text" id="co-complement" placeholder="Apto, Bairro…" value="${esc(d.complement)}" />
+            </div>
           </div>
         </div>
       </div>
 
+      <!-- Forma de pagamento -->
+      <div class="co2-sec-title">FORMA DE PAGAMENTO</div>
       <div class="checkout-section">
-        <div class="checkout-section-title">Forma de pagamento</div>
-        <div class="payment-grid">
+        <div class="co2-pay-list">
           ${PAY_OPTS.map(p => `
-            <div class="payment-option${d.payment === p.id ? ' selected' : ''}" data-pay="${p.id}">
-              <div class="payment-option-icon">${p.icon}</div>
-              <div class="payment-option-label">${p.label}</div>
-            </div>
+            <label class="co2-pay-opt">
+              <span class="co2-pay-radio${d.payment === p.id ? ' checked' : ''}" data-pay="${esc(p.id)}"></span>
+              <span class="co2-pay-label">${esc(p.label)}</span>
+              <input type="radio" name="co-payment" value="${esc(p.id)}" ${d.payment === p.id ? 'checked' : ''} style="display:none" />
+            </label>
           `).join('')}
         </div>
       </div>
 
+      <!-- Resumo do pedido -->
+      <div class="co2-sec-title">RESUMO DO PEDIDO</div>
       <div class="checkout-section">
-        <div class="checkout-section-title">Observações (opcional)</div>
-        <div class="form-field">
+        <div class="co2-summary">
+          <div class="co2-sum-row"><span>Subtotal</span><span>${brl(sub)}</span></div>
+          ${fee > 0 ? `<div class="co2-sum-row"><span>Taxa de entrega</span><span>${brl(fee)}</span></div>` : ''}
+          <div class="co2-sum-row co2-sum-total"><span>TOTAL</span><span>${brl(total)}</span></div>
+        </div>
+      </div>
+
+      <!-- Observações -->
+      <div class="co2-sec-title">OBSERVAÇÕES (OPCIONAL)</div>
+      <div class="checkout-section">
+        <div class="form-field co2-notes">
           <textarea id="co-notes" placeholder="Troco, observações sobre o pedido…">${esc(d.notes)}</textarea>
         </div>
       </div>
 
-      <div class="checkout-section">
-        <div class="cart-summary-row"><span>Subtotal</span><span>${brl(cartTotal())}</span></div>
-        <div class="cart-summary-row">
-          <span>Entrega</span>
-          <span>${fee === 0 ? '<strong style="color:var(--c-green)">Grátis</strong>' : brl(fee)}</span>
-        </div>
-        <div class="cart-summary-row total"><span>Total</span><span>${brl(total)}</span></div>
-      </div>
-
-      <button class="btn-confirm" id="btn-confirm">Confirmar pedido</button>
+      <button class="btn-primary-yellow" id="btn-confirm">CONFIRMAR PEDIDO</button>
     </div>
   `;
 }
@@ -1123,15 +1163,39 @@ function wireLayoutToggle(c, gridSel) {
   });
 }
 
+function wirePLIItems(container, prods) {
+  container.querySelectorAll('.pli').forEach(card => {
+    const pid = card.dataset.pid;
+    const product = S.products.find(p => p.id === pid);
+    if (!product) return;
+    card.addEventListener('click', e => {
+      if (e.target.closest('.pli-add')) return;
+      go('product', { product });
+    });
+  });
+  container.querySelectorAll('.pli-add').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const product = S.products.find(p => p.id === btn.dataset.pid);
+      if (!product) return;
+      addToCart(product, 1);
+      const orig = btn.textContent;
+      btn.textContent = '✓';
+      btn.style.cssText = 'background:var(--c-green);color:white';
+      setTimeout(() => { btn.textContent = orig; btn.style.cssText = ''; }, 1200);
+    });
+  });
+}
+
 function wireProductList(c, catId) {
   const prods = S.products.filter(p => p.category === catId);
   const grid  = c.querySelector('#prod-list-grid');
 
-  c.querySelectorAll('.filter-chip').forEach(chip => {
-    chip.addEventListener('click', () => {
-      c.querySelectorAll('.filter-chip').forEach(ch => ch.classList.remove('active'));
-      chip.classList.add('active');
-      const fid = chip.dataset.fid;
+  c.querySelectorAll('.filter-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      c.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      const fid = tab.dataset.fid;
       let filtered = prods;
       if (fid !== 'all') {
         if      (fid === 'lata')    filtered = prods.filter(p => /lata/i.test(p.name));
@@ -1140,15 +1204,14 @@ function wireProductList(c, catId) {
       }
       if (grid) {
         grid.innerHTML = filtered.length > 0
-          ? filtered.map(renderProductCard).join('')
-          : `<div style="grid-column:span 2;padding:32px;text-align:center;color:var(--text-secondary)">Nenhum produto encontrado.</div>`;
-        wireProductCards(grid);
+          ? filtered.map(renderPLI).join('')
+          : `<div style="padding:32px;text-align:center;color:var(--text-secondary)">Nenhum produto encontrado.</div>`;
+        wirePLIItems(grid, filtered);
       }
     });
   });
 
-  if (grid) wireProductCards(grid);
-  wireLayoutToggle(c, '#prod-list-grid');
+  if (grid) wirePLIItems(grid, prods);
 }
 
 function wireProductDetail(c, product) {
@@ -1212,23 +1275,24 @@ function wireCart(c) {
     const fee   = S.settings.deliveryFee || 0;
     const sub   = cartTotal();
     const total = sub + fee;
-    const cnt   = cartCount();
 
-    const listEl = c.querySelector('.cart-list');
+    const listEl = c.querySelector('#cart2-list');
     if (listEl) { listEl.innerHTML = S.cart.map(renderCartItem).join(''); bindItems(); }
 
-    const titleP = c.querySelector('.view-header-title p');
-    if (titleP) titleP.textContent = `${cnt} ${cnt === 1 ? 'item' : 'itens'}`;
-
-    const rows = c.querySelectorAll('.cart-summary .cart-summary-row');
-    if (rows[0]) rows[0].querySelector('span:last-child').textContent = brl(sub);
-    if (rows[2]) rows[2].querySelector('span:last-child').textContent = brl(total);
+    // Update summary rows
+    const rows = c.querySelectorAll('.cart2-row');
+    if (rows.length) {
+      rows[0].querySelector('span:last-child').textContent = brl(sub);
+      if (fee > 0 && rows[1]) rows[1].querySelector('span:last-child').textContent = brl(fee);
+      const totalRow = c.querySelector('.cart2-total');
+      if (totalRow) totalRow.querySelector('span:last-child').textContent = brl(total);
+    }
 
     updateCartBadge();
   }
 
   function bindItems() {
-    c.querySelectorAll('.cart-qty-btn').forEach(btn => {
+    c.querySelectorAll('.cart2-qty-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         const cid   = btn.dataset.cid;
         const delta = parseInt(btn.dataset.delta, 10);
@@ -1236,34 +1300,57 @@ function wireCart(c) {
         if (item) { setCartQty(cid, item.qty + delta); sync(); }
       });
     });
-    c.querySelectorAll('.btn-cart-remove').forEach(btn => {
-      btn.addEventListener('click', () => { removeFromCart(btn.dataset.cid); sync(); });
-    });
   }
 
   bindItems();
-  c.querySelector('#btn-wa-cart')?.addEventListener('click', () => openWhatsApp(buildCartMessage()));
+  c.querySelector('#btn-clear-cart-header')?.addEventListener('click', () => {
+    if (S.cart.length > 0 && confirm('Limpar carrinho?')) {
+      S.cart = []; saveCart(); updateCartBadge();
+      c.innerHTML = renderCart();
+      wireCart(c);
+    }
+  });
   c.querySelector('#btn-go-checkout')?.addEventListener('click', () => {
     if (S.cart.length > 0) go('checkout');
   });
 }
 
 function wireCheckout(c) {
-  c.querySelectorAll('.payment-option').forEach(opt => {
-    opt.addEventListener('click', () => {
-      S.checkout.payment = opt.dataset.pay;
-      c.querySelectorAll('.payment-option').forEach(o => o.classList.remove('selected'));
-      opt.classList.add('selected');
+  // Radio payment buttons
+  c.querySelectorAll('.co2-pay-radio').forEach(radio => {
+    radio.addEventListener('click', () => {
+      const pay = radio.dataset.pay;
+      S.checkout.payment = pay;
+      c.querySelectorAll('.co2-pay-radio').forEach(r => r.classList.remove('checked'));
+      radio.classList.add('checked');
+      // Sync the hidden <input> too
+      c.querySelectorAll('input[name="co-payment"]').forEach(inp => {
+        inp.checked = (inp.value === pay);
+      });
     });
+  });
+
+  // Address card toggle
+  c.querySelector('#btn-addr-change')?.addEventListener('click', () => {
+    const card = c.querySelector('#co2-addr-card');
+    const form = c.querySelector('#co2-addr-form');
+    if (card) card.style.display = 'none';
+    if (form) form.classList.remove('hidden');
   });
 
   c.querySelector('#btn-confirm')?.addEventListener('click', () => {
     const d = S.checkout;
     d.name       = c.querySelector('#co-name')?.value.trim()       || '';
     d.phone      = c.querySelector('#co-phone')?.value.trim()      || '';
-    d.address    = c.querySelector('#co-address')?.value.trim()    || '';
-    d.number     = c.querySelector('#co-number')?.value.trim()     || '';
-    d.complement = c.querySelector('#co-complement')?.value.trim() || '';
+
+    // Address: use form input if visible, otherwise keep card's existing address
+    const addrForm = c.querySelector('#co2-addr-form');
+    const formVisible = addrForm && !addrForm.classList.contains('hidden');
+    if (formVisible) {
+      d.address    = c.querySelector('#co-address')?.value.trim()    || '';
+      d.number     = c.querySelector('#co-number')?.value.trim()     || '';
+      d.complement = c.querySelector('#co-complement')?.value.trim() || '';
+    }
     d.notes      = c.querySelector('#co-notes')?.value.trim()      || '';
 
     if (!d.name)    { alert('Informe seu nome completo.'); return; }
