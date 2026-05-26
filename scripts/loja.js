@@ -1598,3 +1598,9 @@ async function init() {
 }
 
 init().catch(console.error);
+
+// Elimina qualquer seleção de texto no instante em que ela é criada
+document.addEventListener('selectionchange', () => {
+  const sel = window.getSelection();
+  if (sel && sel.toString().length > 0) sel.removeAllRanges();
+});
