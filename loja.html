@@ -60,6 +60,18 @@
     document.addEventListener('contextmenu', e => e.preventDefault());
     document.addEventListener('gesturestart', e => e.preventDefault());
     document.addEventListener('dblclick', e => e.preventDefault());
+    document.addEventListener('selectstart', e => { if (!e.target.matches('input,textarea')) e.preventDefault(); });
+    document.addEventListener('dragstart', e => e.preventDefault());
+    document.addEventListener('copy', e => { if (!e.target.matches('input,textarea')) e.preventDefault(); });
+    document.addEventListener('cut',  e => { if (!e.target.matches('input,textarea')) e.preventDefault(); });
+    document.addEventListener('keydown', e => {
+      const ctrl = e.ctrlKey || e.metaKey;
+      // Bloqueia: Ctrl+U (fonte), Ctrl+S (salvar), Ctrl+A (selecionar tudo),
+      //           Ctrl+C (copiar), Ctrl+P (imprimir), F12, Ctrl+Shift+I/J (DevTools)
+      if (ctrl && ['u','s','a','c','p'].includes(e.key.toLowerCase())) e.preventDefault();
+      if (e.key === 'F12') e.preventDefault();
+      if (ctrl && e.shiftKey && ['i','j','c'].includes(e.key.toLowerCase())) e.preventDefault();
+    });
     if ('serviceWorker' in navigator) {
       let _reloading = false;
       navigator.serviceWorker.addEventListener('controllerchange', () => {

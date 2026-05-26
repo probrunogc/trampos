@@ -8,7 +8,16 @@
   margin: 0;
   padding: 0;
   -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
 }
+
+/* Permite seleção apenas nos campos de formulário */
+input, textarea { user-select: text; -webkit-user-select: text; }
+
+img { -webkit-user-drag: none; user-drag: none; pointer-events: none; }
+/* Exceção: imagens dentro de botões clicáveis precisam de pointer-events */
+button img, a img, [data-pid] img, [data-catid] img { pointer-events: auto; }
 
 :root {
   /* Core palette — vibrant purple for light background */
