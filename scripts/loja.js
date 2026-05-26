@@ -363,6 +363,15 @@ function animatePageIn(div, view) {
 // type: 'push' (slide in) | 'back' (slide back) | 'tab' (fade) | 'replace' (instant)
 function go(view, params = {}, type = 'push') {
   const root = document.getElementById('view-root');
+
+  // Se já está na mesma view (tab), só garante scroll no topo — sem re-render
+  if (type === 'tab' && view === S.view) {
+    const cur = document.getElementById('current-view');
+    if (cur) cur.scrollTop = 0;
+    updateBottomNav(view);
+    return;
+  }
+
   const prev = root.querySelector('#current-view');
 
   // Save outgoing page to cache before leaving (never save skeleton via 'replace')
@@ -1184,7 +1193,11 @@ function wireProductDetail(c, product) {
       const badge = document.getElementById('nav-cart-badge');
       if (badge) window.gsap.fromTo(badge, { scale: 0 }, { scale: 1, duration: 0.4, ease: 'back.out(2.5)' });
     }
-    setTimeout(() => go('cart'), 750);
+    // Só vai pro carrinho se o usuário ainda estiver nesta tela de produto
+    const pid = product.id;
+    setTimeout(() => {
+      if (S.view === 'product' && S.viewParams?.product?.id === pid) go('cart');
+    }, 750);
   });
 }
 
@@ -1303,10 +1316,7 @@ function wireSuccess(c) {
     const code = (S.lastOrderId || '').slice(-6).toUpperCase();
     openWhatsApp(`Olá! Acabei de fazer um pedido no app Empório GO. Código: #${code}`);
   });
-  c.querySelector('#btn-keep-shopping')?.addEventListener('click', () => {
-    S.navStack = [];
-    go('home');
-  });
+  c.querySelector('#btn-keep-shopping')?.addEventListener('click', () => go('home', {}, 'tab'));
 }
 
 /* ─── Init ───────────────────────────────────────────────────── */
