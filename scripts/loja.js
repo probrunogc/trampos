@@ -280,45 +280,47 @@ function preloadImages() {
 function animatePageIn(div, view) {
   const g = window.gsap;
   if (!g) return;
-  const q = s => div.querySelectorAll(s);
-  const f = s => div.querySelector(s);
+  // One frame delay — ensures CSS page-enter transitions don't conflict
+  requestAnimationFrame(() => {
+    const q = s => Array.from(div.querySelectorAll(s));
+    const f = s => div.querySelector(s);
+    const base = { ease: 'power2.out', clearProps: 'all' };
 
-  if (view === 'home') {
-    const banner = f('.home-banner');
-    if (banner) g.from(banner, { opacity: 0, y: 28, duration: 0.55, ease: 'power3.out' });
-    const chips = q('.cat-chip');
-    if (chips.length) g.from(chips, { opacity: 0, y: 18, duration: 0.4, stagger: 0.055, ease: 'power2.out', delay: 0.1 });
-    const cards = q('.product-card');
-    if (cards.length) g.from(cards, { opacity: 0, y: 22, duration: 0.45, stagger: 0.07, ease: 'power2.out', delay: 0.18 });
-  }
+    if (view === 'home') {
+      const banner = f('.banner-wrap') || f('.banner-card');
+      if (banner) g.from(banner, { ...base, opacity: 0, y: 18, duration: 0.45 });
+      const chips = q('.cat-chip');
+      if (chips.length) g.from(chips, { ...base, opacity: 0, y: 12, duration: 0.35, stagger: 0.05, delay: 0.07 });
+      const cards = q('.product-card');
+      if (cards.length) g.from(cards, { ...base, opacity: 0, y: 16, duration: 0.38, stagger: 0.055, delay: 0.14 });
+    }
 
-  if (view === 'categories') {
-    const banners = q('.cat-banner-card');
-    if (banners.length) g.from(banners, { opacity: 0, x: -22, duration: 0.4, stagger: 0.07, ease: 'power2.out' });
-  }
+    if (view === 'categories') {
+      const banners = q('.cat-banner-card');
+      if (banners.length) g.from(banners, { ...base, opacity: 0, x: -14, duration: 0.32, stagger: 0.06 });
+    }
 
-  if (view === 'products') {
-    const header = f('.view-header');
-    if (header) g.from(header, { opacity: 0, y: -16, duration: 0.35, ease: 'power2.out' });
-    const cards = q('.product-card');
-    if (cards.length) g.from(cards, { opacity: 0, y: 20, duration: 0.4, stagger: 0.065, ease: 'power2.out', delay: 0.08 });
-  }
+    if (view === 'products') {
+      const cards = q('.product-card');
+      if (cards.length) g.from(cards, { ...base, opacity: 0, y: 14, duration: 0.32, stagger: 0.05 });
+    }
 
-  if (view === 'product') {
-    const hero = f('.pd-img-section');
-    const info = f('.pd-info');
-    const btn  = f('.pd-add-btn');
-    if (hero) g.from(hero, { opacity: 0, scale: 0.96, duration: 0.5, ease: 'power3.out' });
-    if (info) g.from(info, { opacity: 0, y: 24, duration: 0.45, delay: 0.1, ease: 'power2.out' });
-    if (btn)  g.from(btn,  { opacity: 0, y: 14, duration: 0.4,  delay: 0.22, ease: 'power3.out' });
-  }
+    if (view === 'product') {
+      const hero = f('.pd-img-section');
+      const info = f('.pd-info');
+      const btn  = f('.pd-add-btn');
+      if (hero) g.from(hero, { ...base, opacity: 0, scale: 0.97, duration: 0.42, ease: 'power3.out' });
+      if (info) g.from(info, { ...base, opacity: 0, y: 18, duration: 0.35, delay: 0.09 });
+      if (btn)  g.from(btn,  { ...base, opacity: 0, y: 10, duration: 0.3,  delay: 0.18 });
+    }
 
-  if (view === 'cart') {
-    const items = q('.cart-item');
-    if (items.length) g.from(items, { opacity: 0, x: -18, duration: 0.35, stagger: 0.07, ease: 'power2.out' });
-    const summary = f('.cart-summary');
-    if (summary) g.from(summary, { opacity: 0, y: 16, duration: 0.35, delay: items.length * 0.07, ease: 'power2.out' });
-  }
+    if (view === 'cart') {
+      const items = q('.cart-item');
+      if (items.length) g.from(items, { ...base, opacity: 0, x: -12, duration: 0.28, stagger: 0.055 });
+      const summary = f('.cart-summary');
+      if (summary) g.from(summary, { ...base, opacity: 0, y: 12, duration: 0.28, delay: items.length * 0.055 });
+    }
+  });
 }
 
 /* ─── Navigation ─────────────────────────────────────────────── */
@@ -1410,18 +1412,15 @@ async function init() {
   // Pré-carrega imagens em background para que fiquem em cache do browser
   preloadImages();
 
-  // Fade-out suave do skeleton antes de substituir pelo conteúdo real
-  await new Promise(resolve => {
-    if (window.gsap) {
-      window.gsap.to(skelDiv, { opacity: 0, duration: 0.2, ease: 'power1.in', onComplete: resolve });
-    } else {
-      skelDiv.style.transition = 'opacity .2s';
-      skelDiv.style.opacity = '0';
-      setTimeout(resolve, 200);
-    }
-  });
-
-  go('home', {}, 'replace');
+  // Fade-out do skeleton via callback (sem await — evita race condition com a nav)
+  const launchHome = () => go('home', {}, 'replace');
+  if (window.gsap) {
+    window.gsap.to(skelDiv, { opacity: 0, duration: 0.18, ease: 'power1.in', onComplete: launchHome });
+  } else {
+    skelDiv.style.transition = 'opacity 0.18s';
+    skelDiv.style.opacity = '0';
+    setTimeout(launchHome, 180);
+  }
 }
 
 init().catch(console.error);
