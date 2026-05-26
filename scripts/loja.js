@@ -68,6 +68,8 @@ const S = {
     name: '', phone: '', address: '',
     number: '', complement: '', payment: 'pix', notes: ''
   },
+  customer:    {},
+  orders:      [],
   lastOrderId: null,
   layout: parseInt(localStorage.getItem('eg:layout') || '2', 10),
   imgTimer: null,
@@ -79,6 +81,40 @@ function loadCart() {
   catch { S.cart = []; }
 }
 function saveCart() { localStorage.setItem('eg:cart', JSON.stringify(S.cart)); }
+
+function loadCustomer() {
+  try { S.customer = JSON.parse(localStorage.getItem('eg:customer') || 'null') || {}; }
+  catch { S.customer = {}; }
+  // Pre-fill checkout with saved customer data
+  const c = S.customer;
+  if (c.name)       S.checkout.name       = c.name;
+  if (c.phone)      S.checkout.phone      = c.phone;
+  if (c.address)    S.checkout.address    = c.address;
+  if (c.number)     S.checkout.number     = c.number;
+  if (c.complement) S.checkout.complement = c.complement;
+}
+function saveCustomer(d) {
+  S.customer = { name: d.name, phone: d.phone, address: d.address, number: d.number || '', complement: d.complement || '' };
+  localStorage.setItem('eg:customer', JSON.stringify(S.customer));
+}
+
+function loadOrders() {
+  try { S.orders = JSON.parse(localStorage.getItem('eg:orders') || '[]'); }
+  catch { S.orders = []; }
+}
+function saveLocalOrder(o) {
+  S.orders.unshift({ ...o, id: Date.now().toString(36), date: new Date().toISOString() });
+  S.orders = S.orders.slice(0, 30);
+  localStorage.setItem('eg:orders', JSON.stringify(S.orders));
+}
+
+function formatOrderDate(iso) {
+  try {
+    const d = new Date(iso);
+    return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  } catch { return ''; }
+}
+const PAY_LABELS = { pix: 'PIX', credito: 'Crédito', debito: 'Débito', dinheiro: 'Dinheiro' };
 function cartCount() { return S.cart.reduce((n, i) => n + i.qty, 0); }
 function cartTotal() { return S.cart.reduce((n, i) => n + i.price * i.qty, 0); }
 
@@ -176,7 +212,7 @@ async function createOrder(data) {
 
 /* ─── WhatsApp ───────────────────────────────────────────────── */
 function getWAPhone() {
-  return (S.settings.lojaWhatsApp || S.settings.phone || '').replace(/\D/g, '');
+  return (S.settings.lojaWhatsApp || S.settings.phone || '92991392485').replace(/\D/g, '');
 }
 
 /* Mensagem rápida do carrinho — sem dados do cliente (ele informa no chat) */
@@ -1208,7 +1244,7 @@ function wireCheckout(c) {
     });
   });
 
-  c.querySelector('#btn-confirm')?.addEventListener('click', async () => {
+  c.querySelector('#btn-confirm')?.addEventListener('click', () => {
     const d = S.checkout;
     d.name       = c.querySelector('#co-name')?.value.trim()       || '';
     d.phone      = c.querySelector('#co-phone')?.value.trim()      || '';
@@ -1221,44 +1257,44 @@ function wireCheckout(c) {
     if (!d.phone)   { alert('Informe seu número de WhatsApp.'); return; }
     if (!d.address) { alert('Informe o endereço de entrega.'); return; }
 
-    const btn = c.querySelector('#btn-confirm');
-    btn.disabled = true;
-    btn.textContent = 'Enviando…';
+    const fee = S.settings.deliveryFee || 0;
+    const orderData = {
+      customer: {
+        name:       d.name,
+        phone:      d.phone.replace(/\D/g, ''),
+        address:    d.address,
+        number:     d.number,
+        complement: d.complement,
+      },
+      items: S.cart.map(i => ({
+        productId: i.id,
+        name:      i.name,
+        qty:       i.qty,
+        price:     i.price,
+        subtotal:  i.price * i.qty,
+      })),
+      subtotal:    cartTotal(),
+      deliveryFee: fee,
+      total:       cartTotal() + fee,
+      payment:     d.payment,
+      notes:       d.notes,
+    };
 
-    try {
-      const fee = S.settings.deliveryFee || 0;
-      S.lastOrderId = await createOrder({
-        customer: {
-          name: d.name,
-          phone: d.phone.replace(/\D/g, ''),
-          address: d.address,
-          number: d.number,
-          complement: d.complement,
-        },
-        items: S.cart.map(i => ({
-          productId: i.id,
-          name:      i.name,
-          qty:       i.qty,
-          price:     i.price,
-          subtotal:  i.price * i.qty,
-        })),
-        subtotal:    cartTotal(),
-        deliveryFee: fee,
-        total:       cartTotal() + fee,
-        payment:     d.payment,
-        notes:       d.notes,
-      });
-      S.cart = [];
-      saveCart();
-      updateCartBadge();
-      S.navStack = [];
-      go('success');
-    } catch (err) {
-      console.error(err);
-      btn.disabled = false;
-      btn.textContent = 'Confirmar pedido';
-      alert('Erro ao enviar. Tente novamente ou use o botão do WhatsApp.');
-    }
+    // 1. Save customer for future pre-fill
+    saveCustomer(d);
+    // 2. Save to local order history and grab generated ID
+    saveLocalOrder(orderData);
+    S.lastOrderId = S.orders[0].id;
+    // 3. Open WhatsApp automatically
+    openWhatsApp(buildOrderMessage());
+    // 4. Clear cart and go to success
+    S.cart = [];
+    saveCart();
+    updateCartBadge();
+    S.navStack = [];
+    go('success');
+    // 5. Fire-and-forget Firestore save (non-blocking)
+    createOrder(orderData).catch(err => console.warn('Firestore save failed:', err));
   });
 }
 
@@ -1275,49 +1311,130 @@ function wireSuccess(c) {
 
 /* ─── Init ───────────────────────────────────────────────────── */
 /* ORDERS */
+function renderOrderCard(order) {
+  const total   = order.total || ((order.subtotal || 0) + (order.deliveryFee || 0));
+  const items   = order.items || [];
+  const preview = items.slice(0, 2).map(i => `${i.qty}x ${i.name}`).join(', ');
+  const extra   = items.length > 2 ? ` +${items.length - 2} iten${items.length - 2 > 1 ? 's' : ''}` : '';
+  const shortId = (order.id || '').slice(-6).toUpperCase();
+  const dateStr = formatOrderDate(order.date);
+  const payLabel = PAY_LABELS[order.payment] || order.payment || '';
+  return `
+    <div class="order-card">
+      <div class="order-card-header">
+        <span class="order-card-id">#${shortId}</span>
+        <span class="order-card-date">${esc(dateStr)}</span>
+      </div>
+      <div class="order-card-items">${esc(preview + extra)}</div>
+      <div class="order-card-footer">
+        <span class="order-card-pay">${esc(payLabel)}</span>
+        <span class="order-card-total">${brl(total)}</span>
+      </div>
+    </div>`;
+}
+
 function renderOrders() {
   const phone = getWAPhone();
+  if (S.orders.length === 0) {
+    return `
+      <div class="view-header">
+        <div class="view-header-title">
+          <h2>Meus Pedidos</h2>
+          <p>Histórico de pedidos</p>
+        </div>
+      </div>
+      <div class="empty-state" style="margin-top:48px">
+        <div class="empty-state-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="5" y="2" width="14" height="20" rx="2"/>
+            <line x1="9" y1="7" x2="15" y2="7"/>
+            <line x1="9" y1="11" x2="15" y2="11"/>
+            <line x1="9" y1="15" x2="12" y2="15"/>
+          </svg>
+        </div>
+        <h4>Nenhum pedido ainda</h4>
+        <p>Seus pedidos aparecerão aqui após a confirmação.</p>
+        ${phone ? `<button class="btn-whatsapp" style="margin-top:24px" id="btn-wa-orders">${waIcon(20)} Falar no WhatsApp</button>` : ''}
+      </div>
+    `;
+  }
   return `
     <div class="view-header">
       <div class="view-header-title">
         <h2>Meus Pedidos</h2>
-        <p>Histórico de pedidos</p>
+        <p>${S.orders.length} pedido${S.orders.length !== 1 ? 's' : ''}</p>
       </div>
     </div>
-    <div class="empty-state" style="margin-top:48px">
-      <div class="empty-state-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="5" y="2" width="14" height="20" rx="2"/>
-          <line x1="9" y1="7" x2="15" y2="7"/>
-          <line x1="9" y1="11" x2="15" y2="11"/>
-          <line x1="9" y1="15" x2="12" y2="15"/>
-        </svg>
-      </div>
-      <h4>Nenhum pedido ainda</h4>
-      <p>Seus pedidos aparecerão aqui após a confirmação.</p>
-      ${phone ? `<button class="btn-whatsapp" style="margin-top:24px" id="btn-wa-orders">${waIcon(20)} Falar no WhatsApp</button>` : ''}
+    <div class="orders-list">
+      ${S.orders.map(renderOrderCard).join('')}
     </div>
   `;
 }
 
 /* ACCOUNT */
 function renderAccount() {
-  const cfg   = S.settings;
-  const phone = getWAPhone();
-  const name  = cfg.storeName || 'Empório GO';
-  const addr  = cfg.lojaAddress || cfg.address || '';
+  const cfg        = S.settings;
+  const phone      = getWAPhone();
+  const cu         = S.customer;
+  const hasProfile = !!cu.name;
+  const initial    = hasProfile ? cu.name.trim().charAt(0).toUpperCase() : '?';
   return `
     <div class="view-header">
       <div class="view-header-title"><h2>Minha Conta</h2></div>
     </div>
     <div class="account-body">
-      <div class="account-store-card">
-        <img src="assets/logo.png" alt="${esc(name)}" class="account-logo" />
-        <div>
-          <div class="account-store-name">${esc(name)}</div>
-          ${addr ? `<div class="account-store-addr">${esc(addr)}</div>` : ''}
+      <div class="account-profile-card">
+        <div class="account-avatar">${initial}</div>
+        <div class="account-profile-info">
+          ${hasProfile ? `
+            <div class="account-profile-name">${esc(cu.name)}</div>
+            ${cu.phone ? `<div class="account-profile-phone">${esc(cu.phone)}</div>` : ''}
+            ${cu.address ? `<div class="account-profile-addr">${esc(cu.address)}${cu.number ? ', ' + cu.number : ''}</div>` : ''}
+          ` : `
+            <div class="account-profile-name">Olá! Faça seu cadastro</div>
+            <div class="account-profile-phone">Seus dados ficam salvos para próximos pedidos</div>
+          `}
+        </div>
+        <button class="account-edit-btn" id="btn-edit-profile" title="Editar perfil">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18">
+            <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+            <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+          </svg>
+        </button>
+      </div>
+
+      <div id="profile-form" class="profile-form hidden">
+        <div class="profile-form-inner">
+          <div class="checkout-section-title">Editar perfil</div>
+          <div class="form-field">
+            <label>Nome completo</label>
+            <input type="text" id="pf-name" value="${esc(cu.name || '')}" placeholder="Ex.: João Silva" autocomplete="name" />
+          </div>
+          <div class="form-field">
+            <label>WhatsApp</label>
+            <input type="tel" id="pf-phone" value="${esc(cu.phone || '')}" placeholder="(92) 9 9999-9999" autocomplete="tel" />
+          </div>
+          <div class="form-field">
+            <label>Rua / Avenida</label>
+            <input type="text" id="pf-address" value="${esc(cu.address || '')}" placeholder="Ex.: Rua das Acácias" autocomplete="street-address" />
+          </div>
+          <div class="form-row">
+            <div class="form-field">
+              <label>Número</label>
+              <input type="text" id="pf-number" value="${esc(cu.number || '')}" placeholder="123" />
+            </div>
+            <div class="form-field">
+              <label>Complemento</label>
+              <input type="text" id="pf-complement" value="${esc(cu.complement || '')}" placeholder="Apto, Bloco…" />
+            </div>
+          </div>
+          <div class="profile-form-btns">
+            <button class="btn-profile-cancel" id="btn-profile-cancel">Cancelar</button>
+            <button class="btn-profile-save" id="btn-profile-save">Salvar</button>
+          </div>
         </div>
       </div>
+
       <div class="account-menu">
         ${phone ? `
           <button class="account-menu-item" id="btn-wa-account">
@@ -1337,6 +1454,19 @@ function renderAccount() {
           <span>Limpar carrinho</span>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="16" height="16"><polyline points="9 18 15 12 9 6"/></svg>
         </button>
+        ${hasProfile ? `
+          <button class="account-menu-item account-menu-danger" id="btn-clear-profile">
+            <span class="account-menu-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22">
+                <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
+                <circle cx="12" cy="7" r="4"/>
+                <line x1="18" y1="8" x2="23" y2="13"/><line x1="23" y1="8" x2="18" y2="13"/>
+              </svg>
+            </span>
+            <span>Apagar dados do perfil</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="16" height="16"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+        ` : ''}
       </div>
     </div>
   `;
@@ -1345,10 +1475,42 @@ function renderAccount() {
 function wireOrders(c) {
   c.querySelector('#btn-wa-orders')?.addEventListener('click', () => openWhatsApp('Olá! Gostaria de verificar meu pedido.'));
 }
+
 function wireAccount(c) {
   c.querySelector('#btn-wa-account')?.addEventListener('click', () => openWhatsApp('Olá! Gostaria de falar com o Empório GO.'));
   c.querySelector('#btn-clear-cart')?.addEventListener('click', () => {
     if (confirm('Limpar carrinho?')) { S.cart = []; saveCart(); updateCartBadge(); go('home', {}, 'tab'); }
+  });
+  c.querySelector('#btn-clear-profile')?.addEventListener('click', () => {
+    if (confirm('Apagar seus dados de cadastro?')) {
+      S.customer = {};
+      localStorage.removeItem('eg:customer');
+      go('account', {}, 'tab');
+    }
+  });
+
+  const editBtn     = c.querySelector('#btn-edit-profile');
+  const profileForm = c.querySelector('#profile-form');
+  editBtn?.addEventListener('click', () => {
+    profileForm?.classList.toggle('hidden');
+    if (!profileForm?.classList.contains('hidden')) {
+      profileForm.querySelector('#pf-name')?.focus();
+    }
+  });
+
+  c.querySelector('#btn-profile-cancel')?.addEventListener('click', () => {
+    profileForm?.classList.add('hidden');
+  });
+
+  c.querySelector('#btn-profile-save')?.addEventListener('click', () => {
+    const name       = c.querySelector('#pf-name')?.value.trim()       || '';
+    const phone      = c.querySelector('#pf-phone')?.value.trim()      || '';
+    const address    = c.querySelector('#pf-address')?.value.trim()    || '';
+    const number     = c.querySelector('#pf-number')?.value.trim()     || '';
+    const complement = c.querySelector('#pf-complement')?.value.trim() || '';
+    if (!name) { alert('Informe seu nome.'); return; }
+    saveCustomer({ name, phone, address, number, complement });
+    go('account', {}, 'tab');
   });
 }
 
@@ -1389,6 +1551,8 @@ function renderSkeleton() {
 
 async function init() {
   loadCart();
+  loadCustomer();
+  loadOrders();
 
   // Mostra o app shell com skeleton imediatamente
   const splash = document.getElementById('splash');

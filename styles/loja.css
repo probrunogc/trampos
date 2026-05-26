@@ -1938,6 +1938,205 @@ html, body {
   color: var(--c-purple-600);
 }
 
+/* ─── Order history ──────────────────────────────────────────── */
+.orders-list {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.order-card {
+  background: var(--bg-card);
+  border-radius: var(--r-lg);
+  border: 1px solid var(--border);
+  padding: 14px 16px;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.order-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.order-card-id {
+  font-size: .80rem;
+  font-weight: 800;
+  color: var(--c-purple-600);
+  letter-spacing: .04em;
+}
+
+.order-card-date {
+  font-size: .73rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.order-card-items {
+  font-size: .84rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.order-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+
+.order-card-pay {
+  font-size: .75rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: var(--c-purple-100);
+  color: var(--c-purple-600);
+  padding: 3px 9px;
+  border-radius: 20px;
+}
+
+.order-card-total {
+  font-size: .92rem;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+/* ─── Account profile card ───────────────────────────────────── */
+.account-profile-card {
+  background: var(--bg-card);
+  border-radius: var(--r-lg);
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+}
+
+.account-avatar {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--c-purple-600), var(--c-purple-400));
+  color: white;
+  font-size: 1.3rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  letter-spacing: -.01em;
+}
+
+.account-profile-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.account-profile-name {
+  font-size: .95rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  letter-spacing: -.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.account-profile-phone {
+  font-size: .78rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+  margin-top: 2px;
+}
+
+.account-profile-addr {
+  font-size: .73rem;
+  color: var(--text-secondary);
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.account-edit-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--r-sm);
+  background: var(--c-purple-100);
+  color: var(--c-purple-600);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.account-edit-btn:active { opacity: .7; }
+
+/* ─── Profile edit form ──────────────────────────────────────── */
+.profile-form {
+  background: var(--bg-card);
+  border-radius: var(--r-lg);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+.profile-form.hidden { display: none; }
+
+.profile-form-inner {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.profile-form-btns {
+  display: flex;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.btn-profile-cancel {
+  flex: 1;
+  padding: 12px;
+  border-radius: var(--r-md);
+  border: 1.5px solid var(--border);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: .90rem;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.btn-profile-save {
+  flex: 2;
+  padding: 12px;
+  border-radius: var(--r-md);
+  border: none;
+  background: var(--c-purple-600);
+  color: white;
+  font-size: .90rem;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+}
+.btn-profile-save:active { opacity: .85; }
+
+.account-menu-danger .account-menu-icon {
+  background: rgba(239,68,68,.12);
+  color: #EF4444;
+}
+.account-menu-danger { color: #EF4444; }
+
 /* ─── Layout toggle button ───────────────────────────────────── */
 .layout-toggle-btn {
   width: 30px;
