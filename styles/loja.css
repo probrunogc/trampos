@@ -101,6 +101,9 @@ html, body {
   overflow: hidden;
   background: var(--bg-app);
   color: var(--text-primary);
+  -webkit-touch-callout: none; /* iOS: bloqueia menu de contexto no long-press */
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 /* ─── Splash ─────────────────────────────────────────────────── */
