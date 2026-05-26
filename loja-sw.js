@@ -1,4 +1,6 @@
-const CACHE = 'loja-v1';
+// IMPORTANTE: Atualize VERSION em cada deploy para forçar atualização em todos os clientes
+const VERSION = '20250526';
+const CACHE = `loja-v${VERSION}`;
 const SHELL = [
   './loja.html',
   './loja-manifest.json',
@@ -10,15 +12,19 @@ const SHELL = [
   './assets/cat-texture.png',
 ];
 
-self.addEventListener('install', (e) => {
+self.addEventListener('install', e => {
   e.waitUntil(
     caches.open(CACHE)
-      .then(c => Promise.all(SHELL.map(u => c.add(u).catch(() => {}))))
+      .then(c => Promise.all(SHELL.map(u =>
+        fetch(u, { cache: 'no-cache' })
+          .then(r => { if (r.ok) return c.put(u, r); })
+          .catch(() => {})
+      )))
       .then(() => self.skipWaiting())
   );
 });
 
-self.addEventListener('activate', (e) => {
+self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys()
       .then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
@@ -26,18 +32,17 @@ self.addEventListener('activate', (e) => {
   );
 });
 
-self.addEventListener('fetch', (e) => {
+self.addEventListener('fetch', e => {
   const req = e.request;
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;
 
   e.respondWith(
-    fetch(req)
+    fetch(req, { cache: 'no-cache' })
       .then(res => {
         if (res && res.status === 200 && res.type === 'basic') {
-          const copy = res.clone();
-          caches.open(CACHE).then(c => c.put(req, copy)).catch(() => {});
+          caches.open(CACHE).then(c => c.put(req, res.clone())).catch(() => {});
         }
         return res;
       })

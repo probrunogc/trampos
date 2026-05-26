@@ -61,8 +61,18 @@
     document.addEventListener('gesturestart', e => e.preventDefault());
     document.addEventListener('dblclick', e => e.preventDefault());
     if ('serviceWorker' in navigator) {
+      let _reloading = false;
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (!_reloading) { _reloading = true; window.location.reload(); }
+      });
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./loja-sw.js').catch(() => {});
+        navigator.serviceWorker.register('./loja-sw.js', { updateViaCache: 'none' })
+          .then(reg => {
+            document.addEventListener('visibilitychange', () => {
+              if (document.visibilityState === 'visible') reg.update().catch(() => {});
+            });
+          })
+          .catch(() => {});
       });
     }
   </script>
