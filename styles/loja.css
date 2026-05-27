@@ -2410,27 +2410,26 @@ html, body {
 }
 
 /* ─── Product detail v2 (pd2) ────────────────────────────────── */
+/* ─── Product detail v2 — hero em duas colunas ───────────────── */
 .pd2-page {
   position: relative;
   min-height: 100%;
-  background: #f5f5f8;
-  padding-top: 0;
+  background: #ffffff;
+  padding: calc(var(--safe-top) + 70px) 0 24px;
   display: flex;
   flex-direction: column;
 }
 
 .pd2-back {
   position: absolute;
-  top: calc(var(--safe-top) + 12px);
+  top: calc(var(--safe-top) + 14px);
   left: 14px;
   z-index: 20;
-  width: 42px;
-  height: 42px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.92);
-  border: 1px solid rgba(0, 0, 0, 0.10);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.14);
-  color: var(--text-primary);
+  width: 44px;
+  height: 44px;
+  background: none;
+  border: none;
+  color: #111;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -2440,110 +2439,115 @@ html, body {
 }
 .pd2-back:active { transform: scale(.88); }
 
-.pd2-img-wrap {
-  width: 100%;
+.pd2-hero {
+  display: grid;
+  grid-template-columns: 5fr 6fr;
+  gap: 14px;
+  align-items: center;
+  padding: 4px 18px 18px;
   min-height: 300px;
-  background: #ffffff;
+}
+
+.pd2-img-col {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: calc(var(--safe-top) + 60px) 20px 20px;
+  min-height: 280px;
 }
-
-.pd2-img-wrap .prod-img,
-.pd2-img-wrap .prod-img-wrap {
-  width: 240px;
-  height: 240px;
+.pd2-img-col .prod-img,
+.pd2-img-col .prod-img-wrap {
+  width: 100%;
+  height: auto;
   background: none;
 }
-.pd2-img-wrap .prod-art-svg { width: 190px; height: 190px; }
-.pd2-img-wrap img {
-  max-height: 260px;
-  max-width: 80%;
+.pd2-img-col .prod-art-svg { width: 80%; height: auto; max-height: 280px; }
+.pd2-img-col img {
+  max-width: 100%;
+  max-height: 320px;
   object-fit: contain;
-  filter: drop-shadow(0 12px 28px rgba(0, 0, 0, 0.18));
+  filter: drop-shadow(0 14px 28px rgba(0, 0, 0, 0.14));
 }
 
-.pd2-info {
-  background: #ffffff;
-  padding: 20px 20px 14px;
+.pd2-info-col {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-}
-
-.pd2-var {
-  font-size: .72rem;
-  font-weight: 700;
-  color: var(--text-secondary);
-  text-transform: uppercase;
-  letter-spacing: .6px;
+  align-items: flex-start;
+  min-width: 0;
 }
 
 .pd2-name {
-  font-size: 1.55rem;
-  font-weight: 900;
-  color: var(--text-primary);
-  line-height: 1.15;
-  letter-spacing: -.03em;
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: #111;
+  line-height: 1.1;
+  letter-spacing: -.02em;
+  word-break: break-word;
+}
+
+.pd2-var {
+  margin-top: 8px;
+  font-size: 1rem;
+  font-weight: 400;
+  color: #555;
+  text-transform: none;
+  letter-spacing: normal;
 }
 
 .pd2-price {
-  font-size: 2rem;
-  font-weight: 900;
-  color: var(--c-purple-700);
-  letter-spacing: -.04em;
-  margin-top: 6px;
+  margin-top: 20px;
+  font-size: 2.4rem;
+  font-weight: 800;
+  color: #111;
+  letter-spacing: -.03em;
+  line-height: 1;
 }
 
 .pd2-qty-pill {
-  display: flex;
+  margin-top: 22px;
+  width: 100%;
+  height: 64px;
+  background: #F3ECFA;
+  border-radius: 18px;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
   align-items: center;
-  gap: 0;
-  background: var(--c-purple-100);
-  border-radius: var(--r-full);
-  padding: 5px;
-  width: fit-content;
-  min-width: 140px;
-  justify-content: space-between;
-  margin-top: 14px;
+  justify-items: center;
+  padding: 0;
 }
 
 .pd2-qty-btn {
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
-  background: #ffffff;
+  width: 100%;
+  height: 100%;
+  background: none;
   color: var(--c-purple-600);
   border: none;
-  font-size: 1.2rem;
-  font-weight: 700;
+  font-size: 1.8rem;
+  font-weight: 500;
+  line-height: 1;
   cursor: pointer;
+  font-family: inherit;
+  -webkit-tap-highlight-color: transparent;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: inherit;
-  flex-shrink: 0;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.10);
-  -webkit-tap-highlight-color: transparent;
-  transition: transform var(--dur-med) var(--ease-spring);
+  border-radius: 18px;
+  transition: background var(--dur-fast), transform var(--dur-fast) var(--ease-spring);
 }
-.pd2-qty-btn:active { transform: scale(.82); }
+.pd2-qty-btn:active { transform: scale(.88); background: rgba(123, 44, 226, 0.10); }
 .pd2-qty-btn:disabled { opacity: .28; cursor: default; }
 
 .pd2-qty-val {
-  min-width: 44px;
-  text-align: center;
-  font-size: 1.1rem;
-  font-weight: 900;
-  color: var(--text-primary);
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--c-purple-600);
+  line-height: 1;
 }
 
 .pd2-out {
-  font-size: .82rem;
+  margin-top: 16px;
+  font-size: .9rem;
   color: var(--c-red);
   font-weight: 700;
-  margin-top: 10px;
 }
 
 /* ─── Button primary yellow (reusable) ───────────────────────── */
@@ -2575,39 +2579,46 @@ html, body {
   background: var(--c-yellow-dark);
 }
 
-/* Product detail CTA reuses .btn-primary-yellow, just adds sticky position */
+/* Product detail CTA reuses .btn-primary-yellow */
 .pd2-add-btn {
-  position: sticky;
-  bottom: calc(var(--bottom-nav-h) + var(--safe-bottom) + 10px);
-  z-index: 5;
+  margin: 8px 18px 22px;
+  width: calc(100% - 36px);
+  height: 64px;
+  padding: 0;
+  border-radius: 16px;
+  font-size: 1.05rem;
+  letter-spacing: .5px;
+  box-shadow: none;
 }
+.pd2-add-btn:active { box-shadow: none; }
 
 /* ─── Product detail sections ────────────────────────────────── */
 .pd2-sections {
   background: #ffffff;
-  margin: 10px 0 0;
-  padding: 4px 20px 36px;
+  margin: 0;
+  padding: 0 18px calc(var(--bottom-nav-h) + var(--safe-bottom) + 16px);
 }
 
 .pd2-section {
-  padding: 14px 0;
-  border-top: 1px solid rgba(0, 0, 0, 0.06);
+  padding: 18px 0;
+  border-bottom: 1px solid #DDDDDD;
 }
-.pd2-section:first-child { border-top: none; }
+.pd2-section:first-child { padding-top: 8px; }
 
 .pd2-sec-label {
-  font-size: .68rem;
+  font-size: .92rem;
   font-weight: 900;
-  color: var(--c-purple-500);
+  color: var(--c-purple-600);
   text-transform: uppercase;
-  letter-spacing: .9px;
-  margin-bottom: 5px;
+  letter-spacing: .6px;
+  margin-bottom: 8px;
 }
 
 .pd2-sec-body {
-  font-size: .88rem;
-  color: var(--text-secondary);
-  line-height: 1.65;
+  font-size: 1rem;
+  color: #111;
+  line-height: 1.4;
+  font-weight: 400;
 }
 
 /* ─── Cart v2 (cart2) ────────────────────────────────────────── */

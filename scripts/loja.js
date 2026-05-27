@@ -261,10 +261,10 @@ function openWhatsApp(message) {
 
 /* ─── Image shimmer while loading ───────────────────────────── */
 function shimmerImages(container) {
-  container.querySelectorAll('.banner-art img, .product-card-img img, .cat-chip-icon img, .pd2-img-wrap img, .pli-thumb img').forEach(img => {
+  container.querySelectorAll('.banner-art img, .product-card-img img, .cat-chip-icon img, .pd2-img-col img, .pli-thumb img').forEach(img => {
     if (img.complete && img.naturalWidth) return;
 
-    const imgWrap = img.closest('.banner-art, .product-card-img, .cat-chip-icon, .pd2-img-wrap, .pli-thumb');
+    const imgWrap = img.closest('.banner-art, .product-card-img, .cat-chip-icon, .pd2-img-col, .pli-thumb');
 
     img.style.opacity = '0';
     img.style.transition = 'opacity .3s';
@@ -342,8 +342,8 @@ function animatePageIn(div, view) {
     }
 
     if (view === 'product') {
-      const hero = f('.pd2-img-wrap');
-      const info = f('.pd2-info');
+      const hero = f('.pd2-img-col');
+      const info = f('.pd2-info-col');
       const btn  = f('.pd2-add-btn');
       if (hero) g.from(hero, { ...base, opacity: 0, scale: 0.97, duration: 0.42, ease: 'power3.out' });
       if (info) g.from(info, { ...base, opacity: 0, y: 18, duration: 0.35, delay: 0.09 });
@@ -748,31 +748,33 @@ function renderProductDetail(p) {
 
   return `
     <div class="pd2-page">
-      <button class="pd2-back" id="btn-back">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="20" height="20">
+      <button class="pd2-back" id="btn-back" aria-label="Voltar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="26" height="26">
           <path d="M19 12H5M12 19l-7-7 7-7"/>
         </svg>
       </button>
 
-      <div class="pd2-img-wrap">
-        ${firstImg
-          ? `<img id="pd-main-img" src="${esc(firstImg)}" alt="${esc(p.name)}" loading="eager" />`
-          : productImage(p)
-        }
-      </div>
+      <div class="pd2-hero">
+        <div class="pd2-img-col">
+          ${firstImg
+            ? `<img id="pd-main-img" src="${esc(firstImg)}" alt="${esc(p.name)}" loading="eager" />`
+            : productImage(p)
+          }
+        </div>
 
-      <div class="pd2-info">
-        ${p.brand ? `<p class="pd2-var">${esc(p.brand)}</p>` : ''}
-        <h2 class="pd2-name">${esc(p.name)}</h2>
-        <p class="pd2-price">${brl(p.price)}</p>
+        <div class="pd2-info-col">
+          <h2 class="pd2-name">${esc(p.name)}</h2>
+          ${p.brand ? `<p class="pd2-var">${esc(p.brand)}</p>` : ''}
+          <p class="pd2-price">${brl(p.price)}</p>
 
-        ${inStock ? `
-          <div class="pd2-qty-pill">
-            <button class="pd2-qty-btn" id="qty-minus" ${S.qty <= 1 ? 'disabled' : ''}>−</button>
-            <span class="pd2-qty-val" id="qty-val">${S.qty}</span>
-            <button class="pd2-qty-btn" id="qty-plus">+</button>
-          </div>
-        ` : `<p class="pd2-out">Esgotado</p>`}
+          ${inStock ? `
+            <div class="pd2-qty-pill">
+              <button class="pd2-qty-btn" id="qty-minus" ${S.qty <= 1 ? 'disabled' : ''}>−</button>
+              <span class="pd2-qty-val" id="qty-val">${S.qty}</span>
+              <button class="pd2-qty-btn" id="qty-plus">+</button>
+            </div>
+          ` : `<p class="pd2-out">Esgotado</p>`}
+        </div>
       </div>
 
       ${inStock ? `
