@@ -2184,41 +2184,7 @@ html, body {
 .products-grid.compact .product-card-price   { font-size: .70rem; }
 .products-grid.compact .btn-add-card         { width: 26px; height: 26px; border-radius: 7px; font-size: .85rem; }
 
-/* ─── Background blobs ───────────────────────────────────────── */
-.loja-app::before,
-.loja-app::after {
-  content: '';
-  position: fixed;
-  pointer-events: none;
-  z-index: 0;
-  background: rgba(124, 58, 237, 0.22);
-}
-
-.loja-app::before {
-  width: 220px;
-  height: 200px;
-  top: -60px;
-  left: -60px;
-  border-radius: 42% 58% 65% 35% / 55% 44% 56% 45%;
-}
-
-.loja-app::after {
-  width: 200px;
-  height: 190px;
-  top: -50px;
-  right: -55px;
-  border-radius: 60% 40% 38% 62% / 45% 58% 42% 55%;
-}
-
-/* Esconde blobs nas telas que têm fundo branco plano */
-.loja-app.view-product::before,
-.loja-app.view-product::after,
-.loja-app.view-cart::before,
-.loja-app.view-cart::after,
-.loja-app.view-checkout::before,
-.loja-app.view-checkout::after {
-  display: none;
-}
+/* ─── Background blobs — removidos ──────────────────────────── */
 
 /* ─── Flat view header (white) ───────────────────────────────── */
 .vhf {
