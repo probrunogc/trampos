@@ -2210,6 +2210,16 @@ html, body {
   border-radius: 60% 40% 38% 62% / 45% 58% 42% 55%;
 }
 
+/* Esconde blobs nas telas que têm fundo branco plano */
+.loja-app.view-product::before,
+.loja-app.view-product::after,
+.loja-app.view-cart::before,
+.loja-app.view-cart::after,
+.loja-app.view-checkout::before,
+.loja-app.view-checkout::after {
+  display: none;
+}
+
 /* ─── Flat view header (white) ───────────────────────────────── */
 .vhf {
   background: #ffffff;

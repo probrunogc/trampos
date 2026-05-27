@@ -397,6 +397,13 @@ function go(view, params = {}, type = 'push') {
   S.viewParams = params;
   if (view === 'product') S.qty = 1;
 
+  // Sinaliza a view atual no #app para regras de CSS (ex: esconder blobs)
+  const appEl = document.getElementById('app');
+  if (appEl) {
+    appEl.className = appEl.className.replace(/\bview-\S+/g, '').trim();
+    appEl.classList.add(`view-${view}`);
+  }
+
   // Restore from cache or render fresh
   const key    = pageCacheKey(view, params);
   const cached = key ? PAGE_CACHE.get(key) : null;
