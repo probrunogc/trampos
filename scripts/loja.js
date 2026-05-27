@@ -261,10 +261,10 @@ function openWhatsApp(message) {
 
 /* ─── Image shimmer while loading ───────────────────────────── */
 function shimmerImages(container) {
-  container.querySelectorAll('.banner-art img, .product-card-img img, .cat-chip-icon img, .pd-img-section img').forEach(img => {
+  container.querySelectorAll('.banner-art img, .product-card-img img, .cat-chip-icon img, .pd2-img-wrap img, .pli-thumb img').forEach(img => {
     if (img.complete && img.naturalWidth) return;
 
-    const imgWrap = img.closest('.banner-art, .product-card-img, .cat-chip-icon, .pd-img-section');
+    const imgWrap = img.closest('.banner-art, .product-card-img, .cat-chip-icon, .pd2-img-wrap, .pli-thumb');
 
     img.style.opacity = '0';
     img.style.transition = 'opacity .3s';
@@ -665,9 +665,10 @@ function renderCategories() {
 
 /* PRODUCT LIST */
 function renderProductList(catId) {
-  const cat     = CATS.find(c => c.id === catId) || { label: catId };
+  const cat     = CATS.find(c => c.id === catId) || { label: String(catId || 'Produtos') };
   const prods   = S.products.filter(p => p.category === catId);
   const filters = buildFilters(catId, prods);
+  const title   = String(cat.label || 'Produtos').toUpperCase();
   return `
     <div class="vhf">
       <button class="vhf-back" id="btn-back">
@@ -675,7 +676,7 @@ function renderProductList(catId) {
           <path d="M19 12H5M12 19l-7-7 7-7"/>
         </svg>
       </button>
-      <span class="vhf-title">${esc(cat.label.toUpperCase())}</span>
+      <span class="vhf-title">${esc(title)}</span>
       <button class="vhf-icon" id="btn-pl-search">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20">
           <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
@@ -775,7 +776,7 @@ function renderProductDetail(p) {
       </div>
 
       ${inStock ? `
-        <button class="pd2-add-btn" id="btn-add-to-cart">ADICIONAR AO CARRINHO</button>
+        <button class="btn-primary-yellow pd2-add-btn" id="btn-add-to-cart">ADICIONAR AO CARRINHO</button>
       ` : ''}
 
       <div class="pd2-sections">
@@ -840,11 +841,11 @@ function renderCart() {
       </div>
       <div class="cart2-footer">
         <div class="cart2-summary">
-          <div class="cart2-row">
+          <div class="cart2-row cart2-sub">
             <span>Subtotal</span><span>${brl(sub)}</span>
           </div>
           ${fee > 0 ? `
-          <div class="cart2-row">
+          <div class="cart2-row cart2-fee">
             <span>Taxa de entrega</span><span>${brl(fee)}</span>
           </div>` : ''}
           <div class="cart2-row cart2-total">
@@ -1179,10 +1180,10 @@ function wirePLIItems(container, prods) {
       const product = S.products.find(p => p.id === btn.dataset.pid);
       if (!product) return;
       addToCart(product, 1);
-      const orig = btn.textContent;
       btn.textContent = '✓';
       btn.style.cssText = 'background:var(--c-green);color:white';
-      setTimeout(() => { btn.textContent = orig; btn.style.cssText = ''; }, 1200);
+      clearTimeout(btn._resetTimer);
+      btn._resetTimer = setTimeout(() => { btn.textContent = '+'; btn.style.cssText = ''; }, 1200);
     });
   });
 }
@@ -1190,6 +1191,8 @@ function wirePLIItems(container, prods) {
 function wireProductList(c, catId) {
   const prods = S.products.filter(p => p.category === catId);
   const grid  = c.querySelector('#prod-list-grid');
+
+  c.querySelector('#btn-pl-search')?.addEventListener('click', () => go('home', {}, 'tab'));
 
   c.querySelectorAll('.filter-tab').forEach(tab => {
     tab.addEventListener('click', () => {
@@ -1279,14 +1282,13 @@ function wireCart(c) {
     const listEl = c.querySelector('#cart2-list');
     if (listEl) { listEl.innerHTML = S.cart.map(renderCartItem).join(''); bindItems(); }
 
-    // Update summary rows
-    const rows = c.querySelectorAll('.cart2-row');
-    if (rows.length) {
-      rows[0].querySelector('span:last-child').textContent = brl(sub);
-      if (fee > 0 && rows[1]) rows[1].querySelector('span:last-child').textContent = brl(fee);
-      const totalRow = c.querySelector('.cart2-total');
-      if (totalRow) totalRow.querySelector('span:last-child').textContent = brl(total);
-    }
+    // Update summary rows — target by class, never by index
+    const subRow = c.querySelector('.cart2-row.cart2-sub');
+    if (subRow) subRow.querySelector('span:last-child').textContent = brl(sub);
+    const feeRow = c.querySelector('.cart2-row.cart2-fee');
+    if (feeRow && fee > 0) feeRow.querySelector('span:last-child').textContent = brl(fee);
+    const totalRow = c.querySelector('.cart2-total');
+    if (totalRow) totalRow.querySelector('span:last-child').textContent = brl(total);
 
     updateCartBadge();
   }
@@ -1316,14 +1318,16 @@ function wireCart(c) {
 }
 
 function wireCheckout(c) {
-  // Radio payment buttons
-  c.querySelectorAll('.co2-pay-radio').forEach(radio => {
-    radio.addEventListener('click', () => {
+  // Radio payment — listen on the whole row so taps on the label/text also work
+  c.querySelectorAll('.co2-pay-opt').forEach(opt => {
+    opt.addEventListener('click', e => {
+      e.preventDefault();
+      const radio = opt.querySelector('.co2-pay-radio');
+      if (!radio) return;
       const pay = radio.dataset.pay;
       S.checkout.payment = pay;
       c.querySelectorAll('.co2-pay-radio').forEach(r => r.classList.remove('checked'));
       radio.classList.add('checked');
-      // Sync the hidden <input> too
       c.querySelectorAll('input[name="co-payment"]').forEach(inp => {
         inp.checked = (inp.value === pay);
       });
