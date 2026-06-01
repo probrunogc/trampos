@@ -52,6 +52,8 @@ service cloud.firestore {
     match /settings/{id} {
       allow read:   if true;    // loja pública lê configurações
       allow write:  if isAdmin();
+      // Vendedores precisam incrementar o contador de sequência de vendas
+      allow write:  if isStaff() && id == 'counter';
     }
 
     // === CLIENTES ===
