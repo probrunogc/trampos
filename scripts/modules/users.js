@@ -165,7 +165,9 @@ async function openForm(id = null) {
   `;
 
   const cancelBtn = el('button', { class: 'btn btn-ghost', type: 'button', onClick: () => ui.closeModal(false) }, 'Cancelar');
-  const saveBtn = el('button', { class: 'btn btn-primary', type: 'submit' }, isEdit ? 'Salvar' : 'Cadastrar');
+  // type="button" + requestSubmit() porque o modal move o botão pra fora do <form>
+  const saveBtn = el('button', { class: 'btn btn-primary', type: 'button',
+    onClick: () => form.requestSubmit() }, isEdit ? 'Salvar' : 'Cadastrar');
 
   form.onsubmit = async (e) => {
     e.preventDefault();

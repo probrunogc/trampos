@@ -448,7 +448,11 @@ export const db = {
   async nextSaleCode() {
     const counter = await this.get('settings', 'counter') || { id: 'counter', saleSeq: 0 };
     const next = (counter.saleSeq || 0) + 1;
-    await this.createWithId('settings', 'counter', { saleSeq: next });
+    try {
+      await this.createWithId('settings', 'counter', { saleSeq: next });
+    } catch {
+      // regra ainda não propagada — continua com sequência local
+    }
     return next;
   }
 };

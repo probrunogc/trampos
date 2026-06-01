@@ -22,7 +22,8 @@ jobs:
 
       - name: Deploy Firestore Rules + Hosting
         run: |
-          echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > /tmp/sa.json
-          npx firebase-tools@latest deploy --only firestore:rules,hosting --project adegas-pf
+          echo "$FIREBASE_SA" > /tmp/sa.json
+          npx firebase-tools@latest deploy --only firestore:rules,hosting --project adegas-pf --non-interactive
         env:
+          FIREBASE_SA: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
           GOOGLE_APPLICATION_CREDENTIALS: /tmp/sa.json
