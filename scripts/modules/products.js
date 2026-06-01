@@ -348,6 +348,20 @@ async function openForm(id = null) {
       </label>
     </div>
 
+    <div class="divider-text">Código de barras</div>
+    <div class="field-row">
+      <label class="field" style="grid-column:span 2">
+        <span class="field-label">Código de barras (EAN/UPC)</span>
+        <input name="barcode" id="field-barcode" placeholder="Escaneie com o leitor ou digite manualmente"
+               value="${fmt.escape(p?.barcode || '')}" autocomplete="off" />
+      </label>
+      <label class="field" style="align-self:flex-end">
+        <button type="button" id="btn-scan-barcode" class="btn btn-outline" style="width:100%">
+          📷 Escanear
+        </button>
+      </label>
+    </div>
+
     <label class="switch" style="margin-top:var(--sp-4)">
       <input name="active" type="checkbox" ${p?.active !== false ? 'checked' : ''}>
       <span class="switch-knob"></span>
@@ -502,6 +516,7 @@ async function openForm(id = null) {
         category:    fd.category,
         unit:        fd.unit,
         sku:         fd.sku.trim(),
+        barcode:     (fd.barcode || '').trim(),
         images:      finalUrls,
         image:       finalUrls[0] || '',
         teor:        fd.teor.trim(),
@@ -533,6 +548,30 @@ async function openForm(id = null) {
       saveBtn.textContent = isEdit ? 'Salvar' : 'Cadastrar';
     }
   };
+
+  // Pré-preenche barcode se veio do PDV (scan de produto não cadastrado)
+  if (window._pendingBarcode && !isEdit) {
+    requestAnimationFrame(() => {
+      const barcodeField = form.querySelector('#field-barcode');
+      if (barcodeField) barcodeField.value = window._pendingBarcode;
+      delete window._pendingBarcode;
+    });
+  }
+
+  // Botão "Escanear" — foca o campo e aguarda o leitor USB digitar
+  form.querySelector('#btn-scan-barcode')?.addEventListener('click', () => {
+    const field = form.querySelector('#field-barcode');
+    if (!field) return;
+    field.value = '';
+    field.focus();
+    field.placeholder = '🔴 Aponte o leitor e escaneie…';
+    field.addEventListener('blur', () => {
+      field.placeholder = 'Escaneie com o leitor ou digite manualmente';
+    }, { once: true });
+    field.addEventListener('keydown', e => {
+      if (e.key === 'Enter') { e.preventDefault(); field.blur(); }
+    }, { once: true });
+  });
 
   await ui.modal({
     title: isEdit ? 'Editar produto' : 'Novo produto',

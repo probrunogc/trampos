@@ -167,7 +167,95 @@ export async function render(root) {
   // Finish
   document.getElementById('pdv-finish').onclick = finishSale;
 
+  // Scanner USB (C3TECH e similares — modo teclado HID)
+  // O leitor injeta os dígitos muito rápido (< 50ms/char) e encerra com Enter.
+  // Capturamos no document para funcionar mesmo sem o campo de busca focado.
+  wireScanner();
+
   paintAll();
+}
+
+/* ─── Scanner USB (HID keyboard emulation) ───────────────────── */
+// O leitor manda os dígitos em rajada (< 50ms entre chars) + Enter.
+// Acumulamos num buffer e, no Enter ou após 120ms de silêncio, processamos.
+let _scanBuf  = '';
+let _scanTimer = null;
+
+function wireScanner() {
+  // Remove listener anterior se o módulo for re-renderizado
+  if (window._scannerHandler) document.removeEventListener('keydown', window._scannerHandler);
+
+  window._scannerHandler = (e) => {
+    // Ignora se o foco estiver em input/textarea (digitação manual)
+    const tag = document.activeElement?.tagName?.toLowerCase();
+    if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
+
+    // Enter = fim do scan
+    if (e.key === 'Enter') {
+      if (_scanBuf.length >= 3) handleScannedBarcode(_scanBuf.trim());
+      _scanBuf = '';
+      clearTimeout(_scanTimer);
+      return;
+    }
+
+    // Acumula apenas caracteres visíveis (dígitos, letras, traços)
+    if (e.key.length === 1) {
+      _scanBuf += e.key;
+      clearTimeout(_scanTimer);
+      // Timeout de segurança: se o leitor não mandar Enter, processa mesmo assim
+      _scanTimer = setTimeout(() => {
+        if (_scanBuf.length >= 3) handleScannedBarcode(_scanBuf.trim());
+        _scanBuf = '';
+      }, 120);
+    }
+  };
+
+  document.addEventListener('keydown', window._scannerHandler);
+}
+
+async function handleScannedBarcode(code) {
+  // 1. Tenta encontrar pelo campo barcode
+  let product = state.products.find(p => p.barcode === code);
+
+  // 2. Se não achou, adiciona ao carrinho com confirmação ou abre cadastro
+  if (!product) {
+    // Flash visual na barra de busca com o código
+    const searchInput = document.getElementById('pdv-search');
+    if (searchInput) {
+      searchInput.value = code;
+      state.search = code;
+      paintProducts();
+    }
+
+    const ok = await ui.confirm({
+      title: `Código não encontrado`,
+      message: `Código lido: <strong>${fmt.escape(code)}</strong><br><br>Nenhum produto com esse código no cadastro.<br>Deseja cadastrar agora com este código de barras?`,
+      okText: 'Cadastrar produto',
+      cancelText: 'Fechar'
+    });
+
+    if (ok) {
+      // Navega para o módulo de produtos com o código pré-preenchido
+      window._pendingBarcode = code;
+      window.location.hash = '#/products';
+    }
+
+    if (searchInput) { searchInput.value = ''; state.search = ''; paintProducts(); }
+    return;
+  }
+
+  // 3. Produto encontrado — adiciona ao carrinho com feedback visual
+  addToCart(product.id);
+
+  // Flash verde na barra de status
+  ui.toast(`✔ ${product.name} adicionado`, 'success');
+
+  // Pisca o card do produto se visível
+  const card = document.querySelector(`[data-id="${product.id}"]`);
+  if (card) {
+    card.classList.add('scanner-hit');
+    setTimeout(() => card.classList.remove('scanner-hit'), 600);
+  }
 }
 
 function paintAll() { paintProducts(); paintCart(); paintTotals(); }

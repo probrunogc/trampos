@@ -1,5 +1,5 @@
 // IMPORTANTE: Atualize VERSION em cada deploy para forçar atualização em todos os clientes
-const VERSION = '20250527c';
+const VERSION = '20250527d';
 const CACHE = `loja-v${VERSION}`;
 const SHELL = [
   './loja.html',
