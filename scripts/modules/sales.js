@@ -60,6 +60,9 @@ export async function render(root) {
             ${icon('search')}
             <input id="pdv-search" type="search" placeholder="Buscar produto... (atalho: digite o nome)" autofocus />
           </div>
+          <button class="btn btn-primary" id="pdv-btn-new-product" type="button" style="white-space:nowrap;flex-shrink:0">
+            ${icon('plus', { size: 14 })} Novo produto
+          </button>
         </div>
         <div class="pdv-category-bar" id="pdv-cats"></div>
         <div class="pdv-grid" id="pdv-grid"></div>
@@ -128,6 +131,9 @@ export async function render(root) {
     state.search = e.target.value.toLowerCase();
     paintProducts();
   };
+
+  // Novo produto
+  document.getElementById('pdv-btn-new-product').onclick = () => openQuickProductForm();
 
   // Customer
   document.getElementById('pdv-customer').onclick = openCustomerPicker;
@@ -213,6 +219,79 @@ function wireScanner() {
   document.addEventListener('keydown', window._scannerHandler);
 }
 
+async function openQuickProductForm(prefillBarcode = '') {
+  const form = el('form', { autocomplete: 'off' });
+  form.innerHTML = `
+    <div class="field-row">
+      <label class="field" style="grid-column: span 2">
+        <span class="field-label">Nome do produto *</span>
+        <input name="name" required placeholder="Ex: Heineken Lata 350ml" />
+      </label>
+      <label class="field">
+        <span class="field-label">Categoria *</span>
+        <select name="category" required>
+          ${CATEGORIES.map(c => `<option value="${c}">${c}</option>`).join('')}
+        </select>
+      </label>
+    </div>
+    <div class="field-row">
+      <label class="field">
+        <span class="field-label">Preço (R$) *</span>
+        <input name="price" type="number" min="0" step="0.01" required placeholder="0,00" />
+      </label>
+      <label class="field">
+        <span class="field-label">Estoque inicial</span>
+        <input name="stock" type="number" min="0" step="1" value="0" />
+      </label>
+      <label class="field">
+        <span class="field-label">Estoque mínimo</span>
+        <input name="minStock" type="number" min="0" step="1" value="6" />
+      </label>
+    </div>
+    <div class="field-row">
+      <label class="field" style="grid-column: span 2">
+        <span class="field-label">Código de barras</span>
+        <input name="barcode" value="${fmt.escape(prefillBarcode)}" placeholder="Opcional" />
+      </label>
+    </div>
+  `;
+
+  const cancelBtn = el('button', { class: 'btn btn-ghost', type: 'button', onClick: () => ui.closeModal(false) }, 'Cancelar');
+  const saveBtn   = el('button', { class: 'btn btn-primary', type: 'button', onClick: () => form.requestSubmit() }, 'Cadastrar');
+
+  form.onsubmit = async (e) => {
+    e.preventDefault();
+    saveBtn.disabled = true;
+    const fd = Object.fromEntries(new FormData(form));
+    const payload = {
+      name:     fd.name.trim(),
+      category: fd.category,
+      price:    parseFloat(fd.price) || 0,
+      stock:    parseInt(fd.stock, 10) || 0,
+      minStock: parseInt(fd.minStock, 10) || 0,
+      barcode:  fd.barcode.trim(),
+      active:   true
+    };
+    try {
+      const created = await db.create('products', payload);
+      state.products.push(created);
+      state.products.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+      paintProducts();
+      ui.toast(`Produto "${payload.name}" cadastrado.`, 'success');
+      ui.closeModal(true);
+    } catch (err) {
+      ui.toast(err.message || 'Erro ao salvar', 'danger');
+      saveBtn.disabled = false;
+    }
+  };
+
+  await ui.modal({
+    title: 'Cadastrar produto',
+    body: form,
+    footer: [cancelBtn, saveBtn]
+  });
+}
+
 async function handleScannedBarcode(code) {
   // 1. Tenta encontrar pelo campo barcode
   let product = state.products.find(p => p.barcode === code);
@@ -229,16 +308,12 @@ async function handleScannedBarcode(code) {
 
     const ok = await ui.confirm({
       title: `Código não encontrado`,
-      message: `Código lido: <strong>${fmt.escape(code)}</strong><br><br>Nenhum produto com esse código no cadastro.<br>Deseja cadastrar agora com este código de barras?`,
+      message: `Código lido: <strong>${fmt.escape(code)}</strong><br><br>Nenhum produto com esse código no cadastro.<br>Deseja cadastrar agora?`,
       okText: 'Cadastrar produto',
       cancelText: 'Fechar'
     });
 
-    if (ok) {
-      // Navega para o módulo de produtos com o código pré-preenchido
-      window._pendingBarcode = code;
-      window.location.hash = '#/products';
-    }
+    if (ok) await openQuickProductForm(code);
 
     if (searchInput) { searchInput.value = ''; state.search = ''; paintProducts(); }
     return;
