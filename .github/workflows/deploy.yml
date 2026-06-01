@@ -20,10 +20,12 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Deploy Firestore Rules + Hosting
-        run: |
-          echo "$FIREBASE_SA" > /tmp/sa.json
-          npx firebase-tools@latest deploy --only firestore:rules,hosting --project adegas-pf --non-interactive
+      - name: Write service account file
+        run: node -e "require('fs').writeFileSync('/tmp/sa.json', process.env.FIREBASE_SA)"
         env:
           FIREBASE_SA: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+
+      - name: Deploy Firestore Rules + Hosting
+        run: npx firebase-tools@latest deploy --only firestore:rules,hosting --project adegas-pf --non-interactive
+        env:
           GOOGLE_APPLICATION_CREDENTIALS: /tmp/sa.json
