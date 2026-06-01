@@ -15,11 +15,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Deploy Hosting
-        uses: FirebaseExtended/action-hosting-deploy@v0
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
-          repoToken: ${{ secrets.GITHUB_TOKEN }}
-          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-          channelId: live
-          projectId: adegas-pf
+          node-version: '20'
 
+      - name: Deploy Firestore Rules + Hosting
+        run: |
+          echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > /tmp/sa.json
+          npx firebase-tools@latest deploy --only firestore:rules,hosting --project adegas-pf
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: /tmp/sa.json
