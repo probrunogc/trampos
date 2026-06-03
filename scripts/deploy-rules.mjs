@@ -9,6 +9,7 @@ import { createSign } from 'crypto';
 const PROJECT = 'adegas-pf';
 const sa = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
 
+// Build a signed JWT for Google OAuth2
 function buildJwt() {
   const now = Math.floor(Date.now() / 1000);
   const header = Buffer.from(JSON.stringify({ alg: 'RS256', typ: 'JWT' })).toString('base64url');
@@ -35,44 +36,45 @@ async function getAccessToken() {
       assertion: jwt
     })
   });
-  const text = await res.text();
-  if (!res.ok) throw new Error(`Token error ${res.status}: ${text}`);
-  return JSON.parse(text).access_token;
-}
-
-async function apiCall(token, method, path, body) {
-  const res = await fetch(`https://firebaserules.googleapis.com/v1/${path}`, {
-    method,
-    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-    body: body ? JSON.stringify(body) : undefined
-  });
-  const text = await res.text();
-  if (!res.ok) throw new Error(`${method} ${path} → ${res.status}: ${text}`);
-  return JSON.parse(text);
+  if (!res.ok) throw new Error(`Token error: ${await res.text()}`);
+  return (await res.json()).access_token;
 }
 
 async function main() {
   console.log('Authenticating...');
   const token = await getAccessToken();
-  console.log('Auth OK');
 
   const rules = readFileSync('./firestore.rules', 'utf8');
-
   console.log('Creating ruleset...');
-  const { name: rulesetName } = await apiCall(token, 'POST',
-    `projects/${PROJECT}/rulesets`,
-    { source: { files: [{ name: 'firestore.rules', content: rules }] } }
-  );
-  console.log('Ruleset:', rulesetName);
 
-  console.log('Updating release...');
-  // PATCH with only the field we want to change (flat body, no wrapper)
-  await apiCall(token, 'PATCH',
-    `projects/${PROJECT}/releases/cloud.firestore?updateMask=rulesetName`,
-    { name: `projects/${PROJECT}/releases/cloud.firestore`, rulesetName }
+  const createRes = await fetch(
+    `https://firebaserules.googleapis.com/v1/projects/${PROJECT}/rulesets`,
+    {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ source: { files: [{ name: 'firestore.rules', content: rules }] } })
+    }
   );
+  if (!createRes.ok) throw new Error(`Create ruleset failed: ${await createRes.text()}`);
+  const { name: rulesetName } = await createRes.json();
+  console.log('Ruleset created:', rulesetName);
 
+  console.log('Releasing...');
+  const releaseRes = await fetch(
+    `https://firebaserules.googleapis.com/v1/projects/${PROJECT}/releases/cloud.firestore`,
+    {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        release: {
+          name: `projects/${PROJECT}/releases/cloud.firestore`,
+          rulesetName
+        }
+      })
+    }
+  );
+  if (!releaseRes.ok) throw new Error(`Release failed: ${await releaseRes.text()}`);
   console.log('Firestore rules deployed successfully.');
 }
 
-main().catch(e => { console.error('FAILED:', e.message); process.exit(1); });
+main().catch(e => { console.error(e.message); process.exit(1); });
