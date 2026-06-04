@@ -58,11 +58,8 @@ export async function render(root) {
         <div class="pdv-search-bar">
           <div class="search-wrap">
             ${icon('search')}
-            <input id="pdv-search" type="search" placeholder="Buscar produto... (atalho: digite o nome)" autofocus />
+            <input id="pdv-search" type="search" placeholder="Buscar produto..." autofocus />
           </div>
-          <button class="btn btn-primary" id="pdv-btn-new-product" type="button" style="white-space:nowrap;flex-shrink:0">
-            ${icon('plus', { size: 14 })} Novo produto
-          </button>
         </div>
         <div class="pdv-category-bar" id="pdv-cats"></div>
         <div class="pdv-grid" id="pdv-grid"></div>
@@ -132,8 +129,6 @@ export async function render(root) {
     paintProducts();
   };
 
-  // Novo produto
-  document.getElementById('pdv-btn-new-product').onclick = () => openQuickProductForm();
 
   // Customer
   document.getElementById('pdv-customer').onclick = openCustomerPicker;

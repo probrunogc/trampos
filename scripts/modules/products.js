@@ -15,7 +15,7 @@ export const meta = {
 
 const CATEGORIES = ['Cerveja', 'Refrigerante', 'Água', 'Energético', 'Destilado', 'Vinho', 'Suco', 'Dose', 'Outros'];
 
-let state = { search: '', category: 'all', list: [] };
+let state = { search: '', category: 'all', sort: 'az', list: [], salesCount: {} };
 
 /* ── Firebase Storage ───────────────────────────────────────── */
 let _storageInstance = null;
@@ -155,9 +155,15 @@ export async function render(root) {
           ${icon('search')}
           <input id="search-input" type="search" placeholder="Buscar produto..." />
         </div>
-        <select id="filter-cat" class="input" style="max-width:200px">
+        <select id="filter-cat" class="input" style="max-width:180px">
           <option value="all">Todas as categorias</option>
           ${CATEGORIES.map(c => `<option value="${c}">${c}</option>`).join('')}
+        </select>
+        <select id="filter-sort" class="input" style="max-width:180px">
+          <option value="az">A → Z</option>
+          <option value="recent">Mais recentes</option>
+          <option value="sold">Mais vendidos</option>
+          <option value="nophoto">Sem foto</option>
         </select>
         <span id="count" class="text-mute small"></span>
       </div>
@@ -179,14 +185,26 @@ export async function render(root) {
   document.getElementById('btn-new').onclick = () => openForm();
   document.getElementById('search-input').oninput = e => { state.search = e.target.value.toLowerCase(); paint(); };
   document.getElementById('filter-cat').onchange = e => { state.category = e.target.value; paint(); };
+  document.getElementById('filter-sort').onchange = e => { state.sort = e.target.value; paint(); };
+  document.getElementById('filter-sort').value = state.sort;
 
-  state.list = await db.list('products', { orderBy: 'name' });
+  const [products, sales] = await Promise.all([
+    db.list('products', { orderBy: 'name' }),
+    db.list('sales', { orderBy: 'createdAt', orderDir: 'desc' })
+  ]);
+  state.list = products;
+  // Contagem de vendas por produto
+  state.salesCount = {};
+  sales.forEach(s => (s.items || []).forEach(i => {
+    state.salesCount[i.productId] = (state.salesCount[i.productId] || 0) + (i.qty || 1);
+  }));
   paint();
 }
 
 function filtered() {
-  let arr = state.list;
+  let arr = [...state.list];
   if (state.category !== 'all') arr = arr.filter(p => p.category === state.category);
+  if (state.sort === 'nophoto') arr = arr.filter(p => !p.image && !(p.images?.length));
   if (state.search) {
     const s = state.search;
     arr = arr.filter(p =>
@@ -194,6 +212,9 @@ function filtered() {
       (p.brand || '').toLowerCase().includes(s)
     );
   }
+  if (state.sort === 'az')     arr.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+  if (state.sort === 'recent') arr.sort((a, b) => ((b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)));
+  if (state.sort === 'sold')   arr.sort((a, b) => ((state.salesCount[b.id] || 0) - (state.salesCount[a.id] || 0)));
   return arr;
 }
 
