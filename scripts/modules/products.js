@@ -190,6 +190,9 @@ export async function render(root) {
           <option value="nophoto">Sem foto</option>
         </select>
         <span id="count" class="text-mute small"></span>
+        <button class="btn btn-primary btn-sm" id="btn-new2">
+          ${icon('plus', { size: 14 })} <span>Novo produto</span>
+        </button>
       </div>
       <div class="table-scroll">
         <table class="data-table">
@@ -207,6 +210,7 @@ export async function render(root) {
   `;
 
   document.getElementById('btn-new').onclick = () => openForm();
+  document.getElementById('btn-new2').onclick = () => openForm();
   document.getElementById('search-input').oninput = e => { state.search = e.target.value.toLowerCase(); paint(); };
   document.getElementById('filter-cat').onchange = e => { state.category = e.target.value; paint(); };
   document.getElementById('filter-sort').onchange = e => { state.sort = e.target.value; paint(); };
