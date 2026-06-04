@@ -194,6 +194,7 @@ export async function render(root) {
           ${icon('plus', { size: 14 })} <span>Novo produto</span>
         </button>
       </div>
+      <div id="alerts-wrap"></div>
       <div class="table-scroll">
         <table class="data-table">
           <thead>
@@ -233,6 +234,8 @@ function filtered() {
   let arr = [...state.list];
   if (state.category !== 'all') arr = arr.filter(p => p.category === state.category);
   if (state.sort === 'nophoto') arr = arr.filter(p => !p.image && !(p.images?.length));
+  if (state.sort === 'zero')    arr = arr.filter(p => (p.stock ?? 0) === 0);
+  if (state.sort === 'noprice') arr = arr.filter(p => !p.price || p.price <= 0);
   if (state.search) {
     const s = state.search;
     arr = arr.filter(p =>
@@ -246,10 +249,52 @@ function filtered() {
   return arr;
 }
 
+function paintAlerts() {
+  const wrap = document.getElementById('alerts-wrap');
+  if (!wrap || !state.list.length) return;
+
+  const noPhoto  = state.list.filter(p => !p.image && !(p.images?.length)).length;
+  const noPrice  = state.list.filter(p => !p.price || p.price <= 0).length;
+  const noStock  = state.list.filter(p => (p.stock ?? 0) === 0).length;
+  const noName   = state.list.filter(p => !p.name?.trim()).length;
+
+  const chips = [
+    noName   && { key: 'noprice', label: `${noName} sem nome`,   color: 'var(--danger,#e74c3c)' },
+    noPrice  && { key: 'noprice', label: `${noPrice} sem preço`, color: 'var(--danger,#e74c3c)' },
+    noStock  && { key: 'zero',    label: `${noStock} sem estoque`, color: '#e67e22' },
+    noPhoto  && { key: 'nophoto', label: `${noPhoto} sem foto`,  color: '#3498db' },
+  ].filter(Boolean);
+
+  if (!chips.length) { wrap.innerHTML = ''; return; }
+
+  wrap.innerHTML = `
+    <div style="display:flex;flex-wrap:wrap;gap:6px;padding:8px 0 4px">
+      ${chips.map(c => `
+        <button class="alert-chip" data-filter="${c.key}"
+          style="background:${c.color}18;border:1px solid ${c.color}55;color:${c.color};
+                 padding:4px 10px;border-radius:20px;font-size:.78rem;font-weight:600;cursor:pointer">
+          ⚠ ${c.label}
+        </button>`).join('')}
+      <span class="text-mute small" style="align-self:center;margin-left:4px">
+        — clique para filtrar
+      </span>
+    </div>`;
+
+  wrap.querySelectorAll('.alert-chip').forEach(btn => {
+    btn.onclick = () => {
+      const f = btn.dataset.filter;
+      state.sort = (state.sort === f) ? 'az' : f;
+      document.getElementById('filter-sort').value = state.sort;
+      paint();
+    };
+  });
+}
+
 function paint() {
   const tbody = document.getElementById('tbody');
   const count = document.getElementById('count');
   const rows  = filtered();
+  paintAlerts();
   count.textContent = `${rows.length} produto${rows.length === 1 ? '' : 's'}`;
 
   if (rows.length === 0) {
