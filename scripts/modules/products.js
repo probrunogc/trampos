@@ -541,6 +541,13 @@ async function openForm(id = null) {
   /* ── Submit ──────────────────────────────────────────────── */
   const handleSubmit = async e => {
     if (e?.preventDefault) e.preventDefault();
+
+    // Validação manual (required do HTML não dispara em click direto no botão)
+    const nameVal  = form.querySelector('[name="name"]').value.trim();
+    const priceVal = parseFloat(form.querySelector('[name="price"]').value);
+    if (!nameVal)            { ui.toast('Informe o nome do produto.', 'warning'); return; }
+    if (!priceVal || priceVal <= 0) { ui.toast('Informe o preço do produto.', 'warning'); return; }
+
     saveBtn.disabled = true;
     saveBtn.textContent = 'Salvando…';
     try {
@@ -576,6 +583,16 @@ async function openForm(id = null) {
         minStock:    parseInt(fd.minStock) || 0,
         active:      form.querySelector('[name="active"]').checked,
       };
+
+      if (payload.barcode) {
+        const dup = state.list.find(x => x.barcode === payload.barcode && x.id !== id);
+        if (dup) {
+          ui.toast(`Código de barras já cadastrado em "${dup.name || 'produto sem nome'}". Edite-o.`, 'warning');
+          saveBtn.disabled = false;
+          saveBtn.textContent = isEdit ? 'Salvar' : 'Cadastrar';
+          return;
+        }
+      }
 
       if (isEdit) {
         const updated = await db.update('products', id, payload);

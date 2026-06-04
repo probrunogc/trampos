@@ -303,6 +303,15 @@ async function openQuickProductForm(prefillBarcode = '') {
     if (!nameVal)    { ui.toast('Informe o nome do produto.', 'warning'); return; }
     if (priceVal <= 0) { ui.toast('Informe o preço do produto.', 'warning'); return; }
 
+    const barcodeVal = form.querySelector('[name="barcode"]').value.trim();
+    if (barcodeVal) {
+      const dup = state.products.find(x => x.barcode === barcodeVal);
+      if (dup) {
+        ui.toast(`Código já cadastrado em "${dup.name}". Edite o produto existente.`, 'warning');
+        return;
+      }
+    }
+
     saveBtn.disabled = true;
     const payload = {
       name:     nameVal,
