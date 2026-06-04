@@ -219,13 +219,42 @@ function wireScanner() {
   document.addEventListener('keydown', window._scannerHandler);
 }
 
+const COSMOS_TOKEN = '82haA2Xclw-x7pepzbU0Yg';
+
+async function cosmosLookup(barcode) {
+  try {
+    const res = await fetch(`https://api.cosmos.bluesoft.com.br/gtins/${barcode}.json`, {
+      headers: { 'X-Cosmos-Token': COSMOS_TOKEN, 'User-Agent': 'Cosmos/1.0' }
+    });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch { return null; }
+}
+
+function cosmosCat(desc) {
+  const d = (desc || '').toLowerCase();
+  const map = [
+    ['cerveja','Cerveja'],['chopp','Cerveja'],
+    ['refrigerante','Refrigerante'],
+    ['suco','Suco'],
+    ['água','Água'],['agua','Água'],
+    ['energético','Energético'],['energy','Energético'],
+    ['vodka','Destilado'],['whisky','Destilado'],['whiskey','Destilado'],
+    ['gin','Destilado'],['rum','Destilado'],['cachaça','Destilado'],['conhaque','Destilado'],
+    ['vinho','Vinho'],
+    ['dose','Dose'],
+  ];
+  return map.find(([k]) => d.includes(k))?.[1] || null;
+}
+
 async function openQuickProductForm(prefillBarcode = '') {
+  const loading = !!prefillBarcode;
   const form = el('form', { autocomplete: 'off' });
   form.innerHTML = `
     <div class="field-row">
       <label class="field" style="grid-column: span 2">
         <span class="field-label">Nome do produto *</span>
-        <input name="name" required placeholder="Ex: Heineken Lata 350ml" />
+        <input name="name" required placeholder="${loading ? '🔍 Buscando na Cosmos...' : 'Ex: Heineken Lata 350ml'}" ${loading ? 'disabled' : ''} />
       </label>
       <label class="field">
         <span class="field-label">Categoria *</span>
@@ -292,11 +321,28 @@ async function openQuickProductForm(prefillBarcode = '') {
   saveBtn.addEventListener('click', doSave);
   form.addEventListener('submit', (e) => { e.preventDefault(); doSave(); });
 
-  await ui.modal({
-    title: 'Cadastrar produto',
-    body: form,
-    footer: [cancelBtn, saveBtn]
-  });
+  // Abre modal e dispara lookup em paralelo
+  const modalPromise = ui.modal({ title: 'Cadastrar produto', body: form, footer: [cancelBtn, saveBtn] });
+
+  if (prefillBarcode) {
+    cosmosLookup(prefillBarcode).then(data => {
+      const nameInput = form.querySelector('[name="name"]');
+      if (!nameInput) return;
+      nameInput.disabled = false;
+      if (data?.description) {
+        nameInput.value = data.description;
+        const cat = cosmosCat(data.description);
+        if (cat) form.querySelector('[name="category"]').value = cat;
+        ui.toast('✔ Produto encontrado na Cosmos', 'success');
+      } else {
+        nameInput.placeholder = 'Ex: Heineken Lata 350ml';
+        ui.toast('Produto não encontrado — preencha manualmente', 'info');
+      }
+      nameInput.focus();
+    });
+  }
+
+  await modalPromise;
 }
 
 async function handleScannedBarcode(code) {
