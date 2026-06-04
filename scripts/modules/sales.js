@@ -124,10 +124,23 @@ export async function render(root) {
   });
 
   // Search
-  document.getElementById('pdv-search').oninput = (e) => {
+  const searchEl = document.getElementById('pdv-search');
+  searchEl.oninput = (e) => {
     state.search = e.target.value.toLowerCase();
     paintProducts();
   };
+  // Quando o scanner termina de digitar o código, manda Enter — capturamos aqui
+  searchEl.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const val = searchEl.value.trim();
+      if (val) {
+        handleScannedBarcode(val);
+        searchEl.value = '';
+        state.search = '';
+      }
+    }
+  });
 
 
   // Customer
