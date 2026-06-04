@@ -165,18 +165,24 @@ async function openForm(id = null) {
   `;
 
   const cancelBtn = el('button', { class: 'btn btn-ghost', type: 'button', onClick: () => ui.closeModal(false) }, 'Cancelar');
-  // type="button" + requestSubmit() porque o modal move o botão pra fora do <form>
-  const saveBtn = el('button', { class: 'btn btn-primary', type: 'button',
-    onClick: () => form.requestSubmit() }, isEdit ? 'Salvar' : 'Cadastrar');
+  const saveBtn   = el('button', { class: 'btn btn-primary', type: 'button' }, isEdit ? 'Salvar' : 'Cadastrar');
 
-  form.onsubmit = async (e) => {
-    e.preventDefault();
+  const doSave = async () => {
+    if (saveBtn.disabled) return;
+    // Validação manual (compatível com todos os browsers/iOS)
+    const nameVal  = form.querySelector('[name="name"]').value.trim();
+    const emailVal = form.querySelector('[name="email"]').value.trim();
+    const roleVal  = form.querySelector('[name="role"]:checked')?.value;
+    const passVal  = form.querySelector('[name="password"]')?.value || '';
+    if (!nameVal)  { ui.toast('Informe o nome.', 'warning');  return; }
+    if (!emailVal) { ui.toast('Informe o e-mail.', 'warning'); return; }
+    if (!isEdit && passVal.length < 6) { ui.toast('Senha deve ter mínimo 6 caracteres.', 'warning'); return; }
+
     saveBtn.disabled = true;
-    const fd = Object.fromEntries(new FormData(form));
     const payload = {
-      name: fd.name.trim(),
-      email: fd.email.trim().toLowerCase(),
-      role: fd.role,
+      name:   nameVal,
+      email:  emailVal.toLowerCase(),
+      role:   roleVal || 'vendedor',
       active: form.querySelector('[name="active"]').checked
     };
     try {
@@ -187,7 +193,7 @@ async function openForm(id = null) {
         ui.toast('Usuário atualizado.', 'success');
       } else {
         if (isDemoMode()) {
-          payload.password = fd.password;
+          payload.password = passVal;
           const created = await db.create('users', payload);
           state.list.push(created);
         } else {
@@ -196,7 +202,7 @@ async function openForm(id = null) {
           const secAuth = await getSecondaryAuth();
           let cred;
           try {
-            cred = await createUserWithEmailAndPassword(secAuth, payload.email, fd.password);
+            cred = await createUserWithEmailAndPassword(secAuth, payload.email, passVal);
           } catch (err) {
             const msgs = {
               'auth/email-already-in-use': 'Este e-mail já está cadastrado no sistema.',
@@ -220,6 +226,9 @@ async function openForm(id = null) {
       saveBtn.disabled = false;
     }
   };
+
+  saveBtn.addEventListener('click', doSave);
+  form.addEventListener('submit', (e) => { e.preventDefault(); doSave(); });
 
   await ui.modal({
     title: isEdit ? 'Editar usuário' : 'Novo usuário',
