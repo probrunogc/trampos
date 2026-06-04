@@ -327,7 +327,7 @@ async function renderSellerHistory(root) {
 
   const { startOfDay } = manausNow();
   const allSales = await db.list('sales', { orderBy: 'createdAt', orderDir: 'desc' });
-  const today = allSales.filter(s => (s.createdAt?.seconds || 0) * 1000 >= startOfDay);
+  const today = allSales.filter(s => (s.createdAt || 0) >= startOfDay);
 
   const dateStr = new Date().toLocaleDateString('pt-BR', { timeZone: 'America/Manaus', weekday: 'long', day: '2-digit', month: 'long' });
   root.querySelector('#hist-date').textContent = dateStr;
@@ -370,8 +370,8 @@ async function renderSellerHistory(root) {
           <tbody>
             ${today.length === 0 ? `<tr><td colspan="4"><div class="empty-state">${icon('sales',{size:40})}<h4>Nenhuma venda hoje</h4></div></td></tr>` :
               today.map(s => {
-                const time = s.createdAt?.seconds
-                  ? new Date(s.createdAt.seconds * 1000).toLocaleTimeString('pt-BR', { timeZone: 'America/Manaus', hour: '2-digit', minute: '2-digit' })
+                const time = s.createdAt
+                  ? new Date(s.createdAt).toLocaleTimeString('pt-BR', { timeZone: 'America/Manaus', hour: '2-digit', minute: '2-digit' })
                   : '--:--';
                 const items = (s.items || []).map(i => `${i.qty}× ${i.name}`).join(', ');
                 return `<tr>

@@ -15,6 +15,30 @@ export const meta = {
 
 const CATEGORIES = ['Cerveja', 'Refrigerante', 'Água', 'Energético', 'Destilado', 'Vinho', 'Suco', 'Dose', 'Outros'];
 
+/* ── Cosmos Bluesoft lookup ─────────────────────────────────── */
+const COSMOS_TOKEN = '82haA2Xclw-x7pepzbU0Yg';
+async function cosmosLookup(barcode) {
+  try {
+    const res = await fetch(`https://api.cosmos.bluesoft.com.br/gtins/${barcode}.json`, {
+      headers: { 'X-Cosmos-Token': COSMOS_TOKEN, 'User-Agent': 'Cosmos/1.0' },
+    });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch { return null; }
+}
+function cosmosCat(desc) {
+  const d = (desc || '').toLowerCase();
+  const map = [
+    ['cerveja','Cerveja'],['chopp','Cerveja'],['refrigerante','Refrigerante'],
+    ['suco','Suco'],['água','Água'],['agua','Água'],
+    ['energético','Energético'],['energy','Energético'],
+    ['vodka','Destilado'],['whisky','Destilado'],['whiskey','Destilado'],
+    ['gin','Destilado'],['rum','Destilado'],['cachaça','Destilado'],['conhaque','Destilado'],
+    ['vinho','Vinho'],['dose','Dose'],
+  ];
+  return map.find(([k]) => d.includes(k))?.[1] || null;
+}
+
 let state = { search: '', category: 'all', sort: 'az', list: [], salesCount: {} };
 
 /* ── Firebase Storage ───────────────────────────────────────── */
@@ -213,7 +237,7 @@ function filtered() {
     );
   }
   if (state.sort === 'az')     arr.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
-  if (state.sort === 'recent') arr.sort((a, b) => ((b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)));
+  if (state.sort === 'recent') arr.sort((a, b) => ((b.createdAt || 0) - (a.createdAt || 0)));
   if (state.sort === 'sold')   arr.sort((a, b) => ((state.salesCount[b.id] || 0) - (state.salesCount[a.id] || 0)));
   return arr;
 }
@@ -571,15 +595,6 @@ async function openForm(id = null) {
   form.addEventListener('submit', handleSubmit);
   saveBtn.addEventListener('click', handleSubmit);
 
-  // Pré-preenche barcode se veio do PDV (scan de produto não cadastrado)
-  if (window._pendingBarcode && !isEdit) {
-    requestAnimationFrame(() => {
-      const barcodeField = form.querySelector('#field-barcode');
-      if (barcodeField) barcodeField.value = window._pendingBarcode;
-      delete window._pendingBarcode;
-    });
-  }
-
   // Botão "Escanear" — foca o campo e aguarda o leitor USB digitar
   form.querySelector('#btn-scan-barcode')?.addEventListener('click', () => {
     const field = form.querySelector('#field-barcode');
@@ -594,6 +609,44 @@ async function openForm(id = null) {
       if (e.key === 'Enter') { e.preventDefault(); field.blur(); }
     }, { once: true });
   });
+
+  // Cosmos lookup — dispara quando barcode é preenchido (blur ou Enter)
+  async function triggerCosmosLookup() {
+    const field = form.querySelector('#field-barcode');
+    const barcode = (field?.value || '').trim();
+    if (!barcode || barcode.length < 8) return;
+    const nameField    = form.querySelector('[name="name"]');
+    const brandField   = form.querySelector('[name="brand"]');
+    const catField     = form.querySelector('[name="category"]');
+    if (nameField?.value.trim()) return; // já tem nome, não sobrescreve
+    const scanBtn = form.querySelector('#btn-scan-barcode');
+    if (scanBtn) { scanBtn.disabled = true; scanBtn.textContent = '⏳ Buscando…'; }
+    const data = await cosmosLookup(barcode);
+    if (scanBtn) { scanBtn.disabled = false; scanBtn.textContent = '📷 Escanear'; }
+    if (!data) return;
+    if (nameField && !nameField.value.trim()) nameField.value = data.description || data.ncm?.description || '';
+    if (brandField && !brandField.value.trim()) brandField.value = data.brand?.name || '';
+    const cat = cosmosCat(data.ncm?.description || data.description || '');
+    if (cat && catField) catField.value = cat;
+    if (nameField?.value) ui.toast('Produto encontrado na base Cosmos ✓', 'success');
+  }
+
+  const barcodeField = form.querySelector('#field-barcode');
+  if (barcodeField) {
+    barcodeField.addEventListener('blur', triggerCosmosLookup);
+    barcodeField.addEventListener('keydown', e => {
+      if (e.key === 'Enter') { e.preventDefault(); triggerCosmosLookup(); }
+    });
+  }
+
+  // Se veio com barcode pré-preenchido, dispara lookup após render
+  if (window._pendingBarcode && !isEdit) {
+    requestAnimationFrame(() => {
+      const f = form.querySelector('#field-barcode');
+      if (f) { f.value = window._pendingBarcode; triggerCosmosLookup(); }
+      delete window._pendingBarcode;
+    });
+  }
 
   await ui.modal({
     title: isEdit ? 'Editar produto' : 'Novo produto',
