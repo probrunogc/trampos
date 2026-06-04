@@ -423,7 +423,6 @@ function paintProducts() {
   }).join('');
 
   grid.querySelectorAll('.pdv-product').forEach(card => {
-    if (card.classList.contains('out')) return;
     card.onclick = () => addToCart(card.dataset.id);
   });
 }
@@ -433,13 +432,12 @@ function addToCart(productId) {
   if (!p) return;
   const existing = state.cart.find(i => i.productId === productId);
   if (existing) {
-    if (existing.qty + 1 > p.stock) {
-      ui.toast(`Estoque insuficiente (${p.stock} disponível).`, 'warning');
-      return;
+    if (p.stock > 0 && existing.qty + 1 > p.stock) {
+      ui.toast(`Atenção: estoque pode ser insuficiente (${p.stock} cadastrado).`, 'warning');
     }
     existing.qty += 1;
   } else {
-    if (p.stock <= 0) return;
+    if (p.stock <= 0) ui.toast(`Atenção: "${p.name}" sem estoque cadastrado.`, 'warning');
     state.cart.push({
       productId: p.id,
       name: p.name,
