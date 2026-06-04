@@ -257,19 +257,23 @@ async function openQuickProductForm(prefillBarcode = '') {
   `;
 
   const cancelBtn = el('button', { class: 'btn btn-ghost', type: 'button', onClick: () => ui.closeModal(false) }, 'Cancelar');
-  const saveBtn   = el('button', { class: 'btn btn-primary', type: 'button', onClick: () => form.requestSubmit() }, 'Cadastrar');
+  const saveBtn   = el('button', { class: 'btn btn-primary', type: 'button' }, 'Cadastrar');
 
-  form.onsubmit = async (e) => {
-    e.preventDefault();
+  const doSave = async () => {
+    if (saveBtn.disabled) return;
+    const nameVal  = form.querySelector('[name="name"]').value.trim();
+    const priceVal = parseFloat(form.querySelector('[name="price"]').value) || 0;
+    if (!nameVal)    { ui.toast('Informe o nome do produto.', 'warning'); return; }
+    if (priceVal <= 0) { ui.toast('Informe o preço do produto.', 'warning'); return; }
+
     saveBtn.disabled = true;
-    const fd = Object.fromEntries(new FormData(form));
     const payload = {
-      name:     fd.name.trim(),
-      category: fd.category,
-      price:    parseFloat(fd.price) || 0,
-      stock:    parseInt(fd.stock, 10) || 0,
-      minStock: parseInt(fd.minStock, 10) || 0,
-      barcode:  fd.barcode.trim(),
+      name:     nameVal,
+      category: form.querySelector('[name="category"]').value,
+      price:    priceVal,
+      stock:    parseInt(form.querySelector('[name="stock"]').value, 10) || 0,
+      minStock: parseInt(form.querySelector('[name="minStock"]').value, 10) || 0,
+      barcode:  form.querySelector('[name="barcode"]').value.trim(),
       active:   true
     };
     try {
@@ -277,13 +281,16 @@ async function openQuickProductForm(prefillBarcode = '') {
       state.products.push(created);
       state.products.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
       paintProducts();
-      ui.toast(`Produto "${payload.name}" cadastrado.`, 'success');
+      ui.toast(`"${payload.name}" cadastrado.`, 'success');
       ui.closeModal(true);
     } catch (err) {
       ui.toast(err.message || 'Erro ao salvar', 'danger');
       saveBtn.disabled = false;
     }
   };
+
+  saveBtn.addEventListener('click', doSave);
+  form.addEventListener('submit', (e) => { e.preventDefault(); doSave(); });
 
   await ui.modal({
     title: 'Cadastrar produto',

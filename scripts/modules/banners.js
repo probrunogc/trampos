@@ -235,13 +235,12 @@ async function openForm(id = null) {
     onClick: () => { if (imgState.blobUrl) URL.revokeObjectURL(imgState.blobUrl); ui.closeModal(false); }
   }, 'Cancelar');
 
-  const saveBtn = el('button', { class: 'btn btn-primary', type: 'button',
-    onClick: () => form.requestSubmit(),
-  }, isEdit ? 'Salvar' : 'Criar banner');
+  const saveBtn = el('button', { class: 'btn btn-primary', type: 'button' },
+    isEdit ? 'Salvar' : 'Criar banner');
 
   /* ── Submit ──────────────────────────────────────────────── */
-  form.onsubmit = async e => {
-    e.preventDefault();
+  const handleSubmit = async e => {
+    if (e?.preventDefault) e.preventDefault();
     saveBtn.disabled = true;
     saveBtn.textContent = 'Salvando…';
     try {
@@ -277,6 +276,8 @@ async function openForm(id = null) {
       saveBtn.textContent = isEdit ? 'Salvar' : 'Criar banner';
     }
   };
+  form.addEventListener('submit', handleSubmit);
+  saveBtn.addEventListener('click', handleSubmit);
 
   await ui.modal({
     title: isEdit ? 'Editar banner' : 'Novo banner',

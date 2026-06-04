@@ -269,10 +269,11 @@ function openNewProduct(codeOrName) {
   `;
 
   const cancelBtn = el('button', { class: 'btn btn-ghost', type: 'button', onClick: () => ui.closeModal(false) }, 'Cancelar');
-  const saveBtn   = el('button', { class: 'btn btn-primary', type: 'button', onClick: () => body.requestSubmit() }, 'Cadastrar');
+  const saveBtn   = el('button', { class: 'btn btn-primary', type: 'button' }, 'Cadastrar');
 
-  body.onsubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async (e) => {
+    if (e?.preventDefault) e.preventDefault();
+    if (saveBtn.disabled) return;
     saveBtn.disabled = true;
     saveBtn.textContent = 'Salvando…';
     const fd = Object.fromEntries(new FormData(body));
@@ -304,6 +305,8 @@ function openNewProduct(codeOrName) {
       saveBtn.textContent = 'Cadastrar';
     }
   };
+  body.addEventListener('submit', handleSubmit);
+  saveBtn.addEventListener('click', handleSubmit);
 
   ui.modal({ title: 'Cadastrar novo produto', wide: true, body, footer: [cancelBtn, saveBtn] });
   requestAnimationFrame(() => {

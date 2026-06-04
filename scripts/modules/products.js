@@ -485,14 +485,13 @@ async function openForm(id = null) {
     }
   }, 'Cancelar');
 
-  // type="button" + requestSubmit() porque o modal move o botão pra fora do <form>
-  const saveBtn = el('button', { class: 'btn btn-primary', type: 'button',
-    onClick: () => form.requestSubmit(),
-  }, isEdit ? 'Salvar' : 'Cadastrar');
+  // type="button" — o modal move o botão pra fora do <form>; wired manualmente abaixo
+  const saveBtn = el('button', { class: 'btn btn-primary', type: 'button' },
+    isEdit ? 'Salvar' : 'Cadastrar');
 
   /* ── Submit ──────────────────────────────────────────────── */
-  form.onsubmit = async e => {
-    e.preventDefault();
+  const handleSubmit = async e => {
+    if (e?.preventDefault) e.preventDefault();
     saveBtn.disabled = true;
     saveBtn.textContent = 'Salvando…';
     try {
@@ -548,6 +547,8 @@ async function openForm(id = null) {
       saveBtn.textContent = isEdit ? 'Salvar' : 'Cadastrar';
     }
   };
+  form.addEventListener('submit', handleSubmit);
+  saveBtn.addEventListener('click', handleSubmit);
 
   // Pré-preenche barcode se veio do PDV (scan de produto não cadastrado)
   if (window._pendingBarcode && !isEdit) {
