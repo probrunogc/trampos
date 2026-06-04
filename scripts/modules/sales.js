@@ -370,6 +370,10 @@ async function handleScannedBarcode(code) {
   // 3. Produto encontrado — adiciona ao carrinho com feedback visual
   addToCart(product.id);
 
+  // Limpa a busca para o grid voltar a mostrar todos os produtos
+  const si = document.getElementById('pdv-search');
+  if (si) { si.value = ''; state.search = ''; paintProducts(); }
+
   // Flash verde na barra de status
   ui.toast(`✔ ${product.name} adicionado`, 'success');
 
@@ -389,7 +393,8 @@ function paintProducts() {
   if (state.category !== 'all') arr = arr.filter(p => p.category === state.category);
   if (state.search) arr = arr.filter(p =>
     (p.name || '').toLowerCase().includes(state.search) ||
-    (p.brand || '').toLowerCase().includes(state.search)
+    (p.brand || '').toLowerCase().includes(state.search) ||
+    (p.barcode || '').includes(state.search)
   );
 
   if (arr.length === 0) {
