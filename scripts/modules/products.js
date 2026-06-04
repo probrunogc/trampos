@@ -362,106 +362,217 @@ async function openForm(id = null) {
   const p = isEdit ? state.list.find(x => x.id === id) : {};
 
   const existingImgs = Array.isArray(p?.images) ? p.images.filter(Boolean) : (p?.image ? [p.image] : []);
-
-  // Each image: { url, file (processed Blob), blobUrl (preview), processing, status }
-  let images = existingImgs.map(url => ({
-    url, file: null, blobUrl: null, processing: false, status: '',
-  }));
+  let images = existingImgs.map(url => ({ url, file: null, blobUrl: null, processing: false, status: '' }));
 
   const form = el('form', { autocomplete: 'off' });
-  form.innerHTML = `
-    <div class="field-row">
-      <label class="field" style="grid-column:span 2">
-        <span class="field-label">Nome *</span>
-        <input name="name" required value="${fmt.escape(p?.name || '')}" />
-      </label>
-      <label class="field">
-        <span class="field-label">Marca</span>
-        <input name="brand" value="${fmt.escape(p?.brand || '')}" />
-      </label>
-    </div>
-    <div class="field-row">
-      <label class="field">
-        <span class="field-label">Categoria *</span>
-        <select name="category" required>
-          ${CATEGORIES.map(c => `<option value="${c}" ${p?.category === c ? 'selected' : ''}>${c}</option>`).join('')}
-        </select>
-      </label>
-      <label class="field">
-        <span class="field-label">Unidade</span>
-        <select name="unit">
-          ${['un','lt','ml','kg','cx','pct'].map(u => `<option value="${u}" ${p?.unit === u ? 'selected' : ''}>${u}</option>`).join('')}
-        </select>
-      </label>
-      <label class="field">
-        <span class="field-label">SKU</span>
-        <input name="sku" value="${fmt.escape(p?.sku || '')}" />
-      </label>
-    </div>
 
-    <div class="divider-text">Imagens</div>
-    <div id="img-grid-wrap"></div>
+  if (!isEdit) {
+    // ── NOVO PRODUTO: formulário simples com barcode em destaque ──
+    form.innerHTML = `
+      <div style="margin-bottom:var(--sp-4)">
+        <div class="field-label" style="margin-bottom:8px;font-size:.8rem;letter-spacing:.05em">
+          CÓDIGO DE BARRAS — aponte o leitor e escaneie
+        </div>
+        <div style="position:relative;display:flex;gap:8px;align-items:center">
+          <input name="barcode" id="field-barcode" autocomplete="off"
+                 placeholder="🔴 Escaneie ou digite o código"
+                 style="font-family:monospace;font-size:1.25rem;letter-spacing:4px;text-align:center;
+                        padding:14px 16px;border:2px solid var(--gold-400,#d4af37);border-radius:8px;
+                        flex:1;background:rgba(212,175,55,.06)" />
+          <button type="button" id="btn-scan-barcode" class="btn btn-outline" style="white-space:nowrap">
+            📷 Focar leitor
+          </button>
+        </div>
+        <p class="field-hint" style="margin-top:6px;font-size:.75rem">
+          Após escanear, o nome e a categoria serão preenchidos automaticamente pela Cosmos.
+        </p>
+      </div>
 
-    <div class="divider-text">Descrição</div>
-    <div class="field-row">
-      <label class="field">
-        <span class="field-label">Teor alcoólico</span>
-        <input name="teor" placeholder="Ex.: 5%, 40%, Zero" value="${fmt.escape(p?.teor || '')}" />
+      <label class="field" style="margin-bottom:var(--sp-3)">
+        <span class="field-label">Nome do produto *</span>
+        <input name="name" id="field-name" autocomplete="off" placeholder="Preenchido automaticamente ou digite" style="font-size:1rem" />
       </label>
-      <label class="field">
-        <span class="field-label">Origem</span>
-        <input name="origem" placeholder="Ex.: Brasil, México" value="${fmt.escape(p?.origem || '')}" />
-      </label>
-    </div>
-    <label class="field">
-      <span class="field-label">Descrição curta</span>
-      <textarea name="description" style="min-height:72px" placeholder="Descrição divertida e informativa…">${fmt.escape(p?.description || '')}</textarea>
-    </label>
 
-    <div class="divider-text">Preços</div>
-    <div class="field-row">
-      <label class="field">
-        <span class="field-label">Preço de venda *</span>
-        <input name="price" type="number" min="0" step="0.01" required value="${p?.price ?? ''}" />
-      </label>
-      <label class="field">
-        <span class="field-label">Preço de custo</span>
-        <input name="costPrice" type="number" min="0" step="0.01" value="${p?.costPrice ?? ''}" />
-      </label>
-    </div>
+      <div class="field-row" style="margin-bottom:var(--sp-3)">
+        <label class="field">
+          <span class="field-label">Categoria *</span>
+          <select name="category">
+            ${CATEGORIES.map(c => `<option value="${c}">${c}</option>`).join('')}
+          </select>
+        </label>
+        <label class="field">
+          <span class="field-label">Preço de venda (R$)</span>
+          <input name="price" type="number" min="0" step="0.01" placeholder="0,00" />
+        </label>
+      </div>
 
-    <div class="divider-text">Estoque</div>
-    <div class="field-row">
-      <label class="field">
-        <span class="field-label">Quantidade em estoque</span>
-        <input name="stock" type="number" min="0" step="1" value="${p?.stock ?? 0}" />
-      </label>
-      <label class="field">
-        <span class="field-label">Estoque mínimo</span>
-        <input name="minStock" type="number" min="0" step="1" value="${p?.minStock ?? 0}" />
-      </label>
-    </div>
+      <!-- Campos extras colapsáveis -->
+      <button type="button" id="btn-toggle-extra"
+        style="background:none;border:none;color:var(--gold-400,#d4af37);cursor:pointer;
+               font-size:.85rem;padding:4px 0;margin-bottom:var(--sp-3);display:flex;
+               align-items:center;gap:6px">
+        <span id="toggle-arrow">▶</span> Mais detalhes (marca, estoque, imagens…)
+      </button>
+      <div id="extra-fields" style="display:none">
+        <div class="field-row">
+          <label class="field">
+            <span class="field-label">Marca</span>
+            <input name="brand" />
+          </label>
+          <label class="field">
+            <span class="field-label">Unidade</span>
+            <select name="unit">
+              ${['un','lt','ml','kg','cx','pct'].map(u => `<option value="${u}">${u}</option>`).join('')}
+            </select>
+          </label>
+          <label class="field">
+            <span class="field-label">SKU</span>
+            <input name="sku" />
+          </label>
+        </div>
+        <div class="field-row">
+          <label class="field">
+            <span class="field-label">Preço de custo</span>
+            <input name="costPrice" type="number" min="0" step="0.01" placeholder="0,00" />
+          </label>
+          <label class="field">
+            <span class="field-label">Estoque inicial</span>
+            <input name="stock" type="number" min="0" step="1" value="0" />
+          </label>
+          <label class="field">
+            <span class="field-label">Estoque mínimo</span>
+            <input name="minStock" type="number" min="0" step="1" value="6" />
+          </label>
+        </div>
+        <div class="field-row">
+          <label class="field">
+            <span class="field-label">Teor alcoólico</span>
+            <input name="teor" placeholder="Ex.: 5%, 40%" />
+          </label>
+          <label class="field">
+            <span class="field-label">Origem</span>
+            <input name="origem" placeholder="Ex.: Brasil" />
+          </label>
+        </div>
+        <label class="field">
+          <span class="field-label">Descrição curta</span>
+          <textarea name="description" style="min-height:60px"></textarea>
+        </label>
+        <div class="divider-text">Fotos</div>
+        <div id="img-grid-wrap"></div>
+      </div>
 
-    <div class="divider-text">Código de barras</div>
-    <div class="field-row">
-      <label class="field" style="grid-column:span 2">
-        <span class="field-label">Código de barras (EAN/UPC)</span>
-        <input name="barcode" id="field-barcode" placeholder="Escaneie com o leitor ou digite manualmente"
-               value="${fmt.escape(p?.barcode || '')}" autocomplete="off" />
+      <label class="switch" style="margin-top:var(--sp-4)">
+        <input name="active" type="checkbox" checked>
+        <span class="switch-knob"></span>
+        <span>Produto ativo (aparece no PDV)</span>
       </label>
-      <label class="field" style="align-self:flex-end">
-        <button type="button" id="btn-scan-barcode" class="btn btn-outline" style="width:100%">
-          📷 Escanear
-        </button>
-      </label>
-    </div>
+    `;
 
-    <label class="switch" style="margin-top:var(--sp-4)">
-      <input name="active" type="checkbox" ${p?.active !== false ? 'checked' : ''}>
-      <span class="switch-knob"></span>
-      <span>Produto ativo (aparece no PDV e na loja)</span>
-    </label>
-  `;
+    // Toggle extra fields
+    form.querySelector('#btn-toggle-extra').onclick = () => {
+      const extra = form.querySelector('#extra-fields');
+      const arrow = form.querySelector('#toggle-arrow');
+      const open  = extra.style.display === 'none';
+      extra.style.display = open ? '' : 'none';
+      arrow.textContent = open ? '▼' : '▶';
+      if (open) renderImages();
+    };
+
+  } else {
+    // ── EDITAR PRODUTO: formulário completo ──
+    form.innerHTML = `
+      <div class="field-row">
+        <label class="field" style="grid-column:span 2">
+          <span class="field-label">Nome *</span>
+          <input name="name" id="field-name" required value="${fmt.escape(p?.name || '')}" />
+        </label>
+        <label class="field">
+          <span class="field-label">Marca</span>
+          <input name="brand" value="${fmt.escape(p?.brand || '')}" />
+        </label>
+      </div>
+      <div class="field-row">
+        <label class="field">
+          <span class="field-label">Categoria *</span>
+          <select name="category" required>
+            ${CATEGORIES.map(c => `<option value="${c}" ${p?.category === c ? 'selected' : ''}>${c}</option>`).join('')}
+          </select>
+        </label>
+        <label class="field">
+          <span class="field-label">Unidade</span>
+          <select name="unit">
+            ${['un','lt','ml','kg','cx','pct'].map(u => `<option value="${u}" ${p?.unit === u ? 'selected' : ''}>${u}</option>`).join('')}
+          </select>
+        </label>
+        <label class="field">
+          <span class="field-label">SKU</span>
+          <input name="sku" value="${fmt.escape(p?.sku || '')}" />
+        </label>
+      </div>
+
+      <div class="divider-text">Imagens</div>
+      <div id="img-grid-wrap"></div>
+
+      <div class="divider-text">Descrição</div>
+      <div class="field-row">
+        <label class="field">
+          <span class="field-label">Teor alcoólico</span>
+          <input name="teor" placeholder="Ex.: 5%, 40%, Zero" value="${fmt.escape(p?.teor || '')}" />
+        </label>
+        <label class="field">
+          <span class="field-label">Origem</span>
+          <input name="origem" placeholder="Ex.: Brasil, México" value="${fmt.escape(p?.origem || '')}" />
+        </label>
+      </div>
+      <label class="field">
+        <span class="field-label">Descrição curta</span>
+        <textarea name="description" style="min-height:72px">${fmt.escape(p?.description || '')}</textarea>
+      </label>
+
+      <div class="divider-text">Preços</div>
+      <div class="field-row">
+        <label class="field">
+          <span class="field-label">Preço de venda *</span>
+          <input name="price" type="number" min="0" step="0.01" required value="${p?.price ?? ''}" />
+        </label>
+        <label class="field">
+          <span class="field-label">Preço de custo</span>
+          <input name="costPrice" type="number" min="0" step="0.01" value="${p?.costPrice ?? ''}" />
+        </label>
+      </div>
+
+      <div class="divider-text">Estoque</div>
+      <div class="field-row">
+        <label class="field">
+          <span class="field-label">Quantidade em estoque</span>
+          <input name="stock" type="number" min="0" step="1" value="${p?.stock ?? 0}" />
+        </label>
+        <label class="field">
+          <span class="field-label">Estoque mínimo</span>
+          <input name="minStock" type="number" min="0" step="1" value="${p?.minStock ?? 0}" />
+        </label>
+      </div>
+
+      <div class="divider-text">Código de barras</div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input name="barcode" id="field-barcode" autocomplete="off"
+               placeholder="Escaneie com o leitor ou digite manualmente"
+               value="${fmt.escape(p?.barcode || '')}"
+               style="font-family:monospace;font-size:1.1rem;letter-spacing:3px;
+                      text-align:center;padding:12px 16px;border:2px solid var(--gold-400,#d4af37);
+                      border-radius:8px;flex:1;background:rgba(212,175,55,.06)" />
+        <button type="button" id="btn-scan-barcode" class="btn btn-outline">📷 Escanear</button>
+      </div>
+
+      <label class="switch" style="margin-top:var(--sp-4)">
+        <input name="active" type="checkbox" ${p?.active !== false ? 'checked' : ''}>
+        <span class="switch-knob"></span>
+        <span>Produto ativo (aparece no PDV e na loja)</span>
+      </label>
+    `;
+    renderImages();
+  }
 
   /* ── Render image grid ──────────────────────────────────── */
   function renderImages() {
@@ -514,7 +625,7 @@ async function openForm(id = null) {
       };
     });
   }
-  renderImages();
+  if (isEdit) renderImages();
 
   /* ── Add file ───────────────────────────────────────────── */
   function addFile(file) {
@@ -587,16 +698,18 @@ async function openForm(id = null) {
   const handleSubmit = async e => {
     if (e?.preventDefault) e.preventDefault();
 
-    // Validação manual (required do HTML não dispara em click direto no botão)
-    const nameVal  = form.querySelector('[name="name"]').value.trim();
-    const priceVal = parseFloat(form.querySelector('[name="price"]').value);
-    if (!nameVal)            { ui.toast('Informe o nome do produto.', 'warning'); return; }
-    if (!priceVal || priceVal <= 0) { ui.toast('Informe o preço do produto.', 'warning'); return; }
+    // Validação — nome obrigatório; preço obrigatório só no edit
+    const nameVal = form.querySelector('[name="name"]').value.trim();
+    if (!nameVal) { ui.toast('Informe o nome do produto.', 'warning'); form.querySelector('[name="name"]').focus(); return; }
+    if (isEdit) {
+      const priceVal = parseFloat(form.querySelector('[name="price"]').value);
+      if (!priceVal || priceVal <= 0) { ui.toast('Informe o preço de venda.', 'warning'); return; }
+    }
 
     saveBtn.disabled = true;
     saveBtn.textContent = 'Salvando…';
     try {
-      // Upload new/processed blobs; keep existing URLs as-is
+      // Upload blobs (edit mode has images; new mode only if extra section was opened)
       const finalUrls = [];
       for (const img of images) {
         if (img.file) {
@@ -611,22 +724,23 @@ async function openForm(id = null) {
 
       const fd = Object.fromEntries(new FormData(form));
       const payload = {
-        name:        fd.name.trim(),
-        brand:       fd.brand.trim(),
-        category:    fd.category,
-        unit:        fd.unit,
-        sku:         fd.sku.trim(),
+        name:        nameVal,
+        brand:       (fd.brand || '').trim(),
+        category:    fd.category || CATEGORIES[0],
+        unit:        fd.unit || 'un',
+        sku:         (fd.sku || '').trim(),
         barcode:     (fd.barcode || '').trim(),
         images:      finalUrls,
         image:       finalUrls[0] || '',
-        teor:        fd.teor.trim(),
-        origem:      fd.origem.trim(),
-        description: fd.description.trim(),
+        teor:        (fd.teor || '').trim(),
+        origem:      (fd.origem || '').trim(),
+        description: (fd.description || '').trim(),
         price:       parseFloat(fd.price) || 0,
         costPrice:   parseFloat(fd.costPrice) || 0,
         stock:       parseInt(fd.stock) || 0,
-        minStock:    parseInt(fd.minStock) || 0,
+        minStock:    parseInt(fd.minStock) || 6,
         active:      form.querySelector('[name="active"]').checked,
+        ...(!isEdit && { createdAt: Date.now() }),
       };
 
       if (payload.barcode) {
@@ -688,13 +802,16 @@ async function openForm(id = null) {
     const scanBtn = form.querySelector('#btn-scan-barcode');
     if (scanBtn) { scanBtn.disabled = true; scanBtn.textContent = '⏳ Buscando…'; }
     const data = await cosmosLookup(barcode);
-    if (scanBtn) { scanBtn.disabled = false; scanBtn.textContent = '📷 Escanear'; }
+    if (scanBtn) { scanBtn.disabled = false; scanBtn.textContent = '📷 Focar leitor'; }
     if (!data) return;
     if (nameField && !nameField.value.trim()) nameField.value = data.description || data.ncm?.description || '';
     if (brandField && !brandField.value.trim()) brandField.value = data.brand?.name || '';
     const cat = cosmosCat(data.ncm?.description || data.description || '');
     if (cat && catField) catField.value = cat;
-    if (nameField?.value) ui.toast('Produto encontrado na base Cosmos ✓', 'success');
+    if (nameField?.value) {
+      ui.toast('Produto encontrado na Cosmos ✓', 'success');
+      nameField.focus();
+    }
   }
 
   const barcodeField = form.querySelector('#field-barcode');

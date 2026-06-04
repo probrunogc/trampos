@@ -16,6 +16,8 @@ export const meta = {
   roles: ['admin', 'vendedor']
 };
 
+let _modalOpen = false; // guard contra duplo-scan
+
 let state = {
   products: [],
   customers: [],
@@ -256,113 +258,159 @@ function cosmosCat(desc) {
 }
 
 async function openQuickProductForm(prefillBarcode = '') {
-  const loading = !!prefillBarcode;
+  _modalOpen = true;
   const form = el('form', { autocomplete: 'off' });
+
+  // Barcode display (if scanned) or scan input (if opening fresh from PRODUTOS)
+  const barcodeHtml = prefillBarcode
+    ? `<div style="background:rgba(255,255,255,0.05);border:2px solid var(--gold-400,#d4af37);
+                   border-radius:10px;padding:14px 20px;text-align:center;margin-bottom:var(--sp-4)">
+         <div style="font-size:.65rem;letter-spacing:3px;color:var(--text-3,#888);text-transform:uppercase;margin-bottom:6px">Código escaneado</div>
+         <div style="font-family:monospace;font-size:1.6rem;font-weight:700;letter-spacing:6px">${fmt.escape(prefillBarcode)}</div>
+       </div>`
+    : `<label class="field" style="margin-bottom:var(--sp-4)">
+         <span class="field-label">Código de barras — escaneie ou digite</span>
+         <input name="barcode" id="qf-barcode" autocomplete="off"
+                placeholder="🔴 Aponte o leitor e escaneie…"
+                style="font-size:1.1rem;letter-spacing:3px;text-align:center;font-family:monospace" />
+       </label>`;
+
   form.innerHTML = `
+    ${barcodeHtml}
+    <label class="field" style="margin-bottom:var(--sp-3)">
+      <span class="field-label">Nome do produto *</span>
+      <input name="name" id="qf-name" autocomplete="off"
+             placeholder="${prefillBarcode ? '🔍 Buscando na Cosmos…' : 'Ex: Heineken Lata 350ml'}"
+             ${prefillBarcode ? 'disabled' : ''}
+             style="font-size:1rem" />
+    </label>
     <div class="field-row">
-      <label class="field" style="grid-column: span 2">
-        <span class="field-label">Nome do produto *</span>
-        <input name="name" required placeholder="${loading ? '🔍 Buscando na Cosmos...' : 'Ex: Heineken Lata 350ml'}" ${loading ? 'disabled' : ''} />
-      </label>
       <label class="field">
-        <span class="field-label">Categoria *</span>
-        <select name="category" required>
+        <span class="field-label">Categoria</span>
+        <select name="category" id="qf-cat">
           ${CATEGORIES.map(c => `<option value="${c}">${c}</option>`).join('')}
         </select>
       </label>
-    </div>
-    <div class="field-row">
       <label class="field">
-        <span class="field-label">Preço (R$) *</span>
-        <input name="price" type="number" min="0" step="0.01" required placeholder="0,00" />
-      </label>
-      <label class="field">
-        <span class="field-label">Estoque inicial</span>
-        <input name="stock" type="number" min="0" step="1" value="0" />
-      </label>
-      <label class="field">
-        <span class="field-label">Estoque mínimo</span>
-        <input name="minStock" type="number" min="0" step="1" value="6" />
+        <span class="field-label">Preço (R$)</span>
+        <input name="price" type="number" min="0" step="0.01" placeholder="0,00"
+               style="max-width:110px" />
       </label>
     </div>
-    <div class="field-row">
-      <label class="field" style="grid-column: span 2">
-        <span class="field-label">Código de barras</span>
-        <input name="barcode" value="${fmt.escape(prefillBarcode)}" placeholder="Opcional" />
-      </label>
-    </div>
+    <p class="field-hint" style="margin-top:4px;font-size:.75rem;color:var(--text-3,#888)">
+      Preço e demais detalhes podem ser completados depois em Produtos.
+    </p>
   `;
 
-  const cancelBtn = el('button', { class: 'btn btn-ghost', type: 'button', onClick: () => ui.closeModal(false) }, 'Cancelar');
-  const saveBtn   = el('button', { class: 'btn btn-primary', type: 'button' }, 'Cadastrar');
+  const closeAndReset = () => { _modalOpen = false; ui.closeModal(false); };
+  const cancelBtn = el('button', { class: 'btn btn-ghost', type: 'button', onClick: closeAndReset }, 'Cancelar');
+  const saveBtn   = el('button', { class: 'btn btn-primary', type: 'button' }, 'Cadastrar produto');
 
   const doSave = async () => {
     if (saveBtn.disabled) return;
-    const nameVal  = form.querySelector('[name="name"]').value.trim();
-    const priceVal = parseFloat(form.querySelector('[name="price"]').value) || 0;
-    if (!nameVal)    { ui.toast('Informe o nome do produto.', 'warning'); return; }
-    if (priceVal <= 0) { ui.toast('Informe o preço do produto.', 'warning'); return; }
+    const nameVal    = form.querySelector('[name="name"]').value.trim();
+    const barcodeVal = (prefillBarcode || form.querySelector('[name="barcode"]')?.value || '').trim();
 
-    const barcodeVal = form.querySelector('[name="barcode"]').value.trim();
+    if (!nameVal) { ui.toast('Informe o nome do produto.', 'warning'); form.querySelector('[name="name"]').focus(); return; }
+
     if (barcodeVal) {
       const dup = state.products.find(x => x.barcode === barcodeVal);
-      if (dup) {
-        ui.toast(`Código já cadastrado em "${dup.name}". Edite o produto existente.`, 'warning');
-        return;
-      }
+      if (dup) { ui.toast(`Código já cadastrado: "${dup.name}". Edite-o em Produtos.`, 'warning'); return; }
     }
 
     saveBtn.disabled = true;
-    const payload = {
-      name:     nameVal,
-      category: form.querySelector('[name="category"]').value,
-      price:    priceVal,
-      stock:    parseInt(form.querySelector('[name="stock"]').value, 10) || 0,
-      minStock: parseInt(form.querySelector('[name="minStock"]').value, 10) || 0,
-      barcode:  form.querySelector('[name="barcode"]').value.trim(),
-      active:   true
-    };
+    saveBtn.textContent = 'Salvando…';
     try {
-      const created = await db.create('products', payload);
+      const created = await db.create('products', {
+        name:     nameVal,
+        category: form.querySelector('[name="category"]').value,
+        price:    parseFloat(form.querySelector('[name="price"]').value) || 0,
+        stock:    0,
+        minStock: 6,
+        barcode:  barcodeVal,
+        active:   true,
+        createdAt: Date.now(),
+      });
       state.products.push(created);
       state.products.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
       paintProducts();
-      ui.toast(`"${payload.name}" cadastrado.`, 'success');
+      ui.toast(`✔ "${created.name}" cadastrado!`, 'success');
+      _modalOpen = false;
       ui.closeModal(true);
     } catch (err) {
-      ui.toast(err.message || 'Erro ao salvar', 'danger');
+      ui.toast(err.message || 'Erro ao salvar.', 'danger');
       saveBtn.disabled = false;
+      saveBtn.textContent = 'Cadastrar produto';
     }
   };
 
   saveBtn.addEventListener('click', doSave);
-  form.addEventListener('submit', (e) => { e.preventDefault(); doSave(); });
+  form.addEventListener('submit', e => { e.preventDefault(); doSave(); });
 
-  // Abre modal e dispara lookup em paralelo
-  const modalPromise = ui.modal({ title: 'Cadastrar produto', body: form, footer: [cancelBtn, saveBtn] });
+  const modalPromise = ui.modal({
+    title: 'Novo produto',
+    body: form,
+    footer: [cancelBtn, saveBtn],
+  });
 
   if (prefillBarcode) {
+    // Cosmos lookup in parallel — fills name + category when found
     cosmosLookup(prefillBarcode).then(data => {
-      const nameInput = form.querySelector('[name="name"]');
-      if (!nameInput) return;
-      nameInput.disabled = false;
+      const nameEl = form.querySelector('#qf-name');
+      const catEl  = form.querySelector('#qf-cat');
+      if (!nameEl) return;
+      nameEl.disabled = false;
       if (data?.description) {
-        nameInput.value = data.description;
-        const cat = cosmosCat(data.description);
-        if (cat) form.querySelector('[name="category"]').value = cat;
+        nameEl.value = data.description;
+        if (data.brand?.name) {/* store brand hint for user */}
+        const cat = cosmosCat(data.ncm?.description || data.description || '');
+        if (cat && catEl) catEl.value = cat;
         ui.toast('✔ Produto encontrado na Cosmos', 'success');
       } else {
-        nameInput.placeholder = 'Ex: Heineken Lata 350ml';
-        ui.toast('Produto não encontrado — preencha manualmente', 'info');
+        nameEl.placeholder = 'Digite o nome do produto';
+        ui.toast('Produto não encontrado — preencha o nome', 'info');
       }
-      nameInput.focus();
+      nameEl.focus();
+    });
+  } else {
+    // Fresh form: focus barcode first, then on Enter go to name
+    requestAnimationFrame(() => {
+      const bcField = form.querySelector('#qf-barcode');
+      if (bcField) {
+        bcField.focus();
+        bcField.addEventListener('keydown', async e => {
+          if (e.key !== 'Enter') return;
+          e.preventDefault();
+          const code = bcField.value.trim();
+          if (!code) return;
+          const dup = state.products.find(x => x.barcode === code);
+          if (dup) { ui.toast(`Código já cadastrado: "${dup.name}"`, 'warning'); return; }
+          const nameEl = form.querySelector('#qf-name');
+          nameEl.disabled = true;
+          nameEl.placeholder = '🔍 Buscando…';
+          const data = await cosmosLookup(code);
+          nameEl.disabled = false;
+          if (data?.description) {
+            nameEl.value = data.description;
+            const cat = cosmosCat(data.ncm?.description || data.description || '');
+            if (cat) form.querySelector('#qf-cat').value = cat;
+            ui.toast('✔ Produto encontrado na Cosmos', 'success');
+          } else {
+            nameEl.placeholder = 'Digite o nome do produto';
+          }
+          nameEl.focus();
+        });
+      }
     });
   }
 
   await modalPromise;
+  _modalOpen = false;
 }
 
 async function handleScannedBarcode(code) {
+  if (_modalOpen) return; // evita abrir segundo modal enquanto um já está aberto
+
   // 1. Tenta encontrar pelo campo barcode
   let product = state.products.find(p => p.barcode === code);
 
@@ -376,12 +424,14 @@ async function handleScannedBarcode(code) {
       paintProducts();
     }
 
+    _modalOpen = true;
     const ok = await ui.confirm({
-      title: `Código não encontrado`,
-      message: `Código lido: <strong>${fmt.escape(code)}</strong><br><br>Nenhum produto com esse código no cadastro.<br>Deseja cadastrar agora?`,
-      okText: 'Cadastrar produto',
-      cancelText: 'Fechar'
+      title: `Produto não encontrado`,
+      message: `Código: <strong style="font-family:monospace;font-size:1.1rem;letter-spacing:2px">${fmt.escape(code)}</strong><br><br>Deseja cadastrar esse produto agora?`,
+      okText: 'Cadastrar',
+      cancelText: 'Cancelar'
     });
+    _modalOpen = false;
 
     if (ok) await openQuickProductForm(code);
 
