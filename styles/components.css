@@ -25,8 +25,10 @@
   user-select: none;
   overflow: hidden;
 }
-.btn:hover { transform: translateY(-1px); }
-.btn:active { transform: translateY(1px); box-shadow: inset 0 2px 6px rgba(0,0,0,0.25); }
+@media (hover: hover) and (pointer: fine) {
+  .btn:hover { transform: translateY(-1px); }
+}
+.btn:active { transform: scale(0.97); box-shadow: inset 0 2px 6px rgba(0,0,0,0.25); }
 .btn:disabled, .btn[aria-disabled="true"] {
   opacity: 0.5; cursor: not-allowed; transform: none;
 }
@@ -50,7 +52,7 @@
   inset: 0;
   background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,0.45) 50%, transparent 70%);
   transform: translateX(-100%);
-  transition: transform 600ms var(--ease);
+  transition: transform 280ms var(--ease);
   pointer-events: none;
 }
 .btn-primary:hover::before { transform: translateX(100%); }
@@ -65,7 +67,7 @@
     inset 0 2px 8px rgba(0,0,0,0.3),
     inset 0 1px 0 rgba(0,0,0,0.15),
     0 2px 6px rgba(212,175,55,0.2);
-  transform: translateY(1px);
+  transform: scale(0.97);
 }
 
 .btn-secondary {
@@ -121,13 +123,16 @@
   display: grid; place-items: center;
   border-radius: var(--r-md);
   color: var(--text-2);
-  transition: all var(--t-fast) var(--ease);
+  transition: background var(--t-fast) var(--ease), color var(--t-fast) var(--ease);
   cursor: pointer;
 }
-.btn-icon-ghost:hover {
-  background: rgba(212,175,55,0.08);
-  color: var(--gold-300);
+@media (hover: hover) and (pointer: fine) {
+  .btn-icon-ghost:hover {
+    background: rgba(212,175,55,0.08);
+    color: var(--gold-300);
+  }
 }
+.btn-icon-ghost:active { transform: scale(0.94); }
 
 /* === FORMS === */
 .field {
@@ -233,10 +238,12 @@ textarea.input:focus {
               transform var(--t-base) var(--ease),
               box-shadow var(--t-base) var(--ease);
 }
-.card:hover {
-  border-color: var(--line-strong);
-  transform: translateY(-2px);
-  box-shadow: inset 0 1.5px 0 rgba(255,255,255,0.18), 0 0 0 1px rgba(212,175,55,0.22), var(--shadow-lg), 0 0 0 1px rgba(212,175,55,0.14), inset 0 1px 0 rgba(255,255,255,0.06);
+@media (hover: hover) and (pointer: fine) {
+  .card:hover {
+    border-color: var(--line-strong);
+    transform: translateY(-2px);
+    box-shadow: inset 0 1.5px 0 rgba(255,255,255,0.18), 0 0 0 1px rgba(212,175,55,0.22), var(--shadow-lg), 0 0 0 1px rgba(212,175,55,0.14), inset 0 1px 0 rgba(255,255,255,0.06);
+  }
 }
 .card-title {
   font-family: var(--font-brand);
@@ -412,7 +419,7 @@ table.data-table tbody tr.clickable { cursor: pointer; }
   -webkit-backdrop-filter: blur(52px) saturate(260%) brightness(1.10);
   box-shadow: inset 0 2px 0 rgba(255,255,255,0.18), inset 0 -1px 0 rgba(0,0,0,0.10), 0 40px 100px rgba(0,0,0,0.6), 0 12px 36px rgba(0,0,0,0.35);
   border: 1px solid rgba(255,255,255,0.16);
-  animation: fadeInUp 320ms var(--ease-out);
+  animation: fadeInUp 240ms var(--ease-out);
 }
 .modal-window.wide { max-width: 880px; }
 .modal-window.narrow { max-width: 420px; }
@@ -482,7 +489,7 @@ table.data-table tbody tr.clickable { cursor: pointer; }
 .toast-info .toast-icon { color: var(--info); }
 .toast-body { font-size: 0.88rem; line-height: 1.4; }
 .toast-title { font-weight: 700; font-size: 0.92rem; margin-bottom: 2px; }
-.toast.fade-out { opacity: 0; transform: translateX(20px); transition: all 240ms var(--ease); }
+.toast.fade-out { opacity: 0; transform: translateX(20px); transition: opacity 200ms ease-out, transform 200ms ease-out; }
 
 /* === DIVIDERS === */
 .divider {
@@ -631,7 +638,7 @@ kbd {
   font-weight: 600;
   color: var(--text-3);
   cursor: pointer;
-  transition: all 0.15s;
+  transition: border-color 150ms var(--ease), color 150ms var(--ease), background 150ms var(--ease);
   width: fit-content;
   font-family: var(--font-base);
 }
@@ -732,7 +739,7 @@ kbd {
   color: var(--text-3);
   font-size: 0.75rem;
   cursor: pointer;
-  transition: color 0.15s;
+  transition: color 150ms var(--ease);
 }
 .img-slot-placeholder svg {
   width: 28px;
@@ -757,7 +764,7 @@ kbd {
   color: var(--text-2);
   cursor: pointer;
   font-family: var(--font-base);
-  transition: all 0.15s;
+  transition: border-color 150ms var(--ease), color 150ms var(--ease);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -775,7 +782,7 @@ kbd {
   cursor: pointer;
   font-size: 0.75rem;
   line-height: 1;
-  transition: all 0.15s;
+  transition: border-color 150ms var(--ease), color 150ms var(--ease);
   font-family: var(--font-base);
 }
 .img-slot-clear:hover {
@@ -854,7 +861,7 @@ kbd {
   color: var(--text-2);
   cursor: pointer;
   font-family: var(--font-base);
-  transition: all 0.15s;
+  transition: border-color 150ms var(--ease), color 150ms var(--ease), background 150ms var(--ease);
   white-space: nowrap;
 }
 .img-action-btn:hover:not(:disabled) {
@@ -880,7 +887,7 @@ kbd {
   color: var(--text-3);
   cursor: pointer;
   font-family: var(--font-base);
-  transition: all 0.15s;
+  transition: border-color 150ms var(--ease), color 150ms var(--ease);
 }
 .img-action-clear:hover {
   border-color: #e05;
@@ -900,7 +907,7 @@ kbd {
   font-size: 0.75rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: border-color 150ms var(--ease), color 150ms var(--ease), background 150ms var(--ease);
   font-family: var(--font-base);
 }
 .img-add-card svg {
