@@ -16,7 +16,8 @@ export const meta = {
   roles: ['admin', 'vendedor']
 };
 
-let _modalOpen = false; // guard contra duplo-scan
+let _modalOpen  = false; // guard contra duplo-scan
+let _checkMode  = false; // modo verificação de preço (não adiciona ao carrinho)
 
 let state = {
   products: [],
@@ -45,6 +46,7 @@ export async function render(root) {
   clearNode(root);
 
   // Reset cart on enter
+  _checkMode = false;
   state.cart = [];
   state.customer = null;
   state.discount = 0;
@@ -62,7 +64,12 @@ export async function render(root) {
             ${icon('search')}
             <input id="pdv-search" type="search" placeholder="Buscar produto..." autofocus />
           </div>
+          <button id="pdv-check-btn" class="btn btn-ghost btn-sm" type="button" title="Verificar preço sem adicionar ao carrinho">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            Check
+          </button>
         </div>
+        <div id="pdv-check-result" style="display:none;padding:var(--sp-3) var(--sp-4);border-bottom:1px solid var(--line)"></div>
         <div class="pdv-category-bar" id="pdv-cats"></div>
         <div class="pdv-grid" id="pdv-grid"></div>
       </div>
@@ -144,6 +151,23 @@ export async function render(root) {
     }
   });
 
+  // Botão Check — modo verificação de preço
+  const checkBtn = document.getElementById('pdv-check-btn');
+  checkBtn.onclick = () => {
+    _checkMode = !_checkMode;
+    if (_checkMode) {
+      checkBtn.style.cssText = 'background:rgba(52,152,219,0.15);border-color:rgba(52,152,219,0.45);color:#7CC5EE;font-weight:700';
+      checkBtn.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> CHECK ATIVO`;
+      searchEl.placeholder = 'Escaneie para verificar preço…';
+      searchEl.focus();
+    } else {
+      checkBtn.removeAttribute('style');
+      checkBtn.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Check`;
+      searchEl.placeholder = 'Buscar produto...';
+      const panel = document.getElementById('pdv-check-result');
+      if (panel) panel.style.display = 'none';
+    }
+  };
 
   // Customer
   document.getElementById('pdv-customer').onclick = openCustomerPicker;
@@ -414,6 +438,14 @@ async function handleScannedBarcode(code) {
   // 1. Tenta encontrar pelo campo barcode
   let product = state.products.find(p => p.barcode === code);
 
+  // Modo verificação — mostra info sem adicionar ao carrinho
+  if (_checkMode) {
+    showCheckResult(product, code);
+    const si = document.getElementById('pdv-search');
+    if (si) { si.value = ''; state.search = ''; paintProducts(); }
+    return;
+  }
+
   // 2. Se não achou, adiciona ao carrinho com confirmação ou abre cadastro
   if (!product) {
     // Flash visual na barra de busca com o código
@@ -455,6 +487,49 @@ async function handleScannedBarcode(code) {
     card.classList.add('scanner-hit');
     setTimeout(() => card.classList.remove('scanner-hit'), 600);
   }
+}
+
+function showCheckResult(product, code) {
+  const panel = document.getElementById('pdv-check-result');
+  if (!panel) return;
+  panel.style.display = 'block';
+
+  if (!product) {
+    panel.innerHTML = `
+      <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;
+                  background:rgba(231,76,60,0.1);border:1px solid rgba(231,76,60,0.3);border-radius:8px">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--danger)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+        <div>
+          <div style="font-weight:700;color:var(--danger);font-size:.95rem">Produto não cadastrado</div>
+          <div style="font-family:monospace;font-size:.85rem;color:var(--text-2);margin-top:2px;letter-spacing:2px">${fmt.escape(code)}</div>
+        </div>
+      </div>`;
+    return;
+  }
+
+  const hasPrice = product.price > 0;
+  panel.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 16px;
+                background:rgba(46,204,113,0.07);border:1px solid rgba(46,204,113,0.22);border-radius:8px">
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:700;font-size:1.05rem;color:var(--cream);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+          ${fmt.escape(product.name)}
+        </div>
+        <div style="font-size:.76rem;color:var(--text-3);margin-top:3px">
+          ${fmt.escape(product.category || '—')} &nbsp;·&nbsp;
+          <span style="font-family:monospace">${fmt.escape(product.barcode || '(sem código)')}</span>
+        </div>
+      </div>
+      <div style="text-align:right;flex-shrink:0">
+        <div style="font-family:var(--font-brand);font-size:1.8rem;font-weight:700;line-height:1;
+                    color:${hasPrice ? 'var(--gold-300)' : 'var(--danger)'}">
+          ${hasPrice ? fmt.currency(product.price) : '⚠ SEM PREÇO'}
+        </div>
+        ${!hasPrice ? `<div style="font-size:.7rem;color:var(--danger);margin-top:3px">Definir preço em Produtos</div>` : ''}
+      </div>
+    </div>`;
 }
 
 function paintAll() { paintProducts(); paintCart(); paintTotals(); }
