@@ -168,6 +168,9 @@ export async function render(root) {
     <div class="page-header">
       <h3>Catálogo de produtos</h3>
       <div class="page-header-actions">
+        <button class="btn btn-danger btn-sm" id="btn-cleanup" style="display:none">
+          🧹 Limpar inválidos
+        </button>
         <button class="btn btn-primary" id="btn-new">
           ${icon('plus', { size: 16 })} <span>Novo produto</span>
         </button>
@@ -217,6 +220,14 @@ export async function render(root) {
   document.getElementById('filter-sort').onchange = e => { state.sort = e.target.value; paint(); };
   document.getElementById('filter-sort').value = state.sort;
 
+  // Botão de limpeza — visível só para admin
+  const role = auth.currentUser()?.role;
+  if (role === 'admin') {
+    const cleanBtn = document.getElementById('btn-cleanup');
+    cleanBtn.style.display = '';
+    cleanBtn.onclick = () => runCleanup();
+  }
+
   const [products, sales] = await Promise.all([
     db.list('products', { orderBy: 'name' }),
     db.list('sales', { orderBy: 'createdAt', orderDir: 'desc' })
@@ -227,6 +238,96 @@ export async function render(root) {
   sales.forEach(s => (s.items || []).forEach(i => {
     state.salesCount[i.productId] = (state.salesCount[i.productId] || 0) + (i.qty || 1);
   }));
+  paint();
+}
+
+/* ── Limpeza de dados inválidos ─────────────────────────────── */
+async function runCleanup() {
+  // IDs levantados em 07/06/2026 — remova esta função após a limpeza ser confirmada
+  const TO_DELETE = [
+    '7DGgBJWZkZA5XqWGC1VT', // sem nome, sem código
+    '95icTNiOQN8yUs9nixnc',  // sem nome, sem código
+    'ShhInGg95yIITHLPfzuw',  // sem nome, sem código
+    'bt4aNcAt5A8T1hZTgGTQ',  // sem nome, sem código
+    'jPqOk8adXVnGufe7ydSI',  // sem nome, sem código
+    'vW102jHR06fO5VEOnsZR',  // sem nome, sem código
+    'pod2ZXqUXo670Zbl2Zxq',  // sem nome, código como nome
+    'TbAdd4wFLGYvuH4A0fxW',  // nome = código (5000281004020)
+    's5IPsKOoNrPaGxMP7ZIg',  // JW Black Label duplicado
+    'Ouo3PubIFOQRFVRGRHZT',  // JW Black Label duplicado
+  ];
+
+  const TO_CLEAR_BARCODE = [
+    { id: '75ahhbvYZG7ashmy2SxR', name: 'HEINEKEN' },
+    { id: 'jN4vlCeo6qiApuqDjJD6', name: 'ANTARTICA' },
+    { id: 'B7bgEpbvYClHHnsphUoC', name: 'BUNDUREISER (Budweiser)' },
+    { id: 'sUn2hPiingL4yGt72wfU', name: 'IMPERIO PURO MALTE' },
+    { id: '4VRDuXm7kwZcxONVjIoJ', name: 'BRAHMA DUPLO MALTE' },
+    { id: 'l2baGzTjMTMWZHhKhEcG', name: 'BALLENA ORIGINAL' },
+    { id: 's6b9yigN5HQ1VzjozL1f', name: 'ORIGINAL' },
+    { id: 's8KkwgZbMNjuYm6SyeuC', name: 'PASSPORT' },
+  ];
+
+  const body = el('div');
+  body.innerHTML = `
+    <p style="color:var(--text-2);margin-bottom:var(--sp-4);line-height:1.6">
+      As seguintes operações serão executadas:
+    </p>
+    <div style="background:rgba(231,76,60,0.08);border:1px solid rgba(231,76,60,0.2);border-radius:8px;padding:12px 16px;margin-bottom:12px">
+      <div style="font-weight:700;color:var(--danger);margin-bottom:8px">🗑 Deletar ${TO_DELETE.length} registros inválidos/duplicados</div>
+      <ul style="margin:0;padding-left:18px;font-size:.84rem;color:var(--text-2);line-height:1.9">
+        <li>6 entradas completamente em branco</li>
+        <li>1 entrada sem nome (só código como barcode)</li>
+        <li>1 produto com código como nome (5000281004020)</li>
+        <li>2 Johnnie Walker Black Label duplicados (mantém 1)</li>
+      </ul>
+    </div>
+    <div style="background:rgba(243,156,18,0.08);border:1px solid rgba(243,156,18,0.2);border-radius:8px;padding:12px 16px;margin-bottom:12px">
+      <div style="font-weight:700;color:var(--warning);margin-bottom:8px">🔧 Limpar código de barras inválido em ${TO_CLEAR_BARCODE.length} produtos</div>
+      <ul style="margin:0;padding-left:18px;font-size:.84rem;color:var(--text-2);line-height:1.9">
+        ${TO_CLEAR_BARCODE.map(p => `<li>${p.name}</li>`).join('')}
+      </ul>
+      <p style="font-size:.78rem;color:var(--text-3);margin:8px 0 0">Esses produtos ficam no sistema sem código — re-escaneie cada um para associar o código correto.</p>
+    </div>
+    <div style="background:rgba(52,152,219,0.08);border:1px solid rgba(52,152,219,0.2);border-radius:8px;padding:12px 16px">
+      <div style="font-weight:700;color:#7CC5EE;margin-bottom:4px">✏️ Corrigir código duplicado</div>
+      <p style="font-size:.84rem;color:var(--text-2);margin:0">GIN LONDON DRY TANQUERAY: <code>50002910207065000291020706</code> → <code>5000291020706</code></p>
+    </div>
+  `;
+
+  const ok = await new Promise(resolve => {
+    const cancel = el('button', { class: 'btn btn-ghost', type: 'button', onClick: () => { ui.closeModal(false); resolve(false); } }, 'Cancelar');
+    const confirm = el('button', { class: 'btn btn-danger', type: 'button', onClick: () => { ui.closeModal(true); resolve(true); } }, 'Executar limpeza');
+    ui.modal({ title: '🧹 Limpeza de dados', body, footer: [cancel, confirm] });
+  });
+
+  if (!ok) return;
+
+  let done = 0, errors = 0;
+  const total = TO_DELETE.length + TO_CLEAR_BARCODE.length + 1;
+  ui.toast(`Executando limpeza (0/${total})…`, 'info');
+
+  // Deletar
+  for (const id of TO_DELETE) {
+    try { await db.remove('products', id); done++; } catch { errors++; }
+  }
+
+  // Limpar barcodes inválidos
+  for (const { id } of TO_CLEAR_BARCODE) {
+    try { await db.update('products', id, { barcode: '' }); done++; } catch { errors++; }
+  }
+
+  // Corrigir Tanqueray
+  try { await db.update('products', 'MSwmgT81VGvyVKafAPW1', { barcode: '5000291020706' }); done++; } catch { errors++; }
+
+  if (errors === 0) {
+    ui.toast(`✔ Limpeza concluída — ${done} operações executadas.`, 'success', { title: 'Sucesso' });
+  } else {
+    ui.toast(`Concluído com ${errors} erro(s). ${done} operações ok.`, 'warning');
+  }
+
+  // Recarregar lista
+  state.list = await db.list('products', { orderBy: 'name' });
   paint();
 }
 
