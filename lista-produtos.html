@@ -160,15 +160,71 @@
     .summary { grid-template-columns: 1fr 1fr; }
   }
 
-  /* ── Print ────────────────────────────────────────────────── */
+  /* ── Print / PDF A4 paisagem ─────────────────────────────── */
   @media print {
-    body { padding: 20px 24px; font-size: 11pt; }
+    @page { size: A4 landscape; margin: 12mm 14mm; }
+
+    body {
+      padding: 0;
+      font-size: 8.5pt;
+      max-width: 100%;
+      color: #000;
+      background: #fff;
+    }
+
     .print-btn { display: none !important; }
-    thead th { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    tbody tr:nth-child(even) td { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    .section-title { page-break-before: auto; }
-    table { page-break-inside: auto; }
+
+    /* Cabeçalho compacto */
+    .page-header { padding-bottom: 8px; margin-bottom: 14px; }
+    .page-header h1 { font-size: 13pt; }
+    .page-header .meta { font-size: 7pt; }
+
+    /* Resumo menor */
+    .summary { gap: 8px; margin-bottom: 16px; }
+    .summary-card { padding: 7px 10px; }
+    .summary-card .num { font-size: 14pt; }
+    .summary-card .lbl { font-size: 6.5pt; }
+
+    /* Título de seção */
+    .section-title { font-size: 8pt; margin: 14px 0 6px; }
+
+    /* Tabela sem scroll — ocupa toda a largura */
+    .table-wrap { overflow: visible; border: 1px solid #bbb; border-radius: 0; }
+    table { min-width: 0 !important; width: 100%; font-size: 7.8pt; }
+
+    thead th {
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+      background: #111 !important;
+      color: #fff !important;
+      padding: 5px 7px;
+      font-size: 6.5pt;
+      white-space: nowrap;
+    }
+
+    td { padding: 4px 7px; }
+
+    tbody tr:nth-child(even) td {
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+      background: #f5f5f5 !important;
+    }
+
+    /* Colunas */
+    .col-name  { font-size: 7.8pt; font-weight: 600; }
+    .col-brand { font-size: 7.5pt; }
+    .col-code  { font-size: 7pt; letter-spacing: 0; }
+    .col-id    { font-size: 6pt; }
+    .col-price { font-size: 7.8pt; }
+    .col-stock { font-size: 8pt; }
+
+    .badge { font-size: 6pt; padding: 1px 5px; border-width: 1px; }
+
+    /* Controle de quebra de página */
+    thead { display: table-header-group; }
     tr { page-break-inside: avoid; }
+    table { page-break-inside: auto; }
+    .section-title { page-break-before: auto; }
   }
 </style>
 </head>
