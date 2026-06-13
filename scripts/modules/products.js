@@ -483,6 +483,9 @@ async function openForm(id = null) {
           <button type="button" id="btn-scan-barcode" class="btn btn-outline" style="white-space:nowrap">
             📷 Focar leitor
           </button>
+          <button type="button" id="btn-cam-scan" class="btn btn-outline" style="white-space:nowrap">
+            📱 Câmera
+          </button>
         </div>
         <p class="field-hint" style="margin-top:6px;font-size:.75rem">
           Após escanear, o nome e a categoria serão preenchidos automaticamente pela Cosmos.
@@ -889,6 +892,17 @@ async function openForm(id = null) {
     field.addEventListener('keydown', e => {
       if (e.key === 'Enter') { e.preventDefault(); field.blur(); }
     }, { once: true });
+  });
+
+  // Botão "Câmera" — abre câmera do dispositivo para escanear
+  form.querySelector('#btn-cam-scan')?.addEventListener('click', async () => {
+    const barcode = await ui.scanBarcode();
+    if (!barcode) return;
+    const field = form.querySelector('#field-barcode');
+    if (field) {
+      field.value = barcode;
+      field.dispatchEvent(new Event('blur'));
+    }
   });
 
   // Cosmos lookup — dispara quando barcode é preenchido (blur ou Enter)

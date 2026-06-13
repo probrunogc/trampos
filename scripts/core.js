@@ -215,6 +215,92 @@ export const ui = {
         footer: [cancelBtn, okBtn]
       });
     });
+  },
+
+  async scanBarcode() {
+    return new Promise((resolve) => {
+      let stream = null;
+      let animFrame = null;
+      let settled = false;
+
+      const done = (result) => {
+        if (settled) return;
+        settled = true;
+        if (animFrame) cancelAnimationFrame(animFrame);
+        if (stream) stream.getTracks().forEach(t => t.stop());
+        ui.closeModal(result);
+        resolve(result);
+      };
+
+      const body = document.createElement('div');
+      body.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:12px;';
+      body.innerHTML = `
+        <div style="position:relative;width:100%;max-width:360px;border-radius:10px;overflow:hidden;background:#000;">
+          <video id="_scan-video" autoplay playsinline muted
+                 style="width:100%;display:block;"></video>
+          <div style="position:absolute;inset:0;pointer-events:none;display:flex;align-items:center;justify-content:center;">
+            <div style="width:70%;height:35%;border:2px solid rgba(212,175,55,.9);border-radius:6px;
+                        box-shadow:0 0 0 9999px rgba(0,0,0,.45);"></div>
+          </div>
+        </div>
+        <p id="_scan-status" style="color:var(--text-2);font-size:.85rem;text-align:center;margin:0;">
+          Iniciando câmera…
+        </p>
+      `;
+
+      const cancelBtn = document.createElement('button');
+      cancelBtn.className = 'btn btn-ghost';
+      cancelBtn.textContent = 'Cancelar';
+      cancelBtn.onclick = () => done(null);
+
+      ui.modal({ title: '📷 Escanear código de barras', body, footer: cancelBtn, narrow: true });
+
+      const statusEl = body.querySelector('#_scan-status');
+      const video = body.querySelector('#_scan-video');
+
+      navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false })
+        .then(async (s) => {
+          stream = s;
+          video.srcObject = s;
+          await video.play();
+          statusEl.textContent = 'Aponte para o código de barras…';
+
+          if ('BarcodeDetector' in window) {
+            const detector = new BarcodeDetector({ formats: ['ean_13', 'ean_8', 'code_128', 'code_39', 'upc_a', 'upc_e', 'itf', 'codabar'] });
+            const scan = async () => {
+              if (settled) return;
+              try {
+                const codes = await detector.detect(video);
+                if (codes.length) { done(codes[0].rawValue); return; }
+              } catch (_) {}
+              animFrame = requestAnimationFrame(scan);
+            };
+            animFrame = requestAnimationFrame(scan);
+          } else {
+            // ZXing fallback
+            statusEl.textContent = 'Carregando leitor…';
+            const script = document.createElement('script');
+            script.src = 'https://unpkg.com/@zxing/library@0.20.0/umd/index.min.js';
+            script.onload = () => {
+              const reader = new ZXing.BrowserMultiFormatReader();
+              statusEl.textContent = 'Aponte para o código de barras…';
+              reader.decodeFromVideoElement(video)
+                .then(result => done(result?.text ?? null))
+                .catch(() => {});
+              const origDone = done;
+              // stop ZXing reader on cancel
+              cancelBtn.onclick = () => { try { reader.reset(); } catch (_) {} origDone(null); };
+            };
+            script.onerror = () => {
+              statusEl.textContent = 'Erro ao carregar leitor. Tente o leitor USB.';
+            };
+            document.head.appendChild(script);
+          }
+        })
+        .catch((err) => {
+          statusEl.textContent = `Câmera indisponível: ${err.message}`;
+        });
+    });
   }
 };
 
