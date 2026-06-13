@@ -223,40 +223,54 @@ export const ui = {
       let animFrame = null;
       let settled = false;
 
+      // Own overlay — does NOT touch modal-host so the product form stays open
+      const overlay = document.createElement('div');
+      overlay.style.cssText = [
+        'position:fixed;inset:0;z-index:9999;',
+        'background:rgba(0,0,0,.78);',
+        'display:flex;align-items:center;justify-content:center;',
+      ].join('');
+      overlay.innerHTML = `
+        <div style="background:var(--surface-1,#1c1c1e);border-radius:14px;padding:20px 20px 16px;
+                    width:min(400px,96vw);display:flex;flex-direction:column;gap:14px;
+                    box-shadow:0 8px 40px rgba(0,0,0,.6);">
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <span style="font-weight:600;font-size:.95rem;">📷 Escanear código de barras</span>
+            <button id="_scan-x" style="background:none;border:none;cursor:pointer;font-size:1.3rem;
+                    line-height:1;color:var(--text-1,#fff);padding:4px;">✕</button>
+          </div>
+          <div style="position:relative;border-radius:10px;overflow:hidden;background:#000;aspect-ratio:4/3;">
+            <video id="_scan-video" autoplay playsinline muted style="width:100%;height:100%;object-fit:cover;display:block;"></video>
+            <div style="position:absolute;inset:0;pointer-events:none;display:flex;align-items:center;justify-content:center;">
+              <div style="width:72%;height:34%;border:2.5px solid rgba(212,175,55,.95);border-radius:8px;
+                          box-shadow:0 0 0 9999px rgba(0,0,0,.42);"></div>
+            </div>
+          </div>
+          <p id="_scan-status" style="color:var(--text-2,#aaa);font-size:.82rem;text-align:center;margin:0;">
+            Iniciando câmera…
+          </p>
+          <button id="_scan-cancel" style="background:none;border:1px solid var(--border,#444);
+                  border-radius:8px;padding:10px;cursor:pointer;color:var(--text-1,#fff);font-size:.9rem;">
+            Cancelar
+          </button>
+        </div>
+      `;
+      document.body.appendChild(overlay);
+
       const done = (result) => {
         if (settled) return;
         settled = true;
         if (animFrame) cancelAnimationFrame(animFrame);
         if (stream) stream.getTracks().forEach(t => t.stop());
-        ui.closeModal(result);
+        overlay.remove();
         resolve(result);
       };
 
-      const body = document.createElement('div');
-      body.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:12px;';
-      body.innerHTML = `
-        <div style="position:relative;width:100%;max-width:360px;border-radius:10px;overflow:hidden;background:#000;">
-          <video id="_scan-video" autoplay playsinline muted
-                 style="width:100%;display:block;"></video>
-          <div style="position:absolute;inset:0;pointer-events:none;display:flex;align-items:center;justify-content:center;">
-            <div style="width:70%;height:35%;border:2px solid rgba(212,175,55,.9);border-radius:6px;
-                        box-shadow:0 0 0 9999px rgba(0,0,0,.45);"></div>
-          </div>
-        </div>
-        <p id="_scan-status" style="color:var(--text-2);font-size:.85rem;text-align:center;margin:0;">
-          Iniciando câmera…
-        </p>
-      `;
+      overlay.querySelector('#_scan-x').onclick = () => done(null);
+      overlay.querySelector('#_scan-cancel').onclick = () => done(null);
 
-      const cancelBtn = document.createElement('button');
-      cancelBtn.className = 'btn btn-ghost';
-      cancelBtn.textContent = 'Cancelar';
-      cancelBtn.onclick = () => done(null);
-
-      ui.modal({ title: '📷 Escanear código de barras', body, footer: cancelBtn, narrow: true });
-
-      const statusEl = body.querySelector('#_scan-status');
-      const video = body.querySelector('#_scan-video');
+      const statusEl = overlay.querySelector('#_scan-status');
+      const video = overlay.querySelector('#_scan-video');
 
       navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false })
         .then(async (s) => {
@@ -277,7 +291,6 @@ export const ui = {
             };
             animFrame = requestAnimationFrame(scan);
           } else {
-            // ZXing fallback
             statusEl.textContent = 'Carregando leitor…';
             const script = document.createElement('script');
             script.src = 'https://unpkg.com/@zxing/library@0.20.0/umd/index.min.js';
@@ -287,9 +300,10 @@ export const ui = {
               reader.decodeFromVideoElement(video)
                 .then(result => done(result?.text ?? null))
                 .catch(() => {});
-              const origDone = done;
-              // stop ZXing reader on cancel
-              cancelBtn.onclick = () => { try { reader.reset(); } catch (_) {} origDone(null); };
+              overlay.querySelector('#_scan-cancel').onclick = () => {
+                try { reader.reset(); } catch (_) {}
+                done(null);
+              };
             };
             script.onerror = () => {
               statusEl.textContent = 'Erro ao carregar leitor. Tente o leitor USB.';

@@ -22,7 +22,7 @@ let _scanTimer = null;
 
 export async function render(root) {
   clearNode(root);
-  _products = (await db.list('products', { orderBy: 'name' })).filter(p => p.active !== false);
+  _products = await db.list('products', { orderBy: 'name' });
 
   root.innerHTML = `
     <div class="page-header">
