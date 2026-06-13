@@ -13,7 +13,7 @@ export const meta = {
   roles: ['admin', 'vendedor']
 };
 
-const CATEGORIES = ['Cerveja', 'Refrigerante', 'Água', 'Energético', 'Destilado', 'Vinho', 'Suco', 'Dose', 'Outros'];
+const CATEGORIES = ['Cerveja', 'Refrigerante', 'Água', 'Energético', 'Destilado', 'Vinho', 'Suco', 'Dose', 'Cigarro', 'Outros'];
 
 /* ── Cosmos Bluesoft lookup ─────────────────────────────────── */
 const COSMOS_TOKEN = '82haA2Xclw-x7pepzbU0Yg';

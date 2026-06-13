@@ -33,7 +33,7 @@ let state = {
   note: ''
 };
 
-const CATEGORIES = ['Cerveja', 'Refrigerante', 'Água', 'Energético', 'Destilado', 'Vinho', 'Suco', 'Dose', 'Outros'];
+const CATEGORIES = ['Cerveja', 'Refrigerante', 'Água', 'Energético', 'Destilado', 'Vinho', 'Suco', 'Dose', 'Cigarro', 'Outros'];
 const PAYMENTS = [
   { id: 'dinheiro',   label: 'Dinheiro' },
   { id: 'pix',        label: 'PIX' },
@@ -70,6 +70,32 @@ export async function render(root) {
           </button>
         </div>
         <div id="pdv-check-result" style="display:none;padding:var(--sp-3) var(--sp-4);border-bottom:1px solid var(--line)"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:10px 12px 0">
+          <button id="pdv-quick-cigarro" type="button"
+                  style="display:flex;flex-direction:column;align-items:center;gap:4px;
+                         padding:12px 8px;border-radius:10px;border:2px solid #b8860b;
+                         background:linear-gradient(135deg,rgba(184,134,11,.18),rgba(184,134,11,.06));
+                         cursor:pointer;color:inherit;transition:transform .1s,background .15s"
+                  onmousedown="this.style.transform='scale(.96)'"
+                  onmouseup="this.style.transform=''"
+                  ontouchend="this.style.transform=''">
+            <span style="font-size:1.7rem;line-height:1">🚬</span>
+            <span style="font-weight:700;font-size:.88rem">Cigarro</span>
+            <span style="font-size:.7rem;color:var(--text-2)">Retalho rápido</span>
+          </button>
+          <button id="pdv-quick-dose" type="button"
+                  style="display:flex;flex-direction:column;align-items:center;gap:4px;
+                         padding:12px 8px;border-radius:10px;border:2px solid #7b3fa0;
+                         background:linear-gradient(135deg,rgba(123,63,160,.18),rgba(123,63,160,.06));
+                         cursor:pointer;color:inherit;transition:transform .1s,background .15s"
+                  onmousedown="this.style.transform='scale(.96)'"
+                  onmouseup="this.style.transform=''"
+                  ontouchend="this.style.transform=''">
+            <span style="font-size:1.7rem;line-height:1">🥃</span>
+            <span style="font-weight:700;font-size:.88rem">Dose</span>
+            <span style="font-size:.7rem;color:var(--text-2)">Venda rápida</span>
+          </button>
+        </div>
         <div class="pdv-category-bar" id="pdv-cats"></div>
         <div class="pdv-grid" id="pdv-grid"></div>
       </div>
@@ -174,6 +200,10 @@ export async function render(root) {
 
   // Payment
   document.getElementById('pdv-payment').onchange = (e) => state.paymentMethod = e.target.value;
+
+  // Quick-add atalhos
+  document.getElementById('pdv-quick-cigarro').onclick = () => openQuickAdd('Cigarro', '🚬 Cigarro — Retalho rápido');
+  document.getElementById('pdv-quick-dose').onclick    = () => openQuickAdd('Dose',    '🥃 Dose — Venda rápida');
 
   // Delivery toggle
   document.getElementById('pdv-delivery').onchange = (e) => {
@@ -533,6 +563,95 @@ function showCheckResult(product, code) {
 }
 
 function paintAll() { paintProducts(); paintCart(); paintTotals(); }
+
+/* ─── Quick-add modal (Cigarro / Dose) ───────────────────────── */
+function openQuickAdd(category, title) {
+  const prods = state.products.filter(p => p.category === category);
+  if (prods.length === 0) {
+    ui.toast(`Nenhum produto cadastrado em "${category}". Cadastre em Produtos primeiro.`, 'warning', { duration: 4500 });
+    return;
+  }
+
+  const qtys = {};
+  prods.forEach(p => { qtys[p.id] = 0; });
+
+  const body = el('div');
+  body.style.cssText = 'display:flex;flex-direction:column;gap:6px;';
+
+  const render = () => {
+    body.innerHTML = prods.map(p => {
+      const q = qtys[p.id];
+      const out = (p.stock ?? 0) <= 0;
+      return `
+        <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:9px;
+                    background:var(--surface-2,rgba(255,255,255,.05));
+                    border:1px solid ${q > 0 ? 'var(--gold-400,#d4af37)' : 'transparent'};
+                    transition:border-color .15s" data-qid="${p.id}">
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:600;font-size:.88rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+              ${fmt.escape(p.name)}
+            </div>
+            <div style="font-size:.76rem;color:var(--text-2)">
+              ${fmt.currency(p.price)}
+              ${out ? ' · <span style="color:#e74c3c">Sem estoque</span>' : ` · Estoque: ${p.stock}`}
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:5px;flex-shrink:0">
+            <button data-dec="${p.id}"
+                    style="width:28px;height:28px;border-radius:50%;border:1px solid var(--border,#555);
+                           background:none;cursor:pointer;color:inherit;font-size:1rem;
+                           display:flex;align-items:center;justify-content:center;
+                           opacity:${q === 0 ? '.35' : '1'}">−</button>
+            <span style="width:26px;text-align:center;font-weight:700;font-size:1rem">${q}</span>
+            <button data-inc="${p.id}"
+                    style="width:28px;height:28px;border-radius:50%;border:1px solid var(--border,#555);
+                           background:none;cursor:pointer;color:inherit;font-size:1rem;
+                           display:flex;align-items:center;justify-content:center">+</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    body.querySelectorAll('[data-dec]').forEach(btn => {
+      btn.onclick = () => {
+        const id = btn.dataset.dec;
+        if (qtys[id] > 0) { qtys[id]--; render(); }
+      };
+    });
+    body.querySelectorAll('[data-inc]').forEach(btn => {
+      btn.onclick = () => { qtys[btn.dataset.inc]++; render(); };
+    });
+  };
+
+  render();
+
+  const cancelBtn = el('button', { class: 'btn btn-ghost', type: 'button' }, 'Cancelar');
+  cancelBtn.onclick = () => ui.closeModal(null);
+
+  const addBtn = el('button', { class: 'btn btn-primary', type: 'button' }, 'Adicionar ao carrinho');
+  addBtn.onclick = () => {
+    let added = 0;
+    for (const [productId, qty] of Object.entries(qtys)) {
+      if (qty <= 0) continue;
+      const p = prods.find(x => x.id === productId);
+      if (!p) continue;
+      const existing = state.cart.find(i => i.productId === productId);
+      if (existing) {
+        existing.qty += qty;
+      } else {
+        state.cart.push({ productId: p.id, name: p.name, unitPrice: p.price, qty, stock: p.stock });
+      }
+      added++;
+    }
+    if (added === 0) { ui.toast('Selecione ao menos um produto.', 'warning'); return; }
+    paintCart();
+    paintTotals();
+    ui.closeModal(true);
+    ui.toast(`${added} produto(s) adicionado(s) ao carrinho ✓`, 'success');
+  };
+
+  ui.modal({ title, body, footer: [cancelBtn, addBtn], narrow: true });
+}
 
 function paintProducts() {
   const grid = document.getElementById('pdv-grid');

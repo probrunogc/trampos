@@ -168,7 +168,19 @@ function openStockEntry(product) {
         <span class="field-label">Quantidade *</span>
         <input id="mov-qty" type="number" min="0" step="1" value="1" class="input" style="font-size:2rem;font-weight:700;text-align:center;padding:12px" />
       </label>
-      <div id="mov-preview" class="stock-entry-preview"></div>
+        <div id="mov-preview" class="stock-entry-preview"></div>
+    </div>
+
+    <div style="display:flex;align-items:center;justify-content:space-between;
+                padding:16px 0 4px;border-top:1px solid var(--line,rgba(255,255,255,.1));margin-top:16px">
+      <div>
+        <div style="font-weight:600;font-size:.9rem">Disponível na loja</div>
+        <div style="font-size:.76rem;color:var(--text-2)">Aparece no PDV e pode ser vendido</div>
+      </div>
+      <label class="switch" style="margin:0">
+        <input type="checkbox" id="mov-active" ${product.active !== false ? 'checked' : ''} />
+        <span class="switch-knob"></span>
+      </label>
     </div>
   `;
 
@@ -200,12 +212,13 @@ function openStockEntry(product) {
     else if (type === 'set') novo = qty;
     else                   novo = Math.max(0, cur - qty);
 
+    const active = body.querySelector('#mov-active').checked;
     saveBtn.disabled = true;
     saveBtn.textContent = 'Salvando…';
     try {
-      await db.update('products', product.id, { stock: novo });
+      await db.update('products', product.id, { stock: novo, active });
       const idx = _products.findIndex(p => p.id === product.id);
-      if (idx >= 0) _products[idx] = { ..._products[idx], stock: novo };
+      if (idx >= 0) _products[idx] = { ..._products[idx], stock: novo, active };
 
       // Registra no histórico da sessão
       addToHistory({ product, type, qty, novo });
