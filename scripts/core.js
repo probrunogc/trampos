@@ -217,6 +217,111 @@ export const ui = {
         footer: [cancelBtn, okBtn]
       });
     });
+  },
+
+  // Abre câmera e lê código de barras — retorna o código ou null se cancelado.
+  // Usa BarcodeDetector nativo (Chrome/Edge/Android) com fallback para ZXing.
+  scanBarcode() {
+    const body = document.createElement('div');
+    body.innerHTML = `
+      <div id="scan-wrap" style="position:relative;background:#000;border-radius:10px;
+           overflow:hidden;aspect-ratio:4/3;max-height:280px;margin-bottom:12px">
+        <video id="scan-video" autoplay playsinline muted
+               style="width:100%;height:100%;object-fit:cover;display:block"></video>
+        <div style="position:absolute;inset:0;pointer-events:none;
+                    background:linear-gradient(rgba(0,0,0,.4) 0%,transparent 30%,transparent 70%,rgba(0,0,0,.4) 100%)">
+          <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+                      width:220px;height:88px;border:2px solid #d4a843;border-radius:6px;
+                      box-shadow:0 0 0 9999px rgba(0,0,0,.35)"></div>
+        </div>
+      </div>
+      <p id="scan-hint" style="text-align:center;font-size:.82rem;color:var(--text-3);line-height:1.5">
+        Aponte a câmera para o código de barras do produto
+      </p>
+    `;
+
+    return new Promise(async (resolve) => {
+      let stream = null;
+      let active = true;
+
+      const finish = (code) => {
+        active = false;
+        if (stream) stream.getTracks().forEach(t => t.stop());
+        ui.closeModal(code);
+        resolve(code);
+      };
+
+      const cancelBtn = el('button', { class: 'btn btn-ghost', type: 'button',
+        onClick: () => finish(null) }, 'Cancelar');
+
+      ui.modal({ title: '📷 Escanear código de barras', narrow: true, body, footer: [cancelBtn] })
+        .then(() => { active = false; if (stream) stream.getTracks().forEach(t => t.stop()); });
+
+      const setHint = (t) => { const h = document.getElementById('scan-hint'); if (h) h.textContent = t; };
+      const setError = (msg) => {
+        const w = document.getElementById('scan-wrap');
+        if (w) w.innerHTML = `
+          <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;
+                      height:200px;gap:10px;color:var(--danger)">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            <strong style="font-size:.95rem">${fmt.escape(msg)}</strong>
+          </div>`;
+      };
+
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 } }
+        });
+        const video = document.getElementById('scan-video');
+        if (!video || !active) return;
+        video.srcObject = stream;
+        await video.play();
+
+        // 1ª opção: BarcodeDetector nativo (Chrome ≥83, Edge ≥83, Android Chrome)
+        if ('BarcodeDetector' in window) {
+          const formats = ['ean_13','ean_8','upc_a','upc_e','code_128','code_39','itf','qr_code'];
+          const det = new BarcodeDetector({ formats });
+          const loop = async () => {
+            if (!active) return;
+            try {
+              const hits = await det.detect(video);
+              if (hits.length) { finish(hits[0].rawValue); return; }
+            } catch {}
+            requestAnimationFrame(loop);
+          };
+          requestAnimationFrame(loop);
+          return;
+        }
+
+        // Fallback: ZXing (carregado dinamicamente)
+        setHint('Carregando leitor de câmera…');
+        if (!window.ZXing) {
+          await new Promise((res, rej) => {
+            const s = document.createElement('script');
+            s.src = 'https://unpkg.com/@zxing/library@0.20.0/umd/index.min.js';
+            s.onload = res; s.onerror = rej;
+            document.head.appendChild(s);
+          });
+        }
+        setHint('Aponte a câmera para o código de barras do produto');
+        const reader = new window.ZXing.BrowserMultiFormatReader();
+        reader.decodeFromVideoDevice(undefined, video, (result, err) => {
+          if (!active) { try { reader.reset(); } catch {} return; }
+          if (result) { reader.reset(); finish(result.getText()); }
+        });
+
+      } catch (err) {
+        const msg = err?.name === 'NotAllowedError'
+          ? 'Permissão de câmera negada. Libere nas configurações do navegador.'
+          : err?.name === 'NotFoundError'
+          ? 'Nenhuma câmera encontrada no dispositivo.'
+          : (err?.message || 'Câmera indisponível.');
+        setError(msg);
+        setHint('Use o leitor USB ou digite o código manualmente.');
+      }
+    });
   }
 };
 

@@ -15,6 +15,30 @@ export const meta = {
 
 const CATEGORIES = ['Cerveja', 'Refrigerante', 'Água', 'Energético', 'Destilado', 'Vinho', 'Suco', 'Dose', 'Outros'];
 
+/* ── Cosmos Bluesoft lookup ─────────────────────────────────── */
+const COSMOS_TOKEN = '82haA2Xclw-x7pepzbU0Yg';
+async function cosmosLookup(barcode) {
+  try {
+    const res = await fetch(`https://api.cosmos.bluesoft.com.br/gtins/${barcode}.json`, {
+      headers: { 'X-Cosmos-Token': COSMOS_TOKEN, 'User-Agent': 'Cosmos/1.0' },
+    });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch { return null; }
+}
+function cosmosCat(desc) {
+  const d = (desc || '').toLowerCase();
+  const map = [
+    ['cerveja','Cerveja'],['chopp','Cerveja'],['refrigerante','Refrigerante'],
+    ['suco','Suco'],['água','Água'],['agua','Água'],
+    ['energético','Energético'],['energy','Energético'],
+    ['vodka','Destilado'],['whisky','Destilado'],['whiskey','Destilado'],
+    ['gin','Destilado'],['rum','Destilado'],['cachaça','Destilado'],['conhaque','Destilado'],
+    ['vinho','Vinho'],['dose','Dose'],
+  ];
+  return map.find(([k]) => d.includes(k))?.[1] || null;
+}
+
 let state = { search: '', category: 'all', list: [] };
 
 /* ── Firebase Storage ───────────────────────────────────────── */
@@ -305,6 +329,20 @@ async function openForm(id = null) {
       </label>
     </div>
 
+    <div class="divider-text">Código de barras</div>
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:var(--sp-4)">
+      <input name="barcode" id="field-barcode" autocomplete="off"
+             placeholder="Escaneie (câmera ou leitor USB) ou digite"
+             value="${fmt.escape(p?.barcode || '')}"
+             style="font-family:monospace;font-size:1.1rem;letter-spacing:3px;text-align:center;
+                    padding:10px 14px;border:2px solid var(--gold-400,#d4af37);border-radius:8px;
+                    flex:1;background:rgba(212,175,55,.06);min-width:0" />
+      <button type="button" id="btn-cam-scan" class="btn btn-outline" title="Escanear com a câmera"
+              style="white-space:nowrap;flex-shrink:0">
+        📷 Câmera
+      </button>
+    </div>
+
     <div class="divider-text">Imagens</div>
     <div id="img-grid-wrap"></div>
 
@@ -408,6 +446,52 @@ async function openForm(id = null) {
   }
   renderImages();
 
+  /* ── Botão câmera + Cosmos lookup ───────────────────────── */
+  const camBtn = form.querySelector('#btn-cam-scan');
+  const barcodeField = form.querySelector('#field-barcode');
+
+  if (camBtn && barcodeField) {
+    // Cosmos lookup — auto-preenche nome/marca/categoria após barcode
+    const triggerCosmos = async (barcode) => {
+      if (!barcode || barcode.length < 8) return;
+      const nameField  = form.querySelector('[name="name"]');
+      const brandField = form.querySelector('[name="brand"]');
+      const catField   = form.querySelector('[name="category"]');
+      if (nameField?.value.trim()) return; // não sobrescreve nome já preenchido
+
+      camBtn.disabled = true;
+      camBtn.textContent = '⏳ Buscando…';
+      const data = await cosmosLookup(barcode);
+      camBtn.disabled = false;
+      camBtn.innerHTML = '📷 Câmera';
+
+      if (!data) { ui.toast('Produto não encontrado na Cosmos — preencha o nome.', 'info'); return; }
+      if (nameField  && !nameField.value.trim())  nameField.value  = data.description || '';
+      if (brandField && !brandField.value.trim()) brandField.value = data.brand?.name || '';
+      const cat = cosmosCat(data.ncm?.description || data.description || '');
+      if (cat && catField) catField.value = cat;
+      if (data.description) ui.toast('✔ Produto encontrado na Cosmos', 'success');
+    };
+
+    // Scan por câmera
+    camBtn.addEventListener('click', async () => {
+      const code = await ui.scanBarcode();
+      if (!code) return;
+      barcodeField.value = code;
+      ui.toast(`✔ Código escaneado: ${code}`, 'success');
+      await triggerCosmos(code);
+    });
+
+    // Scan por leitor USB (Enter no campo barcode)
+    barcodeField.addEventListener('keydown', async (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        await triggerCosmos(barcodeField.value.trim());
+      }
+    });
+    barcodeField.addEventListener('blur', () => triggerCosmos(barcodeField.value.trim()));
+  }
+
   /* ── Add file ───────────────────────────────────────────── */
   function addFile(file) {
     const blobUrl = URL.createObjectURL(file);
@@ -501,6 +585,7 @@ async function openForm(id = null) {
         category:    fd.category,
         unit:        fd.unit,
         sku:         fd.sku.trim(),
+        barcode:     (fd.barcode || '').trim(),
         images:      finalUrls,
         image:       finalUrls[0] || '',
         teor:        fd.teor.trim(),
@@ -512,6 +597,17 @@ async function openForm(id = null) {
         minStock:    parseInt(fd.minStock) || 0,
         active:      form.querySelector('[name="active"]').checked,
       };
+
+      // Valida barcode duplicado
+      if (payload.barcode) {
+        const dup = state.list.find(x => x.barcode === payload.barcode && x.id !== id);
+        if (dup) {
+          ui.toast(`Código de barras já cadastrado em "${dup.name || 'produto sem nome'}". Edite-o.`, 'warning');
+          saveBtn.disabled = false;
+          saveBtn.textContent = isEdit ? 'Salvar' : 'Cadastrar';
+          return;
+        }
+      }
 
       if (isEdit) {
         const updated = await db.update('products', id, payload);
