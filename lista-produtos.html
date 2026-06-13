@@ -80,17 +80,24 @@
   }
 
   /* ── Tabela ───────────────────────────────────────────────── */
+  .table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+  }
   table {
     width: 100%;
+    min-width: 700px;
     border-collapse: collapse;
-    font-size: .9rem;
+    font-size: .88rem;
   }
   thead th {
     background: #111;
     color: #fff;
     text-align: left;
-    padding: 9px 12px;
-    font-size: .78rem;
+    padding: 10px 12px;
+    font-size: .75rem;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: .5px;
@@ -103,12 +110,12 @@
     border-bottom: 1px solid #ddd;
     vertical-align: middle;
   }
-  .col-name { font-weight: 600; font-size: .95rem; }
+  .col-name { font-weight: 600; font-size: .93rem; }
   .col-brand { color: #444; }
-  .col-code  { font-family: 'Courier New', monospace; font-size: .85rem; letter-spacing: 1px; }
-  .col-id    { font-family: 'Courier New', monospace; font-size: .72rem; color: #888; }
+  .col-code  { font-family: 'Courier New', monospace; font-size: .83rem; letter-spacing: 1px; white-space: nowrap; }
+  .col-id    { font-family: 'Courier New', monospace; font-size: .68rem; color: #888; }
   .col-price { font-weight: 700; white-space: nowrap; }
-  .col-stock { text-align: center; font-weight: 700; font-size: 1rem; }
+  .col-stock { text-align: center; font-weight: 700; font-size: 1rem; white-space: nowrap; }
 
   .badge {
     display: inline-block;
@@ -144,6 +151,14 @@
 
   #status { color: #555; padding: 40px 0; font-size: 1.1rem; }
   #error  { color: #c0392b; padding: 40px 0; font-size: 1rem; font-weight: 600; }
+
+  /* ── Mobile ───────────────────────────────────────────────── */
+  @media (max-width: 640px) {
+    body { padding: 20px 16px; font-size: 14px; }
+    .page-header { flex-direction: column; align-items: flex-start; gap: 6px; }
+    .page-header .meta { text-align: left; }
+    .summary { grid-template-columns: 1fr 1fr; }
+  }
 
   /* ── Print ────────────────────────────────────────────────── */
   @media print {
@@ -194,36 +209,40 @@
   <button class="print-btn" onclick="window.print()">🖨 Salvar como PDF</button>
 
   <div class="section-title">Com código de barras</div>
-  <table id="t-com">
-    <thead>
-      <tr>
-        <th style="width:34%">Produto</th>
-        <th style="width:14%">Marca</th>
-        <th style="width:12%">Categoria</th>
-        <th style="width:18%">Código de barras</th>
-        <th style="width:10%">Preço</th>
-        <th style="width:6%">Estoque</th>
-        <th style="width:6%">Status</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
+  <div class="table-wrap">
+    <table id="t-com">
+      <thead>
+        <tr>
+          <th style="min-width:200px">Produto</th>
+          <th style="min-width:110px">Marca</th>
+          <th style="min-width:100px">Categoria</th>
+          <th style="min-width:150px">Código de barras</th>
+          <th style="min-width:90px">Preço</th>
+          <th style="min-width:70px">Estoque</th>
+          <th style="min-width:70px">Status</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
 
   <div class="section-title">Sem código de barras</div>
-  <table id="t-sem">
-    <thead>
-      <tr>
-        <th style="width:30%">Produto</th>
-        <th style="width:14%">Marca</th>
-        <th style="width:12%">Categoria</th>
-        <th style="width:22%">ID Firestore</th>
-        <th style="width:10%">Preço</th>
-        <th style="width:6%">Estoque</th>
-        <th style="width:6%">Status</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
+  <div class="table-wrap">
+    <table id="t-sem">
+      <thead>
+        <tr>
+          <th style="min-width:200px">Produto</th>
+          <th style="min-width:110px">Marca</th>
+          <th style="min-width:100px">Categoria</th>
+          <th style="min-width:180px">ID Firestore</th>
+          <th style="min-width:90px">Preço</th>
+          <th style="min-width:70px">Estoque</th>
+          <th style="min-width:70px">Status</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
 
 </div>
 
