@@ -471,14 +471,13 @@ async function openForm(id = null) {
     }
   }, 'Cancelar');
 
-  // type="button" + requestSubmit() porque o modal move o botão pra fora do <form>
-  const saveBtn = el('button', { class: 'btn btn-primary', type: 'button',
-    onClick: () => form.requestSubmit(),
-  }, isEdit ? 'Salvar' : 'Cadastrar');
+  const saveBtn = el('button', { class: 'btn btn-primary', type: 'button' },
+    isEdit ? 'Salvar' : 'Cadastrar');
 
   /* ── Submit ──────────────────────────────────────────────── */
-  form.onsubmit = async e => {
-    e.preventDefault();
+  const handleSubmit = async e => {
+    if (e?.preventDefault) e.preventDefault();
+    if (saveBtn.disabled) return;
     saveBtn.disabled = true;
     saveBtn.textContent = 'Salvando…';
     try {
@@ -533,6 +532,8 @@ async function openForm(id = null) {
       saveBtn.textContent = isEdit ? 'Salvar' : 'Cadastrar';
     }
   };
+  form.addEventListener('submit', handleSubmit);
+  saveBtn.addEventListener('click', handleSubmit);
 
   await ui.modal({
     title: isEdit ? 'Editar produto' : 'Novo produto',

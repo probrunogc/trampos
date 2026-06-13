@@ -46,6 +46,8 @@ export const Icons = {
   delivery: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>`,
   filter: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>`,
   refresh: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>`,
+  stock: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><line x1="12" y1="12" x2="12" y2="17"/><polyline points="9 14.5 12 12 15 14.5"/></svg>`,
+  barcode: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="butt"><line x1="2" y1="4" x2="2" y2="20"/><line x1="4" y1="4" x2="4" y2="20"/><line x1="7" y1="4" x2="7" y2="20"/><line x1="8.5" y1="4" x2="8.5" y2="20"/><line x1="11" y1="4" x2="11" y2="20"/><line x1="13" y1="4" x2="13" y2="20"/><line x1="15.5" y1="4" x2="15.5" y2="20"/><line x1="17" y1="4" x2="17" y2="20"/><line x1="20" y1="4" x2="20" y2="20"/><line x1="22" y1="4" x2="22" y2="20"/></svg>`,
 };
 
 export function icon(name, opts = {}) {
@@ -443,6 +445,26 @@ export const db = {
       _unsubscribes.push(unsub);
     });
     return () => { cancelled = true; };
+  },
+
+  async batchUpdate(col, updates) {
+    await initFirebase();
+    if (_fb.demo) {
+      const arr = lsAll(col);
+      for (const { id, data } of updates) {
+        const idx = arr.findIndex(r => r.id === id);
+        if (idx >= 0) arr[idx] = { ...arr[idx], ...data, updatedAt: Date.now() };
+      }
+      lsSave(col, arr);
+      notifyWatchers(col);
+      return;
+    }
+    const { fs, db: fsDb } = _fb;
+    const batch = fs.writeBatch(fsDb);
+    for (const { id, data } of updates) {
+      batch.update(fs.doc(fsDb, col, id), { ...data, updatedAt: Date.now() });
+    }
+    await batch.commit();
   },
 
   async nextSaleCode() {

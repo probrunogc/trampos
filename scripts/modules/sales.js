@@ -493,13 +493,14 @@ async function finishSale() {
 
     const created = await db.create('sales', sale);
 
-    // Baixar estoque
-    for (const it of state.cart) {
-      const p = state.products.find(x => x.id === it.productId);
-      if (p) {
-        await db.update('products', p.id, { stock: Math.max(0, (p.stock || 0) - it.qty) });
-      }
-    }
+    // Baixar estoque atomicamente (batch — ou falha tudo junto)
+    const stockUpdates = state.cart
+      .map(it => {
+        const p = state.products.find(x => x.id === it.productId);
+        return p ? { id: p.id, data: { stock: Math.max(0, (p.stock || 0) - it.qty) } } : null;
+      })
+      .filter(Boolean);
+    if (stockUpdates.length) await db.batchUpdate('products', stockUpdates);
 
     ui.toast(`Venda ${code} registrada!`, 'success', { title: 'Sucesso' });
 
