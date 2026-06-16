@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Relatório de Produtos — Empório GO</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Segoe UI', Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  background: #fff;
+  color: #111;
+  padding: 36px 44px;
+  max-width: 1000px;
+  margin: auto;
+}
+
+/* ── Cabeçalho ─────────────────────────────────────────────── */
+.page-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  border-bottom: 3px solid #111;
+  padding-bottom: 10px;
+  margin-bottom: 24px;
+  gap: 12px;
+}
+.page-header h1 { font-size: 1.7rem; font-weight: 800; letter-spacing: -.5px; }
+.page-header .meta { font-size: .75rem; color: #555; text-align: right; line-height: 1.7; }
+
+/* ── Botões ────────────────────────────────────────────────── */
+.btn-bar { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+.btn {
+  background: #111; color: #fff; border: none; border-radius: 5px;
+  padding: 9px 20px; font-size: .85rem; font-weight: 700; cursor: pointer;
+}
+.btn:hover { background: #333; }
+.btn-outline {
+  background: #fff; color: #111; border: 2px solid #111;
+}
+.btn-outline:hover { background: #f0f0f0; }
+
+/* ── Progress ──────────────────────────────────────────────── */
+#progress-wrap { margin-bottom: 24px; }
+.progress-bar-bg {
+  background: #eee; border-radius: 4px; height: 10px; overflow: hidden; margin-top: 6px;
+}
+.progress-bar-fill {
+  background: #111; height: 100%; width: 0%; transition: width .2s;
+  border-radius: 4px;
+}
+#progress-label { font-size: .82rem; color: #555; margin-bottom: 4px; }
+
+/* ── Resumo ────────────────────────────────────────────────── */
+.summary {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 10px;
+  margin-bottom: 32px;
+}
+.summary-card {
+  border: 2px solid #111;
+  border-radius: 6px;
+  padding: 12px 14px;
+  text-align: center;
+}
+.summary-card.warn  { border-color: #c0392b; }
+.summary-card.ok    { border-color: #111; }
+.summary-card .num  { font-size: 2rem; font-weight: 800; display: block; line-height: 1; }
+.summary-card .lbl  { font-size: .7rem; color: #444; margin-top: 4px; display: block;
+                      text-transform: uppercase; letter-spacing: .4px; }
+.summary-card.warn .num { color: #c0392b; }
+
+/* ── Seção ─────────────────────────────────────────────────── */
+.section { margin-bottom: 36px; }
+.section-title {
+  font-size: .92rem; font-weight: 800; text-transform: uppercase; letter-spacing: .8px;
+  border-left: 5px solid #111; padding-left: 10px; margin-bottom: 12px;
+  display: flex; align-items: center; gap: 8px;
+}
+.section-title.red  { border-left-color: #c0392b; color: #c0392b; }
+.section-title.warn { border-left-color: #e67e22; color: #e67e22; }
+.section-title.ok   { border-left-color: #27ae60; color: #27ae60; }
+.section-title .count {
+  background: #111; color: #fff; font-size: .65rem; padding: 2px 7px;
+  border-radius: 10px; font-weight: 700; letter-spacing: 0;
+}
+.section-title.red  .count { background: #c0392b; }
+.section-title.warn .count { background: #e67e22; }
+.section-title.ok   .count { background: #27ae60; }
+
+/* ── Tabelas ───────────────────────────────────────────────── */
+.table-wrap { overflow-x: auto; border: 1px solid #ccc; border-radius: 5px; }
+table { width: 100%; min-width: 600px; border-collapse: collapse; font-size: .82rem; }
+thead th {
+  background: #111; color: #fff; text-align: left;
+  padding: 8px 11px; font-size: .7rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .4px; white-space: nowrap;
+}
+tbody tr:nth-child(even) td { background: #f7f7f7; }
+td { padding: 7px 11px; border-bottom: 1px solid #e0e0e0; vertical-align: top; }
+.col-name  { font-weight: 600; }
+.col-code  { font-family: 'Courier New', monospace; font-size: .78rem; white-space: nowrap; }
+.col-cosmos{ font-size: .78rem; color: #444; }
+.col-diff  { font-size: .78rem; color: #c0392b; font-style: italic; }
+
+.badge {
+  display: inline-block; padding: 1px 8px; border-radius: 3px; font-size: .66rem;
+  font-weight: 700; text-transform: uppercase; letter-spacing: .3px; border: 1.5px solid;
+}
+.badge-ok   { border-color: #27ae60; color: #27ae60; }
+.badge-warn { border-color: #e67e22; color: #e67e22; }
+.badge-red  { border-color: #c0392b; color: #c0392b; }
+.badge-cat  { border-color: #555; color: #555; }
+.badge-new  { border-color: #2980b9; color: #2980b9; }
+
+/* ── Diagnóstico inline ────────────────────────────────────── */
+.diag-box {
+  background: #fffbf0; border-left: 4px solid #e67e22;
+  padding: 14px 16px; border-radius: 0 6px 6px 0;
+  margin-bottom: 28px; font-size: .83rem; line-height: 1.7;
+}
+.diag-box h3 { font-size: .9rem; margin-bottom: 6px; color: #c0392b; }
+.diag-box ul { padding-left: 18px; }
+
+/* ── Rodapé ────────────────────────────────────────────────── */
+.footer { margin-top: 48px; padding-top: 12px; border-top: 2px solid #111;
+          font-size: .72rem; color: #777; }
+
+/* ── Print ─────────────────────────────────────────────────── */
+@media print {
+  @page { size: A4 landscape; margin: 10mm 12mm; }
+  body { padding: 0; font-size: 7.5pt; max-width: 100%; }
+  .btn-bar, #progress-wrap { display: none !important; }
+  .page-header h1 { font-size: 12pt; }
+  .page-header .meta { font-size: 6pt; }
+  .summary { gap: 6px; margin-bottom: 14px; }
+  .summary-card { padding: 6px 8px; }
+  .summary-card .num { font-size: 12pt; }
+  .summary-card .lbl { font-size: 5.5pt; }
+  .section { margin-bottom: 18px; }
+  .section-title { font-size: 7pt; margin-bottom: 6px; }
+  .table-wrap { overflow: visible; border-color: #bbb; border-radius: 0; }
+  table { min-width: 0 !important; width: 100%; font-size: 6.5pt; }
+  thead th {
+    background: #111 !important; color: #fff !important; padding: 4px 6px; font-size: 5.5pt;
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
+  td { padding: 3px 6px; }
+  tbody tr:nth-child(even) td {
+    background: #f5f5f5 !important;
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
+  .badge { font-size: 5pt; padding: 0 4px; border-width: 1px; }
+  .diag-box { padding: 8px 10px; font-size: 6.5pt; }
+  thead { display: table-header-group; }
+  tr { page-break-inside: avoid; }
+  .section { page-break-inside: auto; }
+}
+
+@media (max-width: 640px) {
+  body { padding: 18px 14px; }
+  .summary { grid-template-columns: repeat(3, 1fr); }
+  .page-header { flex-direction: column; align-items: flex-start; }
+  .page-header .meta { text-align: left; }
+}
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>Empório GO — Relatório de Produtos</h1>
+  <div class="meta">
+    <span id="meta-date"></span><br>
+    Dados: Firestore + Cosmos Bluesoft
+  </div>
+</div>
+
+<div class="btn-bar">
+  <button class="btn" onclick="window.print()">🖨 Salvar como PDF</button>
+  <button class="btn btn-outline" onclick="location.reload()">↺ Recarregar</button>
+</div>
+
+<div id="progress-wrap">
+  <div id="progress-label">⏳ Conectando ao Firestore…</div>
+  <div class="progress-bar-bg"><div class="progress-bar-fill" id="progress-fill"></div></div>
+</div>
+
+<div id="report" style="display:none"></div>
+
+<script type="module">
+import { initializeApp }
+  from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js';
+import { getFirestore, collection, getDocs, orderBy, query }
+  from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js';
+
+document.getElementById('meta-date').textContent =
+  new Date().toLocaleString('pt-BR', { dateStyle: 'long', timeStyle: 'short' });
+
+const cfg = {
+  apiKey: 'AIzaSyCT3BGvNWRzoOc3mT4lDRRfz6GISptkUzc',
+  authDomain: 'adegas-pf.firebaseapp.com',
+  projectId: 'adegas-pf',
+  storageBucket: 'adegas-pf.firebasestorage.app',
+  messagingSenderId: '688042256969',
+  appId: '1:688042256969:web:110f697c3db4ee7b57ed98',
+};
+
+const COSMOS_TOKEN = '82haA2Xclw-x7pepzbU0Yg';
+
+const esc  = s => (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const brl  = v => (v ?? 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+const norm = s => (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').trim();
+
+/* ── Categoria esperada a partir do texto do Cosmos ──────────── */
+const CAT_RULES = [
+  [['cerveja','chopp','pilsen','lager','ale','ipa','stout','weiss','bock','porter'],       'Cerveja'],
+  [['refrigerante','coca-cola','pepsi','guaraná','fanta','sprite','schweppes','soda'],     'Refrigerante'],
+  [['suco','néctar','del valle','sufresh','kapo','ades'],                                  'Suco'],
+  [['água','agua','mineral','com gás','sem gás','bonafont','crystal','indaiá'],            'Água'],
+  [['energético','energy','monster','red bull','burn','sting','thunder'],                  'Energético'],
+  [['vodka','whisky','whiskey','gin','rum','cachaça','tequila','conhaque','brandy',
+    'licor','absinto','bourbon','scotch','tennessee','destilado','aguardente'],            'Destilado'],
+  [['vinho','espumante','champagne','champanhe','prosecco','rosé','rose','pinot',
+    'merlot','cabernet','chardonnay','sauvignon'],                                         'Vinho'],
+  [['cigarro','cigarette','cigarrilha','tabaco','fumo','marlboro','winston','lucky',
+    'philip morris','derby','free','premier','camel','ld ','parliament'],                  'Cigarro'],
+];
+
+function guessCategory(text) {
+  const n = norm(text);
+  for (const [keywords, cat] of CAT_RULES) {
+    if (keywords.some(k => n.includes(k))) return cat;
+  }
+  return null;
+}
+
+/* ── Suspeitos: nomes que não parecem bebidas/cigarros ──────── */
+const SUSPICIOUS_WORDS = [
+  'adesivo','embalagem','rótulo','caixa vazia','display','kit','combo','brinde',
+  'tampa','lacre','canudo','copo','caixinha','fita','etiqueta','papelão',
+  'plástico','saco','bag','sacola','envelope','cartão','papel','livro',
+  'caneta','brinquedo','eletrônico','cabo','adaptador',
+];
+function isSuspicious(text) {
+  const n = norm(text);
+  return SUSPICIOUS_WORDS.some(w => n.includes(w));
+}
+
+/* ── Cosmos lookup ───────────────────────────────────────────── */
+async function cosmos(barcode) {
+  try {
+    const r = await fetch(`https://api.cosmos.bluesoft.com.br/gtins/${barcode}.json`, {
+      headers: { 'X-Cosmos-Token': COSMOS_TOKEN, 'User-Agent': 'Cosmos/1.0' }
+    });
+    if (r.status === 404) return null;
+    if (!r.ok) return null;
+    return await r.json();
+  } catch { return null; }
+}
+
+function cosmosName(data) {
+  return data?.description || data?.ncm?.description || '';
+}
+
+function cosmosBrand(data) {
+  return data?.brand?.name || '';
+}
+
+/* ── Helpers de similaridade ─────────────────────────────────── */
+function nameSimilar(a, b) {
+  const na = norm(a), nb = norm(b);
+  if (!na || !nb) return true; // sem dados = não flagga
+  if (na === nb) return true;
+  // palavras em comum
+  const wa = new Set(na.split(/\s+/).filter(x => x.length > 3));
+  const wb = new Set(nb.split(/\s+/).filter(x => x.length > 3));
+  let common = 0;
+  for (const w of wa) if (wb.has(w)) common++;
+  const union = new Set([...wa, ...wb]).size;
+  return union > 0 ? common / union >= 0.4 : true;
+}
+
+/* ── Progresso ───────────────────────────────────────────────── */
+function setProgress(label, pct) {
+  document.getElementById('progress-label').textContent = label;
+  document.getElementById('progress-fill').style.width = pct + '%';
+}
+
+/* ── Tabela genérica ─────────────────────────────────────────── */
+function table(cols, rows) {
+  if (rows.length === 0) return '<p style="color:#999;font-style:italic;padding:8px 0">Nenhum produto nesta categoria.</p>';
+  return `<div class="table-wrap"><table>
+    <thead><tr>${cols.map(c => `<th>${esc(c)}</th>`).join('')}</tr></thead>
+    <tbody>${rows.join('')}</tbody>
+  </table></div>`;
+}
+
+/* ── MAIN ────────────────────────────────────────────────────── */
+try {
+  setProgress('Conectando ao Firestore…', 5);
+  const app  = initializeApp(cfg);
+  const db   = getFirestore(app);
+  const snap = await getDocs(query(collection(db, 'products'), orderBy('name')));
+  const all  = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+  const withBarcode = all.filter(p => (p.barcode || '').trim());
+  const noBarcode   = all.filter(p => !(p.barcode || '').trim());
+
+  // Listas de resultado
+  const correct   = []; // OK — Cosmos bate
+  const nameDiff  = []; // nome diferente
+  const catDiff   = []; // categoria errada
+  const suspicious= []; // produto suspeito (não bebida)
+  const notFound  = []; // não encontrado no Cosmos
+
+  // Query Cosmos para cada produto com barcode
+  for (let i = 0; i < withBarcode.length; i++) {
+    const p = withBarcode[i];
+    const pct = 10 + Math.round((i / withBarcode.length) * 80);
+    setProgress(`Consultando Cosmos: ${p.name} (${i + 1}/${withBarcode.length})…`, pct);
+
+    const data = await cosmos(p.barcode);
+    await new Promise(r => setTimeout(r, 120)); // throttle gentil
+
+    if (!data) {
+      notFound.push({ p });
+      continue;
+    }
+
+    const cName  = cosmosName(data);
+    const cBrand = cosmosBrand(data);
+    const cCat   = guessCategory(cName + ' ' + cBrand);
+
+    const isSusp    = isSuspicious(cName);
+    const nameOk    = nameSimilar(p.name, cName);
+    const catOk     = !cCat || cCat === p.category;
+
+    if (isSusp) {
+      suspicious.push({ p, cName, cBrand, cCat });
+    } else if (!nameOk && !catOk) {
+      nameDiff.push({ p, cName, cBrand, cCat, bothDiff: true });
+      catDiff.push({ p, cName, cBrand, cCat, bothDiff: true });
+    } else if (!nameOk) {
+      nameDiff.push({ p, cName, cBrand, cCat });
+    } else if (!catOk) {
+      catDiff.push({ p, cName, cBrand, cCat });
+    } else {
+      correct.push({ p, cName, cBrand });
+    }
+  }
+
+  setProgress('Gerando relatório…', 95);
+
+  /* ── Render ─────────────────────────────────────────────────── */
+  const totalProblems = nameDiff.length + catDiff.length + suspicious.length;
+
+  const summaryHTML = `<div class="summary">
+    <div class="summary-card"><span class="num">${all.length}</span><span class="lbl">Total de produtos</span></div>
+    <div class="summary-card"><span class="num">${withBarcode.length}</span><span class="lbl">Com código de barras</span></div>
+    <div class="summary-card"><span class="num">${noBarcode.length}</span><span class="lbl">Sem código de barras</span></div>
+    <div class="summary-card ${totalProblems > 0 ? 'warn' : 'ok'}"><span class="num">${totalProblems}</span><span class="lbl">Problemas detectados</span></div>
+    <div class="summary-card"><span class="num">${notFound.length}</span><span class="lbl">Não encontrado Cosmos</span></div>
+  </div>`;
+
+  // Diagnóstico explicativo
+  const diagHTML = suspicious.length || nameDiff.length ? `
+  <div class="diag-box">
+    <h3>⚠ Por que aparecem nomes estranhos?</h3>
+    <ul>
+      <li><strong>Cosmos desatualizado:</strong> o banco da Bluesoft pode ter associado aquele GTIN a outra versão do produto (embalagem promocional, display, kit), gerando uma descrição diferente da do produto avulso.</li>
+      <li><strong>Barcode de embalagem:</strong> algumas caixas master têm código próprio que o Cosmos cadastra como "adesivo", "display", "caixa com X unidades" etc., diferente do produto unitário.</li>
+      <li><strong>Cigarrilhas / Cigarros:</strong> produtos como Beats, Bling e similares são cigarrilhas cadastradas como "Outros". O Cosmos retorna o nome correto e a categoria pode ser corrigida para <em>Cigarro</em>.</li>
+      <li><strong>Produto sem cadastro no Cosmos:</strong> se o retorno for 404, o GTIN não existe na base — vale verificar se o código foi digitado corretamente.</li>
+    </ul>
+  </div>` : '';
+
+  // Suspeitos
+  const suspRow = ({ p, cName, cBrand, cCat }) => `<tr>
+    <td class="col-name">${esc(p.name)}</td>
+    <td class="col-code">${esc(p.barcode)}</td>
+    <td><span class="badge badge-cat">${esc(p.category || '—')}</span></td>
+    <td class="col-cosmos">${esc(cName)}</td>
+    <td class="col-cosmos">${esc(cBrand)}</td>
+    <td class="col-diff">Possível não-bebida</td>
+    <td>${brl(p.price)}</td>
+  </tr>`;
+
+  // Nome diferente
+  const nameRow = ({ p, cName, cBrand, cCat }) => `<tr>
+    <td class="col-name">${esc(p.name)}</td>
+    <td class="col-code">${esc(p.barcode)}</td>
+    <td><span class="badge badge-cat">${esc(p.category || '—')}</span></td>
+    <td class="col-cosmos">${esc(cName)}</td>
+    <td class="col-cosmos">${esc(cBrand)}</td>
+    <td class="col-diff">${cCat && cCat !== p.category ? `→ ${cCat}` : '—'}</td>
+    <td>${brl(p.price)}</td>
+  </tr>`;
+
+  // Categoria diferente (não duplicar os que já estão em nameDiff)
+  const catOnlyDiff = catDiff.filter(x => !x.bothDiff && !nameDiff.find(n => n.p.id === x.p.id));
+  const catRow = ({ p, cName, cBrand, cCat }) => `<tr>
+    <td class="col-name">${esc(p.name)}</td>
+    <td class="col-code">${esc(p.barcode)}</td>
+    <td><span class="badge badge-warn">${esc(p.category || '—')}</span></td>
+    <td class="col-cosmos">${esc(cName)}</td>
+    <td class="col-cosmos">${esc(cBrand)}</td>
+    <td><span class="badge badge-new">${esc(cCat || '?')}</span></td>
+    <td>${brl(p.price)}</td>
+  </tr>`;
+
+  // Corretos
+  const okRow = ({ p, cName, cBrand }) => `<tr>
+    <td class="col-name">${esc(p.name)}</td>
+    <td class="col-code">${esc(p.barcode)}</td>
+    <td><span class="badge badge-cat">${esc(p.category || '—')}</span></td>
+    <td class="col-cosmos">${esc(cName)}</td>
+    <td class="col-cosmos">${esc(cBrand)}</td>
+    <td>${brl(p.price)}</td>
+    <td>${p.stock ?? 0}</td>
+  </tr>`;
+
+  // Não encontrado
+  const nfRow = ({ p }) => `<tr>
+    <td class="col-name">${esc(p.name)}</td>
+    <td class="col-code">${esc(p.barcode)}</td>
+    <td><span class="badge badge-cat">${esc(p.category || '—')}</span></td>
+    <td colspan="3" style="color:#999;font-style:italic">Não encontrado no Cosmos</td>
+    <td>${brl(p.price)}</td>
+  </tr>`;
+
+  // Sem código
+  const ncRow = ({ id, name, brand, category, price, stock }) => `<tr>
+    <td class="col-name">${esc(name)}</td>
+    <td class="col-cosmos">${esc(brand || '—')}</td>
+    <td><span class="badge badge-cat">${esc(category || '—')}</span></td>
+    <td style="font-family:monospace;font-size:.68rem;color:#aaa">${esc(id)}</td>
+    <td>${brl(price)}</td>
+    <td>${stock ?? 0}</td>
+  </tr>`;
+
+  const COLS_PROB   = ['Produto cadastrado','Código','Categoria atual','Nome no Cosmos','Marca Cosmos','Observação','Preço'];
+  const COLS_CAT    = ['Produto','Código','Categoria atual','Nome no Cosmos','Marca Cosmos','Categoria sugerida','Preço'];
+  const COLS_OK     = ['Produto','Código','Categoria','Nome no Cosmos','Marca Cosmos','Preço','Estoque'];
+  const COLS_NF     = ['Produto','Código','Categoria','—','—','—','Preço'];
+  const COLS_NC     = ['Produto','Marca','Categoria','ID Firestore','Preço','Estoque'];
+
+  document.getElementById('report').innerHTML = `
+    ${summaryHTML}
+    ${diagHTML}
+
+    ${suspicious.length ? `
+    <div class="section">
+      <div class="section-title red">🚨 Suspeitos — possível não-bebida <span class="count">${suspicious.length}</span></div>
+      <p style="font-size:.8rem;color:#c0392b;margin-bottom:10px">
+        O Cosmos retornou uma descrição que <strong>não parece bebida ou cigarro</strong>. Verifique se o código de barras está correto.
+      </p>
+      ${table(COLS_PROB, suspicious.map(suspRow))}
+    </div>` : ''}
+
+    ${nameDiff.length ? `
+    <div class="section">
+      <div class="section-title warn">⚠ Nome divergente do Cosmos <span class="count">${nameDiff.length}</span></div>
+      <p style="font-size:.8rem;color:#e67e22;margin-bottom:10px">
+        O nome cadastrado <strong>difere significativamente</strong> do que o Cosmos retorna para esse código.
+        Possível troca de barcode, produto renomeado ou cadastro do display/caixa master.
+      </p>
+      ${table(COLS_PROB, nameDiff.map(nameRow))}
+    </div>` : ''}
+
+    ${catOnlyDiff.length ? `
+    <div class="section">
+      <div class="section-title warn">📂 Categoria possivelmente errada <span class="count">${catOnlyDiff.length}</span></div>
+      <p style="font-size:.8rem;color:#e67e22;margin-bottom:10px">
+        O nome bate mas a <strong>categoria está diferente</strong> do que o Cosmos sugere.
+        Produtos como cigarrilhas cadastradas em "Outros" aparecem aqui.
+      </p>
+      ${table(COLS_CAT, catOnlyDiff.map(catRow))}
+    </div>` : ''}
+
+    ${notFound.length ? `
+    <div class="section">
+      <div class="section-title">❌ Código não encontrado no Cosmos <span class="count">${notFound.length}</span></div>
+      <p style="font-size:.8rem;color:#555;margin-bottom:10px">
+        GTIN sem cadastro na Bluesoft. Verifique se o código foi digitado corretamente.
+      </p>
+      ${table(COLS_NF, notFound.map(nfRow))}
+    </div>` : ''}
+
+    <div class="section">
+      <div class="section-title ok">✅ Produtos com cadastro correto <span class="count">${correct.length}</span></div>
+      ${table(COLS_OK, correct.map(okRow))}
+    </div>
+
+    ${noBarcode.length ? `
+    <div class="section">
+      <div class="section-title">🏷 Sem código de barras <span class="count">${noBarcode.length}</span></div>
+      <p style="font-size:.8rem;color:#555;margin-bottom:10px">
+        Cadastro manual — sem código, não é possível validar via Cosmos nem usar o leitor.
+      </p>
+      ${table(COLS_NC, noBarcode.map(ncRow))}
+    </div>` : ''}
+
+    <div class="footer">
+      Relatório gerado automaticamente em ${new Date().toLocaleString('pt-BR')} · Empório GO · Fonte: Firestore + Cosmos Bluesoft API
+    </div>
+  `;
+
+  setProgress('Pronto!', 100);
+  document.getElementById('progress-wrap').style.display = 'none';
+  document.getElementById('report').style.display = '';
+
+} catch (e) {
+  document.getElementById('progress-label').textContent = '❌ Erro: ' + e.message;
+  document.getElementById('progress-fill').style.background = '#c0392b';
+}
+</script>
+</body>
+</html>

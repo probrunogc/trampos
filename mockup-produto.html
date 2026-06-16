@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Mockup — Detalhe do Produto</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --purple:        #7B2CE2;
+      --purple-soft:   #F3ECFA;
+      --yellow:        #F9C000;
+      --black:         #111111;
+      --gray-2:        #555555;
+      --gray-divider:  #DDDDDD;
+      --pink-grid:     rgba(255, 105, 180, 0.18);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      background: #2a2a2a;
+      font-family: 'Inter', 'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    /* ─── Canvas 864 × 1536 ───────────────────────────────────── */
+    .canvas {
+      position: relative;
+      width: 864px;
+      height: 1536px;
+      background: #ffffff;
+      border: 1px solid #111111;
+      overflow: hidden;
+    }
+
+    /* Pink dotted grid overlay (very subtle) */
+    .canvas::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(to right,  var(--pink-grid) 1px, transparent 1px),
+        linear-gradient(to bottom, var(--pink-grid) 1px, transparent 1px);
+      background-size: 48px 48px;
+      pointer-events: none;
+      opacity: 0.55;
+      mask-image: repeating-linear-gradient(to right, #000 0 4px, transparent 4px 8px);
+      -webkit-mask-image: repeating-linear-gradient(to right, #000 0 4px, transparent 4px 8px);
+      z-index: 0;
+    }
+
+    /* Purple brush strokes — top-left and bottom-right */
+    .brush {
+      position: absolute;
+      pointer-events: none;
+      z-index: 1;
+    }
+    .brush.tl { top: -40px;    left: -60px;  width: 620px; height: 220px; transform: rotate(-12deg); }
+    .brush.br { bottom: 200px; right: -80px; width: 620px; height: 220px; transform: rotate(-12deg); }
+
+    /* Everything above the decorative layers */
+    .content { position: relative; z-index: 2; width: 100%; height: 100%; }
+
+    /* ─── Topo: back arrow + badge ─────────────────────────────── */
+    .btn-back {
+      position: absolute;
+      top: 70px;
+      left: 45px;
+      width: 56px;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: #000;
+    }
+    .btn-back svg { width: 38px; height: 38px; }
+
+    .badge {
+      position: absolute;
+      top: 85px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 280px;
+      height: 56px;
+      background: #FAF6FE;
+      border: 1.5px solid var(--purple);
+      border-radius: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--purple);
+      font-weight: 700;
+      font-size: 22px;
+      letter-spacing: 0.5px;
+    }
+
+    /* ─── Hero: lata + bloco de info ───────────────────────────── */
+    .product-img {
+      position: absolute;
+      left: 95px;
+      top: 240px;
+      width: 295px;
+      height: 545px;
+      object-fit: contain;
+    }
+
+    .info {
+      position: absolute;
+      left: 440px;
+      top: 360px;
+      width: 360px;
+    }
+    .info h1 {
+      color: var(--black);
+      font-size: 56px;
+      font-weight: 800;
+      line-height: 1.1;
+      letter-spacing: -0.5px;
+    }
+    .info .subtitle {
+      margin-top: 16px;
+      color: var(--gray-2);
+      font-size: 32px;
+      font-weight: 400;
+    }
+    .info .price {
+      margin-top: 60px;
+      color: var(--black);
+      font-size: 72px;
+      font-weight: 800;
+      letter-spacing: -1px;
+    }
+
+    /* Quantity selector pill */
+    .qty {
+      position: absolute;
+      left: 440px;
+      top: 690px;
+      width: 350px;
+      height: 110px;
+      background: var(--purple-soft);
+      border-radius: 24px;
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      align-items: center;
+      justify-items: center;
+      color: var(--purple);
+      user-select: none;
+    }
+    .qty button, .qty .val {
+      background: none;
+      border: none;
+      color: var(--purple);
+      font-family: inherit;
+      cursor: pointer;
+      line-height: 1;
+    }
+    .qty .minus, .qty .plus { font-size: 52px; font-weight: 400; }
+    .qty .val { font-size: 44px; font-weight: 700; }
+
+    /* ─── CTA amarelo ──────────────────────────────────────────── */
+    .cta {
+      position: absolute;
+      left: 74px;
+      top: 855px;
+      width: 716px;
+      height: 122px;
+      background: var(--yellow);
+      border: none;
+      border-radius: 22px;
+      color: var(--black);
+      font-family: inherit;
+      font-weight: 900;
+      font-size: 36px;
+      letter-spacing: 0.5px;
+      cursor: pointer;
+    }
+
+    /* ─── Seções: descrição + teor ─────────────────────────────── */
+    .section { position: absolute; left: 74px; width: 716px; }
+    .section .title {
+      color: var(--purple);
+      font-weight: 900;
+      font-size: 30px;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+    .section .body {
+      margin-top: 18px;
+      color: var(--black);
+      font-size: 29px;
+      font-weight: 400;
+      line-height: 1.35;
+      max-width: 640px;
+    }
+    .section .divider {
+      margin-top: 28px;
+      width: 675px;
+      height: 1px;
+      background: var(--gray-divider);
+    }
+
+    .sec-desc  { top: 1045px; }
+    .sec-teor  { top: 1238px; }
+
+    /* ─── Menu inferior ────────────────────────────────────────── */
+    .bottom-nav {
+      position: absolute;
+      left: 0;
+      bottom: 0;
+      width: 100%;
+      height: 140px;
+      background: #ffffff;
+      border-top: 1px solid var(--gray-divider);
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      align-items: center;
+      z-index: 3;
+    }
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      color: var(--gray-2);
+      cursor: pointer;
+    }
+    .nav-item svg { width: 36px; height: 36px; stroke: currentColor; fill: none; stroke-width: 2; }
+    .nav-item .label { font-size: 20px; font-weight: 500; color: inherit; }
+    .nav-item.active { color: var(--purple); }
+    .nav-item.active .label { font-weight: 700; }
+  </style>
+</head>
+<body>
+
+  <div class="canvas">
+
+    <!-- Pinceladas roxas decorativas -->
+    <svg class="brush tl" viewBox="0 0 620 220" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <filter id="rough1">
+          <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="3"/>
+          <feDisplacementMap in="SourceGraphic" scale="6"/>
+        </filter>
+      </defs>
+      <g filter="url(#rough1)" fill="#7B2CE2" opacity="0.85">
+        <path d="M-20 30 Q 200 10 420 60 T 640 100 L 640 130 Q 400 80 180 100 T -20 70 Z"/>
+        <path d="M-20 90 Q 180 70 380 120 T 640 160 L 640 180 Q 420 130 200 150 T -20 130 Z" opacity="0.6"/>
+        <path d="M40 0 L 580 30 L 600 10 L 50 -10 Z" opacity="0.5"/>
+      </g>
+    </svg>
+
+    <svg class="brush br" viewBox="0 0 620 220" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <filter id="rough2">
+          <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="7"/>
+          <feDisplacementMap in="SourceGraphic" scale="6"/>
+        </filter>
+      </defs>
+      <g filter="url(#rough2)" fill="#7B2CE2" opacity="0.85">
+        <path d="M-20 60 Q 200 40 420 90 T 640 130 L 640 160 Q 400 110 180 130 T -20 100 Z"/>
+        <path d="M-20 130 Q 180 110 380 160 T 640 200 L 640 220 Q 420 170 200 190 T -20 170 Z" opacity="0.6"/>
+        <path d="M40 30 L 580 60 L 600 40 L 50 20 Z" opacity="0.5"/>
+      </g>
+    </svg>
+
+    <div class="content">
+
+      <!-- Topo -->
+      <button class="btn-back" aria-label="Voltar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M19 12H5M12 19l-7-7 7-7"/>
+        </svg>
+      </button>
+
+      <div class="badge">VERSÃO AJUSTADA</div>
+
+      <!-- Produto -->
+      <img class="product-img"
+           src="assets/produtos/cerveja/brahma-lata-350ml.png"
+           alt="Brahma Chopp Lata 350ml" />
+
+      <div class="info">
+        <h1>Brahma Chopp</h1>
+        <p class="subtitle">Lata 350ml</p>
+        <p class="price">R$ 3,49</p>
+      </div>
+
+      <div class="qty" role="group" aria-label="Quantidade">
+        <button class="minus" aria-label="Diminuir">−</button>
+        <span class="val">1</span>
+        <button class="plus" aria-label="Aumentar">+</button>
+      </div>
+
+      <button class="cta">ADICIONAR AO CARRINHO</button>
+
+      <!-- Descrição -->
+      <section class="section sec-desc">
+        <div class="title">DESCRIÇÃO</div>
+        <p class="body">Cerveja leve e refrescante, perfeita para qualquer momento.</p>
+        <div class="divider"></div>
+      </section>
+
+      <!-- Teor alcoólico -->
+      <section class="section sec-teor">
+        <div class="title">TEOR ALCOÓLICO</div>
+        <p class="body">4,8%</p>
+        <div class="divider"></div>
+      </section>
+
+      <!-- Menu inferior -->
+      <nav class="bottom-nav">
+        <div class="nav-item active">
+          <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 11.5 12 4l9 7.5"/>
+            <path d="M5 10v10h14V10"/>
+          </svg>
+          <span class="label">Início</span>
+        </div>
+        <div class="nav-item">
+          <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3"  y="3"  width="7" height="7" rx="1.2"/>
+            <rect x="14" y="3"  width="7" height="7" rx="1.2"/>
+            <rect x="3"  y="14" width="7" height="7" rx="1.2"/>
+            <rect x="14" y="14" width="7" height="7" rx="1.2"/>
+          </svg>
+          <span class="label">Categorias</span>
+        </div>
+        <div class="nav-item">
+          <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="9" cy="20" r="1.2"/>
+            <circle cx="18" cy="20" r="1.2"/>
+            <path d="M3 4h2l2.5 12h11l2-8H7"/>
+          </svg>
+          <span class="label">Carrinho</span>
+        </div>
+        <div class="nav-item">
+          <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 3h9l4 4v14H6z"/>
+            <path d="M14 3v5h5"/>
+            <path d="M9 13h7M9 17h7"/>
+          </svg>
+          <span class="label">Pedidos</span>
+        </div>
+        <div class="nav-item">
+          <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="8" r="4"/>
+            <path d="M4 21c1.5-4 5-6 8-6s6.5 2 8 6"/>
+          </svg>
+          <span class="label">Conta</span>
+        </div>
+      </nav>
+
+    </div><!-- /content -->
+  </div><!-- /canvas -->
+
+</body>
+</html>

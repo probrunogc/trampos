@@ -5,6 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <meta name="theme-color" content="#1A0A4A" />
   <title>Empório GO — Delivery</title>
+  <style>
+    *{-webkit-user-select:none!important;user-select:none!important;-webkit-touch-callout:none!important;outline:none!important}
+    input,textarea{-webkit-user-select:text!important;user-select:text!important}
+  </style>
 
   <!-- PWA -->
   <link rel="manifest" href="loja-manifest.json" />
@@ -52,16 +56,39 @@
     <nav id="bottom-nav" class="bottom-nav"></nav>
   </div>
 
+  <script async src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
   <script type="module" src="scripts/loja.js"></script>
   <!-- DEV: régua de alinhamento — remover antes do lançamento -->
-  <script src="scripts/dev-ruler.js"></script>
+  <!-- <script src="scripts/dev-ruler.js"></script> -->
   <script>
     document.addEventListener('contextmenu', e => e.preventDefault());
     document.addEventListener('gesturestart', e => e.preventDefault());
     document.addEventListener('dblclick', e => e.preventDefault());
+    document.addEventListener('selectstart', e => { if (!e.target.matches('input,textarea')) e.preventDefault(); }, true);
+    document.addEventListener('dragstart', e => e.preventDefault());
+    document.addEventListener('copy', e => { if (!e.target.matches('input,textarea')) e.preventDefault(); });
+    document.addEventListener('cut',  e => { if (!e.target.matches('input,textarea')) e.preventDefault(); });
+    document.addEventListener('keydown', e => {
+      const ctrl = e.ctrlKey || e.metaKey;
+      // Bloqueia: Ctrl+U (fonte), Ctrl+S (salvar), Ctrl+A (selecionar tudo),
+      //           Ctrl+C (copiar), Ctrl+P (imprimir), F12, Ctrl+Shift+I/J (DevTools)
+      if (ctrl && ['u','s','a','c','p'].includes(e.key.toLowerCase())) e.preventDefault();
+      if (e.key === 'F12') e.preventDefault();
+      if (ctrl && e.shiftKey && ['i','j','c'].includes(e.key.toLowerCase())) e.preventDefault();
+    });
     if ('serviceWorker' in navigator) {
+      let _reloading = false;
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (!_reloading) { _reloading = true; window.location.reload(); }
+      });
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./loja-sw.js').catch(() => {});
+        navigator.serviceWorker.register('./loja-sw.js', { updateViaCache: 'none' })
+          .then(reg => {
+            document.addEventListener('visibilitychange', () => {
+              if (document.visibilityState === 'visible') reg.update().catch(() => {});
+            });
+          })
+          .catch(() => {});
       });
     }
   </script>

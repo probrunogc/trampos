@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Lista de Produtos — Empório GO</title>
+<style>
+  /* ── Reset & base ─────────────────────────────────────────── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    font-size: 15px;
+    line-height: 1.5;
+    background: #fff;
+    color: #111;
+    padding: 40px 48px;
+    max-width: 960px;
+    margin: auto;
+  }
+
+  /* ── Cabeçalho ────────────────────────────────────────────── */
+  .page-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    border-bottom: 3px solid #111;
+    padding-bottom: 12px;
+    margin-bottom: 28px;
+  }
+  .page-header h1 {
+    font-size: 1.9rem;
+    font-weight: 800;
+    letter-spacing: -.5px;
+  }
+  .page-header .meta {
+    font-size: .82rem;
+    color: #555;
+    text-align: right;
+    line-height: 1.6;
+  }
+
+  /* ── Resumo ───────────────────────────────────────────────── */
+  .summary {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 36px;
+  }
+  .summary-card {
+    border: 2px solid #111;
+    border-radius: 6px;
+    padding: 14px 16px;
+    text-align: center;
+  }
+  .summary-card .num {
+    font-size: 2.2rem;
+    font-weight: 800;
+    display: block;
+    line-height: 1.1;
+  }
+  .summary-card .lbl {
+    font-size: .78rem;
+    color: #444;
+    margin-top: 4px;
+    display: block;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+  }
+
+  /* ── Seções ───────────────────────────────────────────────── */
+  .section-title {
+    font-size: 1.05rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border-left: 5px solid #111;
+    padding-left: 10px;
+    margin: 36px 0 14px;
+  }
+
+  /* ── Tabela ───────────────────────────────────────────────── */
+  .table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+  }
+  table {
+    width: 100%;
+    min-width: 700px;
+    border-collapse: collapse;
+    font-size: .88rem;
+  }
+  thead th {
+    background: #111;
+    color: #fff;
+    text-align: left;
+    padding: 10px 12px;
+    font-size: .75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    white-space: nowrap;
+  }
+  tbody tr:nth-child(even) td { background: #f5f5f5; }
+  tbody tr:hover        td  { background: #ebebeb; }
+  td {
+    padding: 9px 12px;
+    border-bottom: 1px solid #ddd;
+    vertical-align: middle;
+  }
+  .col-name { font-weight: 600; font-size: .93rem; }
+  .col-brand { color: #444; }
+  .col-code  { font-family: 'Courier New', monospace; font-size: .83rem; letter-spacing: 1px; white-space: nowrap; }
+  .col-id    { font-family: 'Courier New', monospace; font-size: .68rem; color: #888; }
+  .col-price { font-weight: 700; white-space: nowrap; }
+  .col-stock { text-align: center; font-weight: 700; font-size: 1rem; white-space: nowrap; }
+
+  .badge {
+    display: inline-block;
+    padding: 2px 9px;
+    border-radius: 3px;
+    font-size: .72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .4px;
+    border: 1.5px solid #111;
+  }
+  .badge.cat    { border-color: #555; color: #555; }
+  .badge.ativo  { border-color: #111; color: #111; }
+  .badge.inativo{ border-color: #999; color: #999; }
+
+  /* ── Rodapé de seção vazia ────────────────────────────────── */
+  .empty-row td { color: #999; font-style: italic; text-align: center; padding: 20px; }
+
+  /* ── Botão imprimir (some no PDF) ────────────────────────── */
+  .print-btn {
+    background: #111;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    padding: 10px 22px;
+    font-size: .9rem;
+    font-weight: 700;
+    cursor: pointer;
+    letter-spacing: .3px;
+    margin-bottom: 8px;
+  }
+  .print-btn:hover { background: #333; }
+
+  #status { color: #555; padding: 40px 0; font-size: 1.1rem; }
+  #error  { color: #c0392b; padding: 40px 0; font-size: 1rem; font-weight: 600; }
+
+  /* ── Mobile ───────────────────────────────────────────────── */
+  @media (max-width: 640px) {
+    body { padding: 20px 16px; font-size: 14px; }
+    .page-header { flex-direction: column; align-items: flex-start; gap: 6px; }
+    .page-header .meta { text-align: left; }
+    .summary { grid-template-columns: 1fr 1fr; }
+  }
+
+  /* ── Print / PDF A4 paisagem ─────────────────────────────── */
+  @media print {
+    @page { size: A4 landscape; margin: 12mm 14mm; }
+
+    body {
+      padding: 0;
+      font-size: 8.5pt;
+      max-width: 100%;
+      color: #000;
+      background: #fff;
+    }
+
+    .print-btn { display: none !important; }
+
+    /* Cabeçalho compacto */
+    .page-header { padding-bottom: 8px; margin-bottom: 14px; }
+    .page-header h1 { font-size: 13pt; }
+    .page-header .meta { font-size: 7pt; }
+
+    /* Resumo menor */
+    .summary { gap: 8px; margin-bottom: 16px; }
+    .summary-card { padding: 7px 10px; }
+    .summary-card .num { font-size: 14pt; }
+    .summary-card .lbl { font-size: 6.5pt; }
+
+    /* Título de seção */
+    .section-title { font-size: 8pt; margin: 14px 0 6px; }
+
+    /* Tabela sem scroll — ocupa toda a largura */
+    .table-wrap { overflow: visible; border: 1px solid #bbb; border-radius: 0; }
+    table { min-width: 0 !important; width: 100%; font-size: 7.8pt; }
+
+    thead th {
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+      background: #111 !important;
+      color: #fff !important;
+      padding: 5px 7px;
+      font-size: 6.5pt;
+      white-space: nowrap;
+    }
+
+    td { padding: 4px 7px; }
+
+    tbody tr:nth-child(even) td {
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+      background: #f5f5f5 !important;
+    }
+
+    /* Colunas */
+    .col-name  { font-size: 7.8pt; font-weight: 600; }
+    .col-brand { font-size: 7.5pt; }
+    .col-code  { font-size: 7pt; letter-spacing: 0; }
+    .col-id    { font-size: 6pt; }
+    .col-price { font-size: 7.8pt; }
+    .col-stock { font-size: 8pt; }
+
+    .badge { font-size: 6pt; padding: 1px 5px; border-width: 1px; }
+
+    /* Controle de quebra de página */
+    thead { display: table-header-group; }
+    tr { page-break-inside: avoid; }
+    table { page-break-inside: auto; }
+    .section-title { page-break-before: auto; }
+  }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>Empório GO — Produtos</h1>
+  <div class="meta">
+    <span id="meta-date"></span><br>
+    Fonte: Firestore (ao vivo)
+  </div>
+</div>
+
+<div id="status">⏳ Carregando dados do Firestore…</div>
+<div id="error" style="display:none"></div>
+
+<div id="output" style="display:none">
+
+  <div class="summary">
+    <div class="summary-card">
+      <span class="num" id="s-total">—</span>
+      <span class="lbl">Total de produtos</span>
+    </div>
+    <div class="summary-card">
+      <span class="num" id="s-com">—</span>
+      <span class="lbl">Com código de barras</span>
+    </div>
+    <div class="summary-card">
+      <span class="num" id="s-sem">—</span>
+      <span class="lbl">Sem código de barras</span>
+    </div>
+    <div class="summary-card">
+      <span class="num" id="s-inat">—</span>
+      <span class="lbl">Inativos</span>
+    </div>
+  </div>
+
+  <button class="print-btn" onclick="window.print()">🖨 Salvar como PDF</button>
+
+  <div class="section-title">Com código de barras</div>
+  <div class="table-wrap">
+    <table id="t-com">
+      <thead>
+        <tr>
+          <th style="min-width:200px">Produto</th>
+          <th style="min-width:110px">Marca</th>
+          <th style="min-width:100px">Categoria</th>
+          <th style="min-width:150px">Código de barras</th>
+          <th style="min-width:90px">Preço</th>
+          <th style="min-width:70px">Estoque</th>
+          <th style="min-width:70px">Status</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <div class="section-title">Sem código de barras</div>
+  <div class="table-wrap">
+    <table id="t-sem">
+      <thead>
+        <tr>
+          <th style="min-width:200px">Produto</th>
+          <th style="min-width:110px">Marca</th>
+          <th style="min-width:100px">Categoria</th>
+          <th style="min-width:180px">ID Firestore</th>
+          <th style="min-width:90px">Preço</th>
+          <th style="min-width:70px">Estoque</th>
+          <th style="min-width:70px">Status</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+</div>
+
+<script type="module">
+import { initializeApp }
+  from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js';
+import { getFirestore, collection, getDocs, orderBy, query }
+  from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js';
+
+document.getElementById('meta-date').textContent =
+  new Date().toLocaleString('pt-BR', { dateStyle: 'long', timeStyle: 'short' });
+
+const cfg = {
+  apiKey:            'AIzaSyCT3BGvNWRzoOc3mT4lDRRfz6GISptkUzc',
+  authDomain:        'adegas-pf.firebaseapp.com',
+  projectId:         'adegas-pf',
+  storageBucket:     'adegas-pf.firebasestorage.app',
+  messagingSenderId: '688042256969',
+  appId:             '1:688042256969:web:110f697c3db4ee7b57ed98',
+};
+
+const esc = s => (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const brl = v => (v ?? 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+try {
+  const app  = initializeApp(cfg);
+  const db   = getFirestore(app);
+  const snap = await getDocs(query(collection(db, 'products'), orderBy('name')));
+  const all  = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+  const withCode = all.filter(p => (p.barcode || '').trim());
+  const noCode   = all.filter(p => !(p.barcode || '').trim());
+  const inactive = all.filter(p => p.active === false);
+
+  document.getElementById('s-total').textContent = all.length;
+  document.getElementById('s-com').textContent   = withCode.length;
+  document.getElementById('s-sem').textContent   = noCode.length;
+  document.getElementById('s-inat').textContent  = inactive.length;
+
+  const row = (p, showBarcode) => {
+    const statusBadge = p.active === false
+      ? '<span class="badge inativo">Inativo</span>'
+      : '<span class="badge ativo">Ativo</span>';
+    const codeCell = showBarcode
+      ? `<td class="col-code">${esc(p.barcode)}</td>`
+      : `<td class="col-id">${esc(p.id)}</td>`;
+    return `<tr>
+      <td class="col-name">${esc(p.name)}</td>
+      <td class="col-brand">${esc(p.brand || '—')}</td>
+      <td><span class="badge cat">${esc(p.category || '—')}</span></td>
+      ${codeCell}
+      <td class="col-price">${brl(p.price)}</td>
+      <td class="col-stock">${p.stock ?? 0}</td>
+      <td>${statusBadge}</td>
+    </tr>`;
+  };
+
+  const emptyRow = cols => `<tr class="empty-row"><td colspan="${cols}">Nenhum produto nesta seção.</td></tr>`;
+
+  document.querySelector('#t-com tbody').innerHTML =
+    withCode.length ? withCode.map(p => row(p, true)).join('') : emptyRow(7);
+  document.querySelector('#t-sem tbody').innerHTML =
+    noCode.length ? noCode.map(p => row(p, false)).join('') : emptyRow(7);
+
+  document.getElementById('status').style.display = 'none';
+  document.getElementById('output').style.display = '';
+} catch (e) {
+  document.getElementById('status').style.display = 'none';
+  document.getElementById('error').style.display  = '';
+  document.getElementById('error').textContent    = '❌ Erro ao conectar: ' + e.message;
+}
+</script>
+</body>
+</html>

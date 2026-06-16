@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Empório GO — Registro de Estoque</title>
+<link rel="icon" href="./assets/logo.png">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:      #0d1b2a;
+  --bg-2:    #0a1424;
+  --surface: #16263d;
+  --surface-2:#1d3251;
+  --line:    rgba(255,255,255,.08);
+  --gold:    #e8c44a;
+  --gold-dim:rgba(232,196,74,.5);
+  --text:    #f3f6fa;
+  --text-2:  #93a6bd;
+  --text-3:  #5d748f;
+  --green:   #22c55e;
+  --green-bg:rgba(34,197,94,.12);
+  --amber:   #f59e0b;
+  --amber-bg:rgba(245,158,11,.12);
+  --red:     #ef4444;
+}
+
+body {
+  background: radial-gradient(ellipse at 50% -10%, #1e3a5f 0%, #0d1b2a 55%, #060e18 100%);
+  min-height: 100dvh;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color: var(--text);
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ── Topbar ─────────────────────────────────────────────────── */
+.topbar {
+  position: sticky; top: 0; z-index: 20;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 18px;
+  background: rgba(6,14,24,.85);
+  backdrop-filter: blur(18px) saturate(160%);
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+  border-bottom: 1px solid var(--line);
+}
+.topbar-brand { display: flex; align-items: center; gap: 10px; }
+.topbar-logo {
+  width: 34px; height: 34px; border-radius: 50%;
+  border: 1.5px solid var(--gold-dim); object-fit: cover;
+  background: var(--surface);
+}
+.topbar-title { font-size: .82rem; font-weight: 800; letter-spacing: 2px; color: var(--gold); text-transform: uppercase; }
+.topbar-sub   { font-size: .62rem; color: var(--text-2); letter-spacing: 1.5px; text-transform: uppercase; }
+.topbar-actions { display: flex; align-items: center; gap: 6px; }
+.icon-btn {
+  width: 38px; height: 38px; border-radius: 10px;
+  background: rgba(255,255,255,.05); border: 1px solid var(--line);
+  color: var(--text-2); cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: background .15s, color .15s;
+}
+.icon-btn:hover { background: rgba(255,255,255,.1); color: var(--text); }
+
+/* ── Layout ─────────────────────────────────────────────────── */
+.wrap { max-width: 560px; margin: 0 auto; padding: 20px 16px 60px; }
+
+/* ── Scan card ──────────────────────────────────────────────── */
+.scan-card {
+  background: linear-gradient(160deg, var(--surface) 0%, var(--bg-2) 100%);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  padding: 24px 20px;
+  text-align: center;
+  box-shadow: 0 18px 44px rgba(0,0,0,.4);
+}
+.scan-icon {
+  width: 64px; height: 64px; margin: 0 auto 12px;
+  border-radius: 18px;
+  background: rgba(232,196,74,.1);
+  border: 1px solid var(--gold-dim);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--gold);
+}
+.scan-title { font-size: 1.15rem; font-weight: 800; margin-bottom: 4px; }
+.scan-hint  { font-size: .82rem; color: var(--text-2); margin-bottom: 18px; line-height: 1.5; }
+
+.scan-input-wrap { position: relative; margin-bottom: 12px; }
+.scan-input {
+  width: 100%;
+  font-family: 'SF Mono', 'Courier New', monospace;
+  font-size: 1.4rem; font-weight: 700; letter-spacing: 3px; text-align: center;
+  padding: 18px 16px;
+  border: 2px solid var(--gold-dim);
+  border-radius: 14px;
+  background: rgba(232,196,74,.05);
+  color: var(--text);
+  outline: none;
+  transition: border-color .15s, box-shadow .15s;
+}
+.scan-input::placeholder { color: var(--text-3); font-size: .95rem; letter-spacing: 1px; }
+.scan-input:focus { border-color: var(--gold); box-shadow: 0 0 0 4px rgba(232,196,74,.14); }
+
+.btn-cam {
+  width: 100%;
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  padding: 16px;
+  border-radius: 14px;
+  background: var(--gold);
+  color: #0d1b2a;
+  font-size: 1rem; font-weight: 800; letter-spacing: .5px;
+  border: none; cursor: pointer;
+  transition: background .15s, transform .1s;
+}
+.btn-cam:hover  { background: #f5d45a; }
+.btn-cam:active { transform: scale(.97); }
+.btn-cam svg { width: 22px; height: 22px; }
+
+/* ── Result area ────────────────────────────────────────────── */
+.result { margin-top: 20px; }
+.result:empty { display: none; }
+
+.card-status {
+  border-radius: 18px;
+  padding: 20px;
+  border: 1.5px solid;
+  animation: slide-up .28s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes slide-up { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+
+.card-status.exists { border-color: var(--green); background: var(--green-bg); }
+.card-status.new    { border-color: var(--amber); background: var(--amber-bg); }
+.card-status.error  { border-color: var(--red); background: rgba(239,68,68,.1); }
+
+.status-badge {
+  display: inline-flex; align-items: center; gap: 7px;
+  font-size: .72rem; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase;
+  padding: 5px 12px; border-radius: 20px; margin-bottom: 14px;
+}
+.status-badge.exists { background: var(--green); color: #03260f; }
+.status-badge.new    { background: var(--amber); color: #2a1a00; }
+.status-badge svg { width: 14px; height: 14px; }
+
+.prod-code {
+  font-family: 'SF Mono', 'Courier New', monospace;
+  font-size: .85rem; color: var(--text-2); letter-spacing: 1px; margin-bottom: 12px;
+}
+
+/* Existing product display */
+.prod-display { display: flex; gap: 14px; align-items: center; }
+.prod-thumb {
+  width: 64px; height: 64px; border-radius: 12px; flex-shrink: 0;
+  background: var(--surface-2); border: 1px solid var(--line);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.8rem; overflow: hidden;
+}
+.prod-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.prod-info { flex: 1; min-width: 0; text-align: left; }
+.prod-name  { font-size: 1.05rem; font-weight: 700; line-height: 1.3; margin-bottom: 4px; }
+.prod-meta  { font-size: .8rem; color: var(--text-2); display: flex; flex-wrap: wrap; gap: 6px 12px; }
+.prod-meta b { color: var(--text); font-weight: 600; }
+.chip {
+  display: inline-block; padding: 2px 9px; border-radius: 6px;
+  font-size: .7rem; font-weight: 600; background: rgba(255,255,255,.08); color: var(--text-2);
+}
+
+/* New product form */
+.form-grid { display: flex; flex-direction: column; gap: 12px; text-align: left; margin-top: 4px; }
+.field label {
+  display: block; font-size: .72rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .6px; color: var(--text-2); margin-bottom: 6px;
+}
+.field input, .field select {
+  width: 100%; padding: 13px 14px;
+  background: var(--bg-2); border: 1px solid var(--line); border-radius: 10px;
+  color: var(--text); font-size: 1rem; outline: none;
+  transition: border-color .15s, box-shadow .15s;
+}
+.field input:focus, .field select:focus { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(232,196,74,.12); }
+.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.cosmos-tag {
+  font-size: .72rem; color: var(--green); font-weight: 600; margin-top: 2px;
+  display: none; align-items: center; gap: 5px;
+}
+.cosmos-tag.show { display: flex; }
+.cosmos-tag svg { width: 13px; height: 13px; }
+
+.actions { display: flex; gap: 10px; margin-top: 18px; }
+.btn {
+  flex: 1; padding: 15px; border-radius: 12px; border: none; cursor: pointer;
+  font-size: .95rem; font-weight: 800; letter-spacing: .4px; transition: background .15s, transform .1s, opacity .15s;
+}
+.btn:active { transform: scale(.97); }
+.btn-primary { background: var(--gold); color: #0d1b2a; }
+.btn-primary:hover:not(:disabled) { background: #f5d45a; }
+.btn-primary:disabled { opacity: .55; cursor: default; }
+.btn-ghost { background: rgba(255,255,255,.06); color: var(--text-2); border: 1px solid var(--line); }
+.btn-ghost:hover { background: rgba(255,255,255,.12); color: var(--text); }
+.btn-success { background: var(--green); color: #03260f; }
+.btn-block { width: 100%; }
+
+/* ── Activity log ───────────────────────────────────────────── */
+.log-section { margin-top: 32px; }
+.log-title {
+  font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px;
+  color: var(--text-2); margin-bottom: 12px; padding-left: 4px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.log-count { background: rgba(255,255,255,.08); padding: 2px 9px; border-radius: 10px; font-size: .68rem; }
+.log-list { display: flex; flex-direction: column; gap: 7px; }
+.log-item {
+  display: flex; align-items: center; gap: 11px;
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: 11px; padding: 11px 13px;
+  animation: slide-up .25s ease;
+}
+.log-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+.log-dot.exists { background: var(--green); }
+.log-dot.new    { background: var(--amber); }
+.log-text { flex: 1; min-width: 0; }
+.log-name { font-size: .88rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.log-sub  { font-size: .72rem; color: var(--text-2); }
+.log-time { font-size: .7rem; color: var(--text-3); font-variant-numeric: tabular-nums; }
+.log-empty { text-align: center; color: var(--text-3); font-size: .82rem; padding: 24px 0; }
+
+/* ── Login overlay ──────────────────────────────────────────── */
+.login-overlay {
+  position: fixed; inset: 0; z-index: 100;
+  background: radial-gradient(ellipse at 50% -10%, #1e3a5f 0%, #0d1b2a 55%, #060e18 100%);
+  display: flex; align-items: center; justify-content: center; padding: 24px;
+}
+.login-box {
+  width: 100%; max-width: 360px; text-align: center;
+}
+.login-logo {
+  width: 78px; height: 78px; border-radius: 50%; margin: 0 auto 18px;
+  border: 2px solid var(--gold-dim); object-fit: cover; background: var(--surface);
+}
+.login-title { font-size: 1.5rem; font-weight: 900; letter-spacing: 3px; color: var(--gold); margin-bottom: 4px; }
+.login-sub   { font-size: .7rem; color: var(--text-2); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 28px; }
+.login-field { margin-bottom: 14px; text-align: left; }
+.login-field label { display: block; font-size: .7rem; font-weight: 600; text-transform: uppercase; color: var(--text-2); letter-spacing: .8px; margin-bottom: 7px; }
+.login-field input {
+  width: 100%; background: var(--bg-2); border: 1px solid var(--line); border-radius: 10px;
+  padding: 14px 15px; color: var(--text); font-size: 1rem; outline: none; transition: border-color .15s, box-shadow .15s;
+}
+.login-field input:focus { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(232,196,74,.14); }
+.login-err { color: #ff7070; font-size: .82rem; min-height: 18px; margin: 8px 0; }
+
+/* ── Toast ──────────────────────────────────────────────────── */
+.toast-host { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); z-index: 300; display: flex; flex-direction: column; gap: 8px; align-items: center; pointer-events: none; }
+.toast {
+  background: var(--surface-2); color: var(--text); border: 1px solid var(--line);
+  border-radius: 12px; padding: 13px 20px; font-size: .9rem; font-weight: 600;
+  box-shadow: 0 10px 30px rgba(0,0,0,.5); animation: toast-in .3s cubic-bezier(.34,1.56,.64,1);
+  display: flex; align-items: center; gap: 9px; max-width: 90vw;
+}
+.toast.success { border-color: var(--green); }
+.toast.danger  { border-color: var(--red); }
+.toast.fade { animation: toast-out .26s ease forwards; }
+@keyframes toast-in  { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes toast-out { to { opacity: 0; transform: translateY(16px); } }
+
+/* ── Camera scanner overlay ─────────────────────────────────── */
+.cam-overlay {
+  position: fixed; inset: 0; z-index: 400;
+  background: rgba(0,0,0,.85);
+  display: flex; align-items: center; justify-content: center; padding: 16px;
+}
+.cam-box {
+  background: var(--surface); border-radius: 18px; padding: 18px;
+  width: min(440px, 96vw); display: flex; flex-direction: column; gap: 14px;
+  box-shadow: 0 20px 50px rgba(0,0,0,.6);
+}
+.cam-head { display: flex; align-items: center; justify-content: space-between; }
+.cam-head span { font-weight: 700; font-size: .95rem; }
+.cam-x { background: none; border: none; color: var(--text); font-size: 1.4rem; cursor: pointer; padding: 2px 8px; }
+.cam-video-wrap { position: relative; border-radius: 12px; overflow: hidden; background: #000; aspect-ratio: 4/3; }
+.cam-video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.cam-frame {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none;
+}
+.cam-frame div {
+  width: 74%; height: 32%; border: 3px solid var(--gold);
+  border-radius: 10px; box-shadow: 0 0 0 9999px rgba(0,0,0,.45);
+}
+.cam-status { font-size: .82rem; color: var(--text-2); text-align: center; }
+
+.hidden { display: none !important; }
+
+.spinner {
+  width: 22px; height: 22px; border: 2.5px solid rgba(255,255,255,.15);
+  border-top-color: var(--gold); border-radius: 50%; animation: spin .7s linear infinite; margin: 0 auto;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.checking { text-align: center; padding: 24px; color: var(--text-2); font-size: .9rem; }
+.checking .spinner { margin-bottom: 12px; }
+</style>
+</head>
+<body>
+
+<!-- ── Login overlay ── -->
+<div class="login-overlay" id="login-overlay">
+  <div class="login-box">
+    <img class="login-logo" src="./assets/logo.png" alt="" onerror="this.style.display='none'">
+    <div class="login-title">EMPÓRIO GO</div>
+    <div class="login-sub">Registro de Estoque</div>
+    <div class="login-field">
+      <label for="login-email">E-mail</label>
+      <input id="login-email" type="email" placeholder="seu@email.com" autocomplete="username">
+    </div>
+    <div class="login-field">
+      <label for="login-pass">Senha</label>
+      <input id="login-pass" type="password" placeholder="••••••••" autocomplete="current-password">
+    </div>
+    <div class="login-err" id="login-err"></div>
+    <button class="btn btn-primary btn-block" id="login-btn">Entrar</button>
+  </div>
+</div>
+
+<!-- ── App ── -->
+<div id="app" class="hidden">
+  <div class="topbar">
+    <div class="topbar-brand">
+      <img class="topbar-logo" src="./assets/logo.png" alt="" onerror="this.style.display='none'">
+      <div>
+        <div class="topbar-title">Registro de Estoque</div>
+        <div class="topbar-sub" id="user-label">—</div>
+      </div>
+    </div>
+    <div class="topbar-actions">
+      <a href="./index.html" class="icon-btn" title="Painel admin">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
+      </a>
+      <button class="icon-btn" id="logout-btn" title="Sair">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <div class="scan-card">
+      <div class="scan-icon">
+        <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 5v14M7 5v14M11 5v14M15 5v14M19 5v14M21 5v14"/>
+        </svg>
+      </div>
+      <div class="scan-title">Escaneie o produto</div>
+      <div class="scan-hint">Use o leitor de código de barras<br>ou a câmera do celular</div>
+
+      <div class="scan-input-wrap">
+        <input id="scan-input" class="scan-input" inputmode="numeric" autocomplete="off"
+               placeholder="Código de barras…" autofocus>
+      </div>
+
+      <button class="btn-cam" id="cam-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        Escanear com a câmera
+      </button>
+    </div>
+
+    <div class="result" id="result"></div>
+
+    <div class="log-section">
+      <div class="log-title">
+        <span>Atividade da sessão</span>
+        <span class="log-count" id="log-count">0</span>
+      </div>
+      <div class="log-list" id="log-list">
+        <div class="log-empty">Nenhum produto escaneado ainda.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast-host" id="toast-host"></div>
+
+<script type="module">
+import { initializeApp }
+  from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js';
+import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut }
+  from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js';
+import { getFirestore, collection, query, where, getDocs, addDoc, doc, getDoc }
+  from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js';
+import { firebaseConfig }
+  from './scripts/firebase-config.js';
+
+const app  = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db   = getFirestore(app);
+const SAVED_KEY = '_kk'; // mesma chave do quiosque — login compartilhado
+
+const CATEGORIES = ['Cerveja', 'Refrigerante', 'Água', 'Energético', 'Destilado', 'Vinho', 'Suco', 'Dose', 'Cigarro', 'Outros'];
+const COSMOS_TOKEN = '82haA2Xclw-x7pepzbU0Yg';
+
+/* ── Helpers ────────────────────────────────────────────────── */
+const $ = s => document.querySelector(s);
+const esc  = s => (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const brl  = v => (v ?? 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+const norm = s => (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+
+function toast(msg, type = 'info') {
+  const host = $('#toast-host');
+  const t = document.createElement('div');
+  t.className = `toast ${type}`;
+  const ico = type === 'success'
+    ? '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>'
+    : type === 'danger'
+    ? '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>'
+    : '';
+  t.innerHTML = ico + `<span>${esc(msg)}</span>`;
+  host.appendChild(t);
+  setTimeout(() => { t.classList.add('fade'); setTimeout(() => t.remove(), 260); }, 2600);
+}
+
+/* ── Cosmos lookup ──────────────────────────────────────────── */
+async function cosmosLookup(barcode) {
+  try {
+    const res = await fetch(`https://api.cosmos.bluesoft.com.br/gtins/${barcode}.json`, {
+      headers: { 'X-Cosmos-Token': COSMOS_TOKEN, 'User-Agent': 'Cosmos/1.0' },
+    });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch { return null; }
+}
+function guessCategory(text) {
+  const d = norm(text);
+  const map = [
+    [['cerveja','chopp','pilsen','lager','ipa','weiss','stout'], 'Cerveja'],
+    [['refrigerante','coca','pepsi','guarana','fanta','sprite','soda','schweppes'], 'Refrigerante'],
+    [['suco','nectar','del valle','sufresh','ades'], 'Suco'],
+    [['agua','mineral','crystal','bonafont','indaia'], 'Água'],
+    [['energetico','energy','monster','red bull','burn','tnt','baly','fusion'], 'Energético'],
+    [['vodka','whisky','whiskey','gin','rum','cachaca','tequila','conhaque','licor','aguardente','bourbon','scotch'], 'Destilado'],
+    [['vinho','espumante','champagne','prosecco','frisante'], 'Vinho'],
+    [['cigarro','cigarette','cigarrilha','tabaco','fumo','marlboro','winston','lucky','derby','rothmans','camel'], 'Cigarro'],
+  ];
+  return map.find(([ks]) => ks.some(k => d.includes(k)))?.[1] || null;
+}
+
+/* ── Auth ───────────────────────────────────────────────────── */
+onAuthStateChanged(auth, async user => {
+  if (user) {
+    // Verifica se é staff (admin/vendedor) — só eles podem escrever
+    let role = null;
+    try {
+      const uDoc = await getDoc(doc(db, 'users', user.uid));
+      role = uDoc.exists() ? uDoc.data().role : null;
+    } catch {}
+    if (role !== 'admin' && role !== 'vendedor') {
+      localStorage.removeItem(SAVED_KEY); // evita reconexão em loop
+      $('#login-overlay').classList.remove('hidden');
+      $('#app').classList.add('hidden');
+      $('#login-err').textContent = 'Acesso restrito a administradores e vendedores.';
+      await signOut(auth);
+      return;
+    }
+    $('#user-label').textContent = (user.email || '').split('@')[0];
+    $('#login-overlay').classList.add('hidden');
+    $('#app').classList.remove('hidden');
+    focusInput();
+  } else {
+    // Tenta login salvo do quiosque
+    const raw = localStorage.getItem(SAVED_KEY);
+    if (raw) {
+      try {
+        const { e, p } = JSON.parse(atob(raw));
+        await signInWithEmailAndPassword(auth, e, p);
+        return;
+      } catch { localStorage.removeItem(SAVED_KEY); }
+    }
+    $('#login-overlay').classList.remove('hidden');
+    $('#app').classList.add('hidden');
+    $('#login-email').focus();
+  }
+});
+
+async function doLogin() {
+  const email = $('#login-email').value.trim();
+  const pass  = $('#login-pass').value;
+  const btn = $('#login-btn'), err = $('#login-err');
+  if (!email || !pass) { err.textContent = 'Preencha e-mail e senha.'; return; }
+  btn.disabled = true; btn.textContent = 'Entrando…'; err.textContent = '';
+  try {
+    await signInWithEmailAndPassword(auth, email, pass);
+    localStorage.setItem(SAVED_KEY, btoa(JSON.stringify({ e: email, p: pass })));
+  } catch {
+    err.textContent = 'E-mail ou senha incorretos.';
+    btn.disabled = false; btn.textContent = 'Entrar';
+  }
+}
+$('#login-btn').onclick = doLogin;
+$('#login-pass').onkeydown = e => { if (e.key === 'Enter') doLogin(); };
+
+$('#logout-btn').onclick = async () => {
+  localStorage.removeItem(SAVED_KEY);
+  await signOut(auth);
+  location.reload();
+};
+
+/* ── Scan input handling ────────────────────────────────────── */
+const input = $('#scan-input');
+function focusInput() { setTimeout(() => input.focus(), 50); }
+
+input.addEventListener('keydown', e => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    const code = input.value.trim();
+    if (code.length >= 6) processCode(code);
+  }
+});
+
+/* ── Core: process a scanned code ───────────────────────────── */
+let _busy = false;
+async function processCode(code) {
+  if (_busy) return;
+  _busy = true;
+  input.value = '';
+  const result = $('#result');
+  result.innerHTML = `<div class="checking"><div class="spinner"></div>Verificando código <strong>${esc(code)}</strong>…</div>`;
+
+  try {
+    // 1) Já existe no Firestore?
+    const snap = await getDocs(query(collection(db, 'products'), where('barcode', '==', code)));
+    if (!snap.empty) {
+      const p = { id: snap.docs[0].id, ...snap.docs[0].data() };
+      renderExists(p, code);
+      addLog({ name: p.name, sub: p.category || p.brand || '', type: 'exists' });
+      _busy = false;
+      return;
+    }
+    // 2) Novo — busca Cosmos para pré-preencher
+    result.innerHTML = `<div class="checking"><div class="spinner"></div>Produto novo. Buscando dados na Cosmos…</div>`;
+    const data = await cosmosLookup(code);
+    renderNew(code, data);
+  } catch (err) {
+    result.innerHTML = `<div class="card-status error">
+      <div class="status-badge" style="background:var(--red);color:#fff">Erro</div>
+      <p>${esc(err.message || 'Falha ao verificar o código.')}</p>
+    </div>`;
+  }
+  _busy = false;
+}
+
+/* ── Render: existing product ───────────────────────────────── */
+function renderExists(p, code) {
+  const result = $('#result');
+  const img = (p.image || (p.images && p.images[0]) || '');
+  result.innerHTML = `
+    <div class="card-status exists">
+      <span class="status-badge exists">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        Já cadastrado
+      </span>
+      <div class="prod-code">${esc(code)}</div>
+      <div class="prod-display">
+        <div class="prod-thumb">${img ? `<img src="${esc(img)}" alt="">` : '🍺'}</div>
+        <div class="prod-info">
+          <div class="prod-name">${esc(p.name || 'Sem nome')}</div>
+          <div class="prod-meta">
+            ${p.brand ? `<span><b>${esc(p.brand)}</b></span>` : ''}
+            <span class="chip">${esc(p.category || '—')}</span>
+            ${p.price != null ? `<span>${brl(p.price)}</span>` : ''}
+          </div>
+        </div>
+      </div>
+      <button class="btn btn-success btn-block" id="next-btn" style="margin-top:16px">Escanear próximo</button>
+    </div>`;
+  $('#next-btn').onclick = resetScan;
+}
+
+/* ── Render: new product form ───────────────────────────────── */
+function renderNew(code, data) {
+  const result = $('#result');
+  const cName  = data?.description || data?.ncm?.description || '';
+  const cBrand = data?.brand?.name || '';
+  const cCat   = guessCategory(`${cName} ${cBrand} ${data?.ncm?.description || ''}`) || 'Outros';
+  const found  = !!data;
+
+  result.innerHTML = `
+    <div class="card-status new">
+      <span class="status-badge new">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Novo produto
+      </span>
+      <div class="prod-code">${esc(code)}</div>
+      <div class="cosmos-tag ${found ? 'show' : ''}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        Dados encontrados na Cosmos
+      </div>
+      <form class="form-grid" id="new-form">
+        <div class="field">
+          <label>Nome do produto *</label>
+          <input name="name" value="${esc(cName)}" placeholder="Ex.: Brahma Chopp Lata 350ml" required autocomplete="off">
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label>Marca</label>
+            <input name="brand" value="${esc(cBrand)}" placeholder="Marca" autocomplete="off">
+          </div>
+          <div class="field">
+            <label>Categoria *</label>
+            <select name="category">
+              ${CATEGORIES.map(c => `<option value="${c}" ${c === cCat ? 'selected' : ''}>${c}</option>`).join('')}
+            </select>
+          </div>
+        </div>
+        <div class="field">
+          <label>Preço de venda (R$)</label>
+          <input name="price" type="number" min="0" step="0.01" placeholder="0,00" inputmode="decimal" autocomplete="off">
+        </div>
+      </form>
+      <div class="actions">
+        <button class="btn btn-ghost" id="cancel-btn" type="button">Cancelar</button>
+        <button class="btn btn-primary" id="save-btn" type="button">Cadastrar</button>
+      </div>
+    </div>`;
+
+  const form = $('#new-form');
+  const saveBtn = $('#save-btn');
+
+  const save = async () => {
+    const fd = Object.fromEntries(new FormData(form));
+    const name = (fd.name || '').trim();
+    if (!name) { toast('Informe o nome do produto.', 'danger'); form.querySelector('[name="name"]').focus(); return; }
+    saveBtn.disabled = true; saveBtn.textContent = 'Salvando…';
+    try {
+      // Dupla checagem de barcode antes de gravar
+      const dup = await getDocs(query(collection(db, 'products'), where('barcode', '==', code)));
+      if (!dup.empty) {
+        toast('Esse código já foi cadastrado por outra pessoa.', 'danger');
+        const p = { id: dup.docs[0].id, ...dup.docs[0].data() };
+        renderExists(p, code);
+        return;
+      }
+      await addDoc(collection(db, 'products'), {
+        name,
+        brand:    (fd.brand || '').trim(),
+        category: fd.category || 'Outros',
+        price:    parseFloat(fd.price) || 0,
+        barcode:  code,
+        stock:    0,          // sem quantidade — entra zerado
+        active:   true,
+        images:   [],
+        image:    '',
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      });
+      addLog({ name, sub: fd.category || '', type: 'new' });
+      toast(`✔ ${name} cadastrado!`, 'success');
+      resetScan();
+    } catch (err) {
+      toast(err.message || 'Erro ao cadastrar.', 'danger');
+      saveBtn.disabled = false; saveBtn.textContent = 'Cadastrar';
+    }
+  };
+
+  saveBtn.onclick = save;
+  form.addEventListener('submit', e => { e.preventDefault(); save(); });
+  $('#cancel-btn').onclick = resetScan;
+  if (!cName) form.querySelector('[name="name"]').focus();
+}
+
+function resetScan() {
+  $('#result').innerHTML = '';
+  focusInput();
+}
+
+/* ── Activity log (session only) ────────────────────────────── */
+const _log = [];
+function addLog({ name, sub, type }) {
+  _log.unshift({ name, sub, type, at: Date.now() });
+  const list = $('#log-list');
+  $('#log-count').textContent = _log.length;
+  list.innerHTML = _log.slice(0, 30).map(h => `
+    <div class="log-item">
+      <span class="log-dot ${h.type}"></span>
+      <div class="log-text">
+        <div class="log-name">${esc(h.name)}</div>
+        <div class="log-sub">${h.type === 'new' ? 'Cadastrado' : 'Já existia'}${h.sub ? ' · ' + esc(h.sub) : ''}</div>
+      </div>
+      <span class="log-time">${new Date(h.at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
+    </div>
+  `).join('');
+}
+
+/* ── Camera scanner (BarcodeDetector + ZXing fallback) ──────── */
+$('#cam-btn').onclick = async () => {
+  const code = await scanWithCamera();
+  if (code) processCode(code);
+  else focusInput();
+};
+
+function scanWithCamera() {
+  return new Promise(resolve => {
+    let stream = null, animFrame = null, settled = false, reader = null;
+    const overlay = document.createElement('div');
+    overlay.className = 'cam-overlay';
+    overlay.innerHTML = `
+      <div class="cam-box">
+        <div class="cam-head">
+          <span>📷 Escanear código</span>
+          <button class="cam-x" id="cam-close">✕</button>
+        </div>
+        <div class="cam-video-wrap">
+          <video class="cam-video" id="cam-video" autoplay playsinline muted></video>
+          <div class="cam-frame"><div></div></div>
+        </div>
+        <div class="cam-status" id="cam-status">Iniciando câmera…</div>
+      </div>`;
+    document.body.appendChild(overlay);
+
+    const status = overlay.querySelector('#cam-status');
+    const video  = overlay.querySelector('#cam-video');
+
+    const done = (result) => {
+      if (settled) return;
+      settled = true;
+      if (animFrame) cancelAnimationFrame(animFrame);
+      if (reader) { try { reader.reset(); } catch {} }
+      if (stream) stream.getTracks().forEach(t => t.stop());
+      overlay.remove();
+      resolve(result);
+    };
+    overlay.querySelector('#cam-close').onclick = () => done(null);
+    overlay.onclick = e => { if (e.target === overlay) done(null); };
+
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false })
+      .then(async s => {
+        stream = s; video.srcObject = s; await video.play();
+        status.textContent = 'Aponte para o código de barras…';
+        if ('BarcodeDetector' in window) {
+          const detector = new BarcodeDetector({ formats: ['ean_13','ean_8','code_128','code_39','upc_a','upc_e','itf','codabar'] });
+          const scan = async () => {
+            if (settled) return;
+            try { const codes = await detector.detect(video); if (codes.length) return done(codes[0].rawValue); } catch {}
+            animFrame = requestAnimationFrame(scan);
+          };
+          animFrame = requestAnimationFrame(scan);
+        } else {
+          status.textContent = 'Carregando leitor…';
+          const sc = document.createElement('script');
+          sc.src = 'https://unpkg.com/@zxing/library@0.20.0/umd/index.min.js';
+          sc.onload = () => {
+            reader = new ZXing.BrowserMultiFormatReader();
+            status.textContent = 'Aponte para o código de barras…';
+            reader.decodeFromVideoElement(video).then(r => done(r?.text ?? null)).catch(() => {});
+          };
+          sc.onerror = () => { status.textContent = 'Erro ao carregar o leitor. Use o leitor USB.'; };
+          document.head.appendChild(sc);
+        }
+      })
+      .catch(err => { status.textContent = 'Câmera indisponível: ' + err.message; });
+  });
+}
+
+/* ── Manter foco no input para o leitor USB ─────────────────── */
+document.addEventListener('click', e => {
+  if ($('#app').classList.contains('hidden')) return;
+  if (e.target.closest('input, select, button, a, .card-status')) return;
+  focusInput();
+});
+</script>
+</body>
+</html>

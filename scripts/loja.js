@@ -68,6 +68,8 @@ const S = {
     name: '', phone: '', address: '',
     number: '', complement: '', payment: 'pix', notes: ''
   },
+  customer:    {},
+  orders:      [],
   lastOrderId: null,
   layout: parseInt(localStorage.getItem('eg:layout') || '2', 10),
   imgTimer: null,
@@ -79,6 +81,40 @@ function loadCart() {
   catch { S.cart = []; }
 }
 function saveCart() { localStorage.setItem('eg:cart', JSON.stringify(S.cart)); }
+
+function loadCustomer() {
+  try { S.customer = JSON.parse(localStorage.getItem('eg:customer') || 'null') || {}; }
+  catch { S.customer = {}; }
+  // Pre-fill checkout with saved customer data
+  const c = S.customer;
+  if (c.name)       S.checkout.name       = c.name;
+  if (c.phone)      S.checkout.phone      = c.phone;
+  if (c.address)    S.checkout.address    = c.address;
+  if (c.number)     S.checkout.number     = c.number;
+  if (c.complement) S.checkout.complement = c.complement;
+}
+function saveCustomer(d) {
+  S.customer = { name: d.name, phone: d.phone, address: d.address, number: d.number || '', complement: d.complement || '' };
+  localStorage.setItem('eg:customer', JSON.stringify(S.customer));
+}
+
+function loadOrders() {
+  try { S.orders = JSON.parse(localStorage.getItem('eg:orders') || '[]'); }
+  catch { S.orders = []; }
+}
+function saveLocalOrder(o) {
+  S.orders.unshift({ ...o, id: Date.now().toString(36), date: new Date().toISOString() });
+  S.orders = S.orders.slice(0, 30);
+  localStorage.setItem('eg:orders', JSON.stringify(S.orders));
+}
+
+function formatOrderDate(iso) {
+  try {
+    const d = new Date(iso);
+    return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  } catch { return ''; }
+}
+const PAY_LABELS = { pix: 'PIX', credito: 'Crédito', debito: 'Débito', dinheiro: 'Dinheiro' };
 function cartCount() { return S.cart.reduce((n, i) => n + i.qty, 0); }
 function cartTotal() { return S.cart.reduce((n, i) => n + i.price * i.qty, 0); }
 
@@ -176,7 +212,7 @@ async function createOrder(data) {
 
 /* ─── WhatsApp ───────────────────────────────────────────────── */
 function getWAPhone() {
-  return (S.settings.lojaWhatsApp || S.settings.phone || '').replace(/\D/g, '');
+  return (S.settings.lojaWhatsApp || S.settings.phone || '92991392485').replace(/\D/g, '');
 }
 
 /* Mensagem rápida do carrinho — sem dados do cliente (ele informa no chat) */
@@ -225,10 +261,10 @@ function openWhatsApp(message) {
 
 /* ─── Image shimmer while loading ───────────────────────────── */
 function shimmerImages(container) {
-  container.querySelectorAll('.banner-art img, .product-card-img img, .cat-chip-icon img, .pd-img-section img').forEach(img => {
+  container.querySelectorAll('.banner-art img, .product-card-img img, .cat-chip-icon img, .pd2-img-col img, .pli-thumb img').forEach(img => {
     if (img.complete && img.naturalWidth) return;
 
-    const imgWrap = img.closest('.banner-art, .product-card-img, .cat-chip-icon, .pd-img-section');
+    const imgWrap = img.closest('.banner-art, .product-card-img, .cat-chip-icon, .pd2-img-col, .pli-thumb');
 
     img.style.opacity = '0';
     img.style.transition = 'opacity .3s';
@@ -276,10 +312,66 @@ function preloadImages() {
   urls.forEach(url => { (new Image()).src = url; });
 }
 
+/* ─── GSAP entrance animations ──────────────────────────────── */
+function animatePageIn(div, view) {
+  const g = window.gsap;
+  if (!g) return;
+  // One frame delay — ensures CSS page-enter transitions don't conflict
+  requestAnimationFrame(() => {
+    const q = s => Array.from(div.querySelectorAll(s));
+    const f = s => div.querySelector(s);
+    const base = { ease: 'power2.out', clearProps: 'all' };
+
+    if (view === 'home') {
+      const banner = f('.banner-wrap') || f('.banner-card');
+      if (banner) g.from(banner, { ...base, opacity: 0, y: 18, duration: 0.45 });
+      const chips = q('.cat-chip');
+      if (chips.length) g.from(chips, { ...base, opacity: 0, y: 12, duration: 0.35, stagger: 0.05, delay: 0.07 });
+      const cards = q('.product-card');
+      if (cards.length) g.from(cards, { ...base, opacity: 0, y: 16, duration: 0.38, stagger: 0.055, delay: 0.14 });
+    }
+
+    if (view === 'categories') {
+      const banners = q('.cat-banner-card');
+      if (banners.length) g.from(banners, { ...base, opacity: 0, x: -14, duration: 0.32, stagger: 0.06 });
+    }
+
+    if (view === 'products') {
+      const cards = q('.product-card');
+      if (cards.length) g.from(cards, { ...base, opacity: 0, y: 14, duration: 0.32, stagger: 0.05 });
+    }
+
+    if (view === 'product') {
+      const hero = f('.pd2-img-col');
+      const info = f('.pd2-info-col');
+      const btn  = f('.pd2-add-btn');
+      if (hero) g.from(hero, { ...base, opacity: 0, scale: 0.97, duration: 0.42, ease: 'power3.out' });
+      if (info) g.from(info, { ...base, opacity: 0, y: 18, duration: 0.35, delay: 0.09 });
+      if (btn)  g.from(btn,  { ...base, opacity: 0, y: 10, duration: 0.3,  delay: 0.18 });
+    }
+
+    if (view === 'cart') {
+      const items = q('.cart2-item');
+      if (items.length) g.from(items, { ...base, opacity: 0, x: -12, duration: 0.28, stagger: 0.055 });
+      const summary = f('.cart2-footer');
+      if (summary) g.from(summary, { ...base, opacity: 0, y: 12, duration: 0.28, delay: items.length * 0.055 });
+    }
+  });
+}
+
 /* ─── Navigation ─────────────────────────────────────────────── */
 // type: 'push' (slide in) | 'back' (slide back) | 'tab' (fade) | 'replace' (instant)
 function go(view, params = {}, type = 'push') {
   const root = document.getElementById('view-root');
+
+  // Se já está na mesma view (tab), só garante scroll no topo — sem re-render
+  if (type === 'tab' && view === S.view) {
+    const cur = document.getElementById('current-view');
+    if (cur) cur.scrollTop = 0;
+    updateBottomNav(view);
+    return;
+  }
+
   const prev = root.querySelector('#current-view');
 
   // Save outgoing page to cache before leaving (never save skeleton via 'replace')
@@ -304,6 +396,13 @@ function go(view, params = {}, type = 'push') {
   S.view       = view;
   S.viewParams = params;
   if (view === 'product') S.qty = 1;
+
+  // Sinaliza a view atual no #app para regras de CSS (ex: esconder blobs)
+  const appEl = document.getElementById('app');
+  if (appEl) {
+    appEl.className = appEl.className.replace(/\bview-\S+/g, '').trim();
+    appEl.classList.add(`view-${view}`);
+  }
 
   // Restore from cache or render fresh
   const key    = pageCacheKey(view, params);
@@ -349,6 +448,7 @@ function go(view, params = {}, type = 'push') {
   } else {
     shimmerImages(div);
     wireView(view, params, div);
+    animatePageIn(div, view);
   }
 
   div.scrollTop = div._savedScrollTop || 0;
@@ -572,29 +672,31 @@ function renderCategories() {
 
 /* PRODUCT LIST */
 function renderProductList(catId) {
-  const cat     = CATS.find(c => c.id === catId) || { label: catId };
+  const cat     = CATS.find(c => c.id === catId) || { label: String(catId || 'Produtos') };
   const prods   = S.products.filter(p => p.category === catId);
   const filters = buildFilters(catId, prods);
+  const title   = String(cat.label || 'Produtos').toUpperCase();
   return `
-    <div class="view-header">
-      <button class="btn-back" id="btn-back">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+    <div class="vhf">
+      <button class="vhf-back" id="btn-back">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="20" height="20">
           <path d="M19 12H5M12 19l-7-7 7-7"/>
         </svg>
       </button>
-      <div class="view-header-title">
-        <h2>${esc(cat.label)}</h2>
-        <p>${prods.length} produto${prods.length !== 1 ? 's' : ''}</p>
-      </div>
-      <button class="layout-toggle-btn" id="btn-layout-toggle">${S.layout === 2 ? ICON_COMPACT : ICON_EXPAND}</button>
+      <span class="vhf-title">${esc(title)}</span>
+      <button class="vhf-icon" id="btn-pl-search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20">
+          <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
+        </svg>
+      </button>
     </div>
     ${filters.length > 0 ? `
-      <div class="filter-chips">
-        ${filters.map((f, i) => `<button class="filter-chip${i === 0 ? ' active' : ''}" data-fid="${esc(f.id)}">${esc(f.label)}</button>`).join('')}
+      <div class="filter-tabs" id="filter-tabs">
+        ${filters.map((f, i) => `<button class="filter-tab${i === 0 ? ' active' : ''}" data-fid="${esc(f.id)}">${esc(f.label)}</button>`).join('')}
       </div>
     ` : ''}
     ${prods.length > 0
-      ? `<div class="products-grid${S.layout === 4 ? ' compact' : ''}" id="prod-list-grid">${prods.map(renderProductCard).join('')}</div>`
+      ? `<div class="plist" id="prod-list-grid">${prods.map(renderPLI).join('')}</div>`
       : `<div class="empty-state">
            <div class="empty-state-icon">
              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -606,6 +708,23 @@ function renderProductList(catId) {
          </div>`
     }
   `;
+}
+
+/* PRODUCT LIST ITEM (new list layout) */
+function renderPLI(p) {
+  const inStock = (p.stock ?? 1) > 0;
+  return `
+    <div class="pli" data-pid="${esc(p.id)}">
+      <div class="pli-thumb">${productImage(p)}</div>
+      <div class="pli-info">
+        <div class="pli-name">${esc(p.name)}</div>
+        ${p.brand ? `<div class="pli-var">${esc(p.brand)}</div>` : ''}
+        <div class="pli-price">${brl(p.price)}</div>
+      </div>
+      ${inStock
+        ? `<button class="pli-add" data-pid="${esc(p.id)}">+</button>`
+        : `<span class="pli-out">Esgotado</span>`}
+    </div>`;
 }
 
 /* PRODUCT CARD */
@@ -630,59 +749,62 @@ function renderProductCard(p) {
 
 /* PRODUCT DETAIL */
 function renderProductDetail(p) {
-  const inStock = (p.stock ?? 1) > 0;
-  const images  = getProductImages(p);
+  const inStock  = (p.stock ?? 1) > 0;
+  const images   = getProductImages(p);
   const firstImg = images[0] || '';
 
   return `
-    <div class="pd-page">
-      <button class="pd-back" id="btn-back">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="22" height="22">
+    <div class="pd2-page">
+      <button class="pd2-back" id="btn-back" aria-label="Voltar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="26" height="26">
           <path d="M19 12H5M12 19l-7-7 7-7"/>
         </svg>
       </button>
-      <div class="pd-split">
-        <div class="pd-img-section" id="pd-img-section">
+
+      <div class="pd2-hero">
+        <div class="pd2-img-col">
           ${firstImg
             ? `<img id="pd-main-img" src="${esc(firstImg)}" alt="${esc(p.name)}" loading="eager" />`
             : productImage(p)
           }
         </div>
-        <div class="pd-info">
-          ${p.brand ? `<p class="pd-brand">${esc(p.brand)}</p>` : ''}
-          <h2 class="pd-name">${esc(p.name)}</h2>
-          <p class="pd-price">${brl(p.price)}</p>
+
+        <div class="pd2-info-col">
+          <h2 class="pd2-name">${esc(p.name)}</h2>
+          ${p.brand ? `<p class="pd2-var">${esc(p.brand)}</p>` : ''}
+          <p class="pd2-price">${brl(p.price)}</p>
+
           ${inStock ? `
-            <div class="pd-qty-ctrl">
-              <button class="pd-qty-btn" id="qty-minus" ${S.qty <= 1 ? 'disabled' : ''}>−</button>
-              <span class="pd-qty-val" id="qty-val">${S.qty}</span>
-              <button class="pd-qty-btn" id="qty-plus">+</button>
+            <div class="pd2-qty-pill">
+              <button class="pd2-qty-btn" id="qty-minus" ${S.qty <= 1 ? 'disabled' : ''}>−</button>
+              <span class="pd2-qty-val" id="qty-val">${S.qty}</span>
+              <button class="pd2-qty-btn" id="qty-plus">+</button>
             </div>
-          ` : `<p class="pd-out-of-stock">Esgotado</p>`}
+          ` : `<p class="pd2-out">Esgotado</p>`}
         </div>
       </div>
+
       ${inStock ? `
-        <button class="pd-add-btn" id="btn-add-to-cart">
-          ADICIONAR AO CARRINHO
-        </button>
+        <button class="btn-primary-yellow pd2-add-btn" id="btn-add-to-cart">ADICIONAR AO CARRINHO</button>
       ` : ''}
-      <div class="pd-sections">
+
+      <div class="pd2-sections">
         ${p.description ? `
-          <div class="pd-section">
-            <p class="pd-section-label">Descrição</p>
-            <p class="pd-section-body">${esc(p.description)}</p>
+          <div class="pd2-section">
+            <p class="pd2-sec-label">DESCRIÇÃO</p>
+            <p class="pd2-sec-body">${esc(p.description)}</p>
           </div>
         ` : ''}
         ${p.teor ? `
-          <div class="pd-section">
-            <p class="pd-section-label">Teor Alcoólico</p>
-            <p class="pd-section-body">${esc(p.teor)}</p>
+          <div class="pd2-section">
+            <p class="pd2-sec-label">TEOR ALCOÓLICO</p>
+            <p class="pd2-sec-body">${esc(p.teor)}</p>
           </div>
         ` : ''}
         ${p.origem ? `
-          <div class="pd-section">
-            <p class="pd-section-label">Origem</p>
-            <p class="pd-section-body">${esc(p.origem)}</p>
+          <div class="pd2-section">
+            <p class="pd2-sec-label">ORIGEM</p>
+            <p class="pd2-sec-body">${esc(p.origem)}</p>
           </div>
         ` : ''}
       </div>
@@ -696,11 +818,20 @@ function renderCart() {
   const sub   = cartTotal();
   const total = sub + fee;
   return `
-    <div class="view-header">
-      <div class="view-header-title">
-        <h2>Carrinho</h2>
-        <p>${S.cart.length === 0 ? 'Vazio' : `${cartCount()} ${cartCount() === 1 ? 'item' : 'itens'}`}</p>
-      </div>
+    <div class="vhf">
+      <button class="vhf-back" id="btn-back">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="20" height="20">
+          <path d="M19 12H5M12 19l-7-7 7-7"/>
+        </svg>
+      </button>
+      <span class="vhf-title">MEU CARRINHO</span>
+      <button class="vhf-icon" id="btn-clear-cart-header" title="Limpar carrinho">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20">
+          <polyline points="3 6 5 6 21 6"/>
+          <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/>
+          <path d="M10 11v6"/><path d="M14 11v6"/>
+        </svg>
+      </button>
     </div>
     ${S.cart.length === 0 ? `
       <div class="empty-state" style="margin-top:40px">
@@ -714,28 +845,23 @@ function renderCart() {
         <p>Adicione produtos para fazer seu pedido.</p>
       </div>
     ` : `
-      <div class="cart-list">
+      <div class="cart2-list" id="cart2-list">
         ${S.cart.map(renderCartItem).join('')}
       </div>
-      <div class="cart-summary">
-        <div class="cart-summary-row">
-          <span>Subtotal</span><span>${brl(sub)}</span>
+      <div class="cart2-footer">
+        <div class="cart2-summary">
+          <div class="cart2-row cart2-sub">
+            <span>Subtotal</span><span>${brl(sub)}</span>
+          </div>
+          ${fee > 0 ? `
+          <div class="cart2-row cart2-fee">
+            <span>Taxa de entrega</span><span>${brl(fee)}</span>
+          </div>` : ''}
+          <div class="cart2-row cart2-total">
+            <span>TOTAL</span><span>${brl(total)}</span>
+          </div>
         </div>
-        <div class="cart-summary-row">
-          <span>Taxa de entrega</span>
-          <span>${fee === 0 ? '<strong style="color:var(--c-green)">Grátis</strong>' : brl(fee)}</span>
-        </div>
-        <div class="cart-summary-row total">
-          <span>Total</span><span>${brl(total)}</span>
-        </div>
-      </div>
-      <div class="cart-actions">
-        <button class="btn-whatsapp" id="btn-wa-cart">
-          ${waIcon(20)} Pedir pelo WhatsApp
-        </button>
-        <button class="btn-checkout" id="btn-go-checkout">
-          Confirmar pedido →
-        </button>
+        <button class="btn-primary-yellow" id="btn-go-checkout">FINALIZAR PEDIDO</button>
       </div>
     `}
   `;
@@ -743,21 +869,18 @@ function renderCart() {
 
 function renderCartItem(item) {
   return `
-    <div class="cart-item-card">
-      <div class="cart-item-thumb">${productImage({ art: item.art, image: item.image, category: item.category, name: item.name })}</div>
-      <div class="cart-item-info">
-        <div class="cart-item-name">${esc(item.name)}</div>
-        <div class="cart-item-unit">${brl(item.price)} / ${item.unit || 'un'}</div>
-        <div class="cart-item-subtotal">${brl(item.price * item.qty)}</div>
-      </div>
-      <div class="cart-item-right">
-        <div class="cart-qty-ctrl">
-          <button class="cart-qty-btn" data-cid="${esc(item.id)}" data-delta="-1">−</button>
-          <span class="cart-qty-val">${item.qty}</span>
-          <button class="cart-qty-btn" data-cid="${esc(item.id)}" data-delta="1">+</button>
+    <div class="cart2-item" data-cid="${esc(item.id)}">
+      <div class="cart2-thumb">${productImage({ art: item.art, image: item.image, category: item.category, name: item.name })}</div>
+      <div class="cart2-info">
+        <div class="cart2-name">${esc(item.name)}</div>
+        ${item.brand ? `<div class="cart2-var">${esc(item.brand)}</div>` : ''}
+        <div class="cart2-qty-ctrl">
+          <button class="cart2-qty-btn" data-cid="${esc(item.id)}" data-delta="-1">−</button>
+          <span class="cart2-qty-val">${item.qty}</span>
+          <button class="cart2-qty-btn" data-cid="${esc(item.id)}" data-delta="1">+</button>
         </div>
-        <button class="btn-cart-remove" data-cid="${esc(item.id)}">Remover</button>
       </div>
+      <div class="cart2-price">${brl(item.price * item.qty)}</div>
     </div>`;
 }
 
@@ -765,30 +888,35 @@ function renderCartItem(item) {
 function renderCheckout() {
   const d   = S.checkout;
   const fee = S.settings.deliveryFee || 0;
-  const total = cartTotal() + fee;
+  const sub   = cartTotal();
+  const total = sub + fee;
   const enabledPays = S.settings.lojaPayments || ['pix', 'credito', 'debito', 'dinheiro'];
   const PAY_OPTS = [
-    { id: 'pix',      label: 'PIX',     icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="5" y="5" width="3" height="3"/><rect x="16" y="5" width="3" height="3"/><rect x="5" y="16" width="3" height="3"/><path d="M14 14h3v3M14 17v3h3M17 14h3M20 17v3"/></svg>` },
-    { id: 'credito',  label: 'Crédito', icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>` },
-    { id: 'debito',   label: 'Débito',  icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/><line x1="5" y1="15" x2="9" y2="15"/></svg>` },
-    { id: 'dinheiro', label: 'Dinheiro',icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></svg>` },
+    { id: 'pix',      label: 'PIX' },
+    { id: 'credito',  label: 'Cartão de Crédito' },
+    { id: 'debito',   label: 'Cartão de Débito' },
+    { id: 'dinheiro', label: 'Dinheiro' },
   ].filter(p => enabledPays.includes(p.id));
 
+  // Determine if we have a saved address to show card vs form
+  const hasAddr = !!(d.address);
+
   return `
-    <div class="view-header">
-      <button class="btn-back" id="btn-back">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+    <div class="vhf">
+      <button class="vhf-back" id="btn-back">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="20" height="20">
           <path d="M19 12H5M12 19l-7-7 7-7"/>
         </svg>
       </button>
-      <div class="view-header-title">
-        <h2>Finalizar pedido</h2>
-        <p>Total: ${brl(total)}</p>
-      </div>
+      <span class="vhf-title">FINALIZAR PEDIDO</span>
+      <span class="vhf-icon"></span>
     </div>
-    <div class="checkout-form">
+
+    <div class="co2-body">
+
+      <!-- Dados do cliente -->
+      <div class="co2-sec-title">DADOS DO CLIENTE</div>
       <div class="checkout-section">
-        <div class="checkout-section-title">Seus dados</div>
         <div class="form-field">
           <label>Nome completo *</label>
           <input type="text" id="co-name" placeholder="Ex.: João Silva" value="${esc(d.name)}" autocomplete="name" />
@@ -799,53 +927,71 @@ function renderCheckout() {
         </div>
       </div>
 
-      <div class="checkout-section">
-        <div class="checkout-section-title">Endereço de entrega</div>
-        <div class="form-field">
-          <label>Rua / Avenida *</label>
-          <input type="text" id="co-address" placeholder="Ex.: Rua das Acácias" value="${esc(d.address)}" autocomplete="street-address" />
-        </div>
-        <div class="form-row">
-          <div class="form-field">
-            <label>Número</label>
-            <input type="text" id="co-number" placeholder="123" value="${esc(d.number)}" />
+      <!-- Endereço de entrega -->
+      <div class="co2-sec-title">ENDEREÇO DE ENTREGA</div>
+
+      ${hasAddr ? `
+        <div class="co2-addr-card" id="co2-addr-card">
+          <div class="co2-addr-info">
+            <div class="co2-addr-street">${esc(d.address)}${d.number ? ', ' + esc(d.number) : ''}</div>
+            ${d.complement ? `<div class="co2-addr-compl">${esc(d.complement)}</div>` : ''}
           </div>
+          <button class="co2-addr-change" id="btn-addr-change">Alterar</button>
+        </div>
+      ` : ''}
+
+      <div class="co2-addr-form${hasAddr ? ' hidden' : ''}" id="co2-addr-form">
+        <div class="checkout-section">
           <div class="form-field">
-            <label>Complemento</label>
-            <input type="text" id="co-complement" placeholder="Apto, Bairro…" value="${esc(d.complement)}" />
+            <label>Rua / Avenida *</label>
+            <input type="text" id="co-address" placeholder="Ex.: Rua das Acácias" value="${esc(d.address)}" autocomplete="street-address" />
+          </div>
+          <div class="form-row">
+            <div class="form-field">
+              <label>Número</label>
+              <input type="text" id="co-number" placeholder="123" value="${esc(d.number)}" />
+            </div>
+            <div class="form-field">
+              <label>Complemento</label>
+              <input type="text" id="co-complement" placeholder="Apto, Bairro…" value="${esc(d.complement)}" />
+            </div>
           </div>
         </div>
       </div>
 
+      <!-- Forma de pagamento -->
+      <div class="co2-sec-title">FORMA DE PAGAMENTO</div>
       <div class="checkout-section">
-        <div class="checkout-section-title">Forma de pagamento</div>
-        <div class="payment-grid">
+        <div class="co2-pay-list">
           ${PAY_OPTS.map(p => `
-            <div class="payment-option${d.payment === p.id ? ' selected' : ''}" data-pay="${p.id}">
-              <div class="payment-option-icon">${p.icon}</div>
-              <div class="payment-option-label">${p.label}</div>
-            </div>
+            <label class="co2-pay-opt">
+              <span class="co2-pay-radio${d.payment === p.id ? ' checked' : ''}" data-pay="${esc(p.id)}"></span>
+              <span class="co2-pay-label">${esc(p.label)}</span>
+              <input type="radio" name="co-payment" value="${esc(p.id)}" ${d.payment === p.id ? 'checked' : ''} style="display:none" />
+            </label>
           `).join('')}
         </div>
       </div>
 
+      <!-- Resumo do pedido -->
+      <div class="co2-sec-title">RESUMO DO PEDIDO</div>
       <div class="checkout-section">
-        <div class="checkout-section-title">Observações (opcional)</div>
-        <div class="form-field">
+        <div class="co2-summary">
+          <div class="co2-sum-row"><span>Subtotal</span><span>${brl(sub)}</span></div>
+          ${fee > 0 ? `<div class="co2-sum-row"><span>Taxa de entrega</span><span>${brl(fee)}</span></div>` : ''}
+          <div class="co2-sum-row co2-sum-total"><span>TOTAL</span><span>${brl(total)}</span></div>
+        </div>
+      </div>
+
+      <!-- Observações -->
+      <div class="co2-sec-title">OBSERVAÇÕES (OPCIONAL)</div>
+      <div class="checkout-section">
+        <div class="form-field co2-notes">
           <textarea id="co-notes" placeholder="Troco, observações sobre o pedido…">${esc(d.notes)}</textarea>
         </div>
       </div>
 
-      <div class="checkout-section">
-        <div class="cart-summary-row"><span>Subtotal</span><span>${brl(cartTotal())}</span></div>
-        <div class="cart-summary-row">
-          <span>Entrega</span>
-          <span>${fee === 0 ? '<strong style="color:var(--c-green)">Grátis</strong>' : brl(fee)}</span>
-        </div>
-        <div class="cart-summary-row total"><span>Total</span><span>${brl(total)}</span></div>
-      </div>
-
-      <button class="btn-confirm" id="btn-confirm">Confirmar pedido</button>
+      <button class="btn-primary-yellow" id="btn-confirm">CONFIRMAR PEDIDO</button>
     </div>
   `;
 }
@@ -1027,15 +1173,41 @@ function wireLayoutToggle(c, gridSel) {
   });
 }
 
+function wirePLIItems(container, prods) {
+  container.querySelectorAll('.pli').forEach(card => {
+    const pid = card.dataset.pid;
+    const product = S.products.find(p => p.id === pid);
+    if (!product) return;
+    card.addEventListener('click', e => {
+      if (e.target.closest('.pli-add')) return;
+      go('product', { product });
+    });
+  });
+  container.querySelectorAll('.pli-add').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const product = S.products.find(p => p.id === btn.dataset.pid);
+      if (!product) return;
+      addToCart(product, 1);
+      btn.textContent = '✓';
+      btn.style.cssText = 'background:var(--c-green);color:white';
+      clearTimeout(btn._resetTimer);
+      btn._resetTimer = setTimeout(() => { btn.textContent = '+'; btn.style.cssText = ''; }, 1200);
+    });
+  });
+}
+
 function wireProductList(c, catId) {
   const prods = S.products.filter(p => p.category === catId);
   const grid  = c.querySelector('#prod-list-grid');
 
-  c.querySelectorAll('.filter-chip').forEach(chip => {
-    chip.addEventListener('click', () => {
-      c.querySelectorAll('.filter-chip').forEach(ch => ch.classList.remove('active'));
-      chip.classList.add('active');
-      const fid = chip.dataset.fid;
+  c.querySelector('#btn-pl-search')?.addEventListener('click', () => go('home', {}, 'tab'));
+
+  c.querySelectorAll('.filter-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      c.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      const fid = tab.dataset.fid;
       let filtered = prods;
       if (fid !== 'all') {
         if      (fid === 'lata')    filtered = prods.filter(p => /lata/i.test(p.name));
@@ -1044,15 +1216,14 @@ function wireProductList(c, catId) {
       }
       if (grid) {
         grid.innerHTML = filtered.length > 0
-          ? filtered.map(renderProductCard).join('')
-          : `<div style="grid-column:span 2;padding:32px;text-align:center;color:var(--text-secondary)">Nenhum produto encontrado.</div>`;
-        wireProductCards(grid);
+          ? filtered.map(renderPLI).join('')
+          : `<div style="padding:32px;text-align:center;color:var(--text-secondary)">Nenhum produto encontrado.</div>`;
+        wirePLIItems(grid, filtered);
       }
     });
   });
 
-  if (grid) wireProductCards(grid);
-  wireLayoutToggle(c, '#prod-list-grid');
+  if (grid) wirePLIItems(grid, prods);
 }
 
 function wireProductDetail(c, product) {
@@ -1089,7 +1260,19 @@ function wireProductDetail(c, product) {
     addBtn.textContent = '✓ Adicionado!';
     addBtn.style.background = 'var(--c-green)';
     addBtn.style.color = 'white';
-    setTimeout(() => go('cart'), 750);
+    if (window.gsap) {
+      window.gsap.fromTo(addBtn,
+        { scale: 0.94 },
+        { scale: 1, duration: 0.5, ease: 'elastic.out(1, 0.5)' }
+      );
+      const badge = document.getElementById('nav-cart-badge');
+      if (badge) window.gsap.fromTo(badge, { scale: 0 }, { scale: 1, duration: 0.4, ease: 'back.out(2.5)' });
+    }
+    // Só vai pro carrinho se o usuário ainda estiver nesta tela de produto
+    const pid = product.id;
+    setTimeout(() => {
+      if (S.view === 'product' && S.viewParams?.product?.id === pid) go('cart');
+    }, 750);
   });
 }
 
@@ -1104,23 +1287,23 @@ function wireCart(c) {
     const fee   = S.settings.deliveryFee || 0;
     const sub   = cartTotal();
     const total = sub + fee;
-    const cnt   = cartCount();
 
-    const listEl = c.querySelector('.cart-list');
+    const listEl = c.querySelector('#cart2-list');
     if (listEl) { listEl.innerHTML = S.cart.map(renderCartItem).join(''); bindItems(); }
 
-    const titleP = c.querySelector('.view-header-title p');
-    if (titleP) titleP.textContent = `${cnt} ${cnt === 1 ? 'item' : 'itens'}`;
-
-    const rows = c.querySelectorAll('.cart-summary .cart-summary-row');
-    if (rows[0]) rows[0].querySelector('span:last-child').textContent = brl(sub);
-    if (rows[2]) rows[2].querySelector('span:last-child').textContent = brl(total);
+    // Update summary rows — target by class, never by index
+    const subRow = c.querySelector('.cart2-row.cart2-sub');
+    if (subRow) subRow.querySelector('span:last-child').textContent = brl(sub);
+    const feeRow = c.querySelector('.cart2-row.cart2-fee');
+    if (feeRow && fee > 0) feeRow.querySelector('span:last-child').textContent = brl(fee);
+    const totalRow = c.querySelector('.cart2-total');
+    if (totalRow) totalRow.querySelector('span:last-child').textContent = brl(total);
 
     updateCartBadge();
   }
 
   function bindItems() {
-    c.querySelectorAll('.cart-qty-btn').forEach(btn => {
+    c.querySelectorAll('.cart2-qty-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         const cid   = btn.dataset.cid;
         const delta = parseInt(btn.dataset.delta, 10);
@@ -1128,78 +1311,103 @@ function wireCart(c) {
         if (item) { setCartQty(cid, item.qty + delta); sync(); }
       });
     });
-    c.querySelectorAll('.btn-cart-remove').forEach(btn => {
-      btn.addEventListener('click', () => { removeFromCart(btn.dataset.cid); sync(); });
-    });
   }
 
   bindItems();
-  c.querySelector('#btn-wa-cart')?.addEventListener('click', () => openWhatsApp(buildCartMessage()));
+  c.querySelector('#btn-clear-cart-header')?.addEventListener('click', () => {
+    if (S.cart.length > 0 && confirm('Limpar carrinho?')) {
+      S.cart = []; saveCart(); updateCartBadge();
+      c.innerHTML = renderCart();
+      wireCart(c);
+    }
+  });
   c.querySelector('#btn-go-checkout')?.addEventListener('click', () => {
     if (S.cart.length > 0) go('checkout');
   });
 }
 
 function wireCheckout(c) {
-  c.querySelectorAll('.payment-option').forEach(opt => {
-    opt.addEventListener('click', () => {
-      S.checkout.payment = opt.dataset.pay;
-      c.querySelectorAll('.payment-option').forEach(o => o.classList.remove('selected'));
-      opt.classList.add('selected');
+  // Radio payment — listen on the whole row so taps on the label/text also work
+  c.querySelectorAll('.co2-pay-opt').forEach(opt => {
+    opt.addEventListener('click', e => {
+      e.preventDefault();
+      const radio = opt.querySelector('.co2-pay-radio');
+      if (!radio) return;
+      const pay = radio.dataset.pay;
+      S.checkout.payment = pay;
+      c.querySelectorAll('.co2-pay-radio').forEach(r => r.classList.remove('checked'));
+      radio.classList.add('checked');
+      c.querySelectorAll('input[name="co-payment"]').forEach(inp => {
+        inp.checked = (inp.value === pay);
+      });
     });
   });
 
-  c.querySelector('#btn-confirm')?.addEventListener('click', async () => {
+  // Address card toggle
+  c.querySelector('#btn-addr-change')?.addEventListener('click', () => {
+    const card = c.querySelector('#co2-addr-card');
+    const form = c.querySelector('#co2-addr-form');
+    if (card) card.style.display = 'none';
+    if (form) form.classList.remove('hidden');
+  });
+
+  c.querySelector('#btn-confirm')?.addEventListener('click', () => {
     const d = S.checkout;
     d.name       = c.querySelector('#co-name')?.value.trim()       || '';
     d.phone      = c.querySelector('#co-phone')?.value.trim()      || '';
-    d.address    = c.querySelector('#co-address')?.value.trim()    || '';
-    d.number     = c.querySelector('#co-number')?.value.trim()     || '';
-    d.complement = c.querySelector('#co-complement')?.value.trim() || '';
+
+    // Address: use form input if visible, otherwise keep card's existing address
+    const addrForm = c.querySelector('#co2-addr-form');
+    const formVisible = addrForm && !addrForm.classList.contains('hidden');
+    if (formVisible) {
+      d.address    = c.querySelector('#co-address')?.value.trim()    || '';
+      d.number     = c.querySelector('#co-number')?.value.trim()     || '';
+      d.complement = c.querySelector('#co-complement')?.value.trim() || '';
+    }
     d.notes      = c.querySelector('#co-notes')?.value.trim()      || '';
 
     if (!d.name)    { alert('Informe seu nome completo.'); return; }
     if (!d.phone)   { alert('Informe seu número de WhatsApp.'); return; }
     if (!d.address) { alert('Informe o endereço de entrega.'); return; }
 
-    const btn = c.querySelector('#btn-confirm');
-    btn.disabled = true;
-    btn.textContent = 'Enviando…';
+    const fee = S.settings.deliveryFee || 0;
+    const orderData = {
+      customer: {
+        name:       d.name,
+        phone:      d.phone.replace(/\D/g, ''),
+        address:    d.address,
+        number:     d.number,
+        complement: d.complement,
+      },
+      items: S.cart.map(i => ({
+        productId: i.id,
+        name:      i.name,
+        qty:       i.qty,
+        price:     i.price,
+        subtotal:  i.price * i.qty,
+      })),
+      subtotal:    cartTotal(),
+      deliveryFee: fee,
+      total:       cartTotal() + fee,
+      payment:     d.payment,
+      notes:       d.notes,
+    };
 
-    try {
-      const fee = S.settings.deliveryFee || 0;
-      S.lastOrderId = await createOrder({
-        customer: {
-          name: d.name,
-          phone: d.phone.replace(/\D/g, ''),
-          address: d.address,
-          number: d.number,
-          complement: d.complement,
-        },
-        items: S.cart.map(i => ({
-          productId: i.id,
-          name:      i.name,
-          qty:       i.qty,
-          price:     i.price,
-          subtotal:  i.price * i.qty,
-        })),
-        subtotal:    cartTotal(),
-        deliveryFee: fee,
-        total:       cartTotal() + fee,
-        payment:     d.payment,
-        notes:       d.notes,
-      });
-      S.cart = [];
-      saveCart();
-      updateCartBadge();
-      S.navStack = [];
-      go('success');
-    } catch (err) {
-      console.error(err);
-      btn.disabled = false;
-      btn.textContent = 'Confirmar pedido';
-      alert('Erro ao enviar. Tente novamente ou use o botão do WhatsApp.');
-    }
+    // 1. Save customer for future pre-fill
+    saveCustomer(d);
+    // 2. Save to local order history and grab generated ID
+    saveLocalOrder(orderData);
+    S.lastOrderId = S.orders[0].id;
+    // 3. Open WhatsApp automatically
+    openWhatsApp(buildOrderMessage());
+    // 4. Clear cart and go to success
+    S.cart = [];
+    saveCart();
+    updateCartBadge();
+    S.navStack = [];
+    go('success');
+    // 5. Fire-and-forget Firestore save (non-blocking)
+    createOrder(orderData).catch(err => console.warn('Firestore save failed:', err));
   });
 }
 
@@ -1208,57 +1416,135 @@ function wireSuccess(c) {
     const code = (S.lastOrderId || '').slice(-6).toUpperCase();
     openWhatsApp(`Olá! Acabei de fazer um pedido no app Empório GO. Código: #${code}`);
   });
-  c.querySelector('#btn-keep-shopping')?.addEventListener('click', () => {
-    S.navStack = [];
-    go('home');
-  });
+  c.querySelector('#btn-keep-shopping')?.addEventListener('click', () => go('home', {}, 'tab'));
 }
 
 /* ─── Init ───────────────────────────────────────────────────── */
 /* ORDERS */
+function renderOrderCard(order) {
+  const total   = order.total || ((order.subtotal || 0) + (order.deliveryFee || 0));
+  const items   = order.items || [];
+  const preview = items.slice(0, 2).map(i => `${i.qty}x ${i.name}`).join(', ');
+  const extra   = items.length > 2 ? ` +${items.length - 2} iten${items.length - 2 > 1 ? 's' : ''}` : '';
+  const shortId = (order.id || '').slice(-6).toUpperCase();
+  const dateStr = formatOrderDate(order.date);
+  const payLabel = PAY_LABELS[order.payment] || order.payment || '';
+  return `
+    <div class="order-card">
+      <div class="order-card-header">
+        <span class="order-card-id">#${shortId}</span>
+        <span class="order-card-date">${esc(dateStr)}</span>
+      </div>
+      <div class="order-card-items">${esc(preview + extra)}</div>
+      <div class="order-card-footer">
+        <span class="order-card-pay">${esc(payLabel)}</span>
+        <span class="order-card-total">${brl(total)}</span>
+      </div>
+    </div>`;
+}
+
 function renderOrders() {
   const phone = getWAPhone();
+  if (S.orders.length === 0) {
+    return `
+      <div class="view-header">
+        <div class="view-header-title">
+          <h2>Meus Pedidos</h2>
+          <p>Histórico de pedidos</p>
+        </div>
+      </div>
+      <div class="empty-state" style="margin-top:48px">
+        <div class="empty-state-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="5" y="2" width="14" height="20" rx="2"/>
+            <line x1="9" y1="7" x2="15" y2="7"/>
+            <line x1="9" y1="11" x2="15" y2="11"/>
+            <line x1="9" y1="15" x2="12" y2="15"/>
+          </svg>
+        </div>
+        <h4>Nenhum pedido ainda</h4>
+        <p>Seus pedidos aparecerão aqui após a confirmação.</p>
+        ${phone ? `<button class="btn-whatsapp" style="margin-top:24px" id="btn-wa-orders">${waIcon(20)} Falar no WhatsApp</button>` : ''}
+      </div>
+    `;
+  }
   return `
     <div class="view-header">
       <div class="view-header-title">
         <h2>Meus Pedidos</h2>
-        <p>Histórico de pedidos</p>
+        <p>${S.orders.length} pedido${S.orders.length !== 1 ? 's' : ''}</p>
       </div>
     </div>
-    <div class="empty-state" style="margin-top:48px">
-      <div class="empty-state-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="5" y="2" width="14" height="20" rx="2"/>
-          <line x1="9" y1="7" x2="15" y2="7"/>
-          <line x1="9" y1="11" x2="15" y2="11"/>
-          <line x1="9" y1="15" x2="12" y2="15"/>
-        </svg>
-      </div>
-      <h4>Nenhum pedido ainda</h4>
-      <p>Seus pedidos aparecerão aqui após a confirmação.</p>
-      ${phone ? `<button class="btn-whatsapp" style="margin-top:24px" id="btn-wa-orders">${waIcon(20)} Falar no WhatsApp</button>` : ''}
+    <div class="orders-list">
+      ${S.orders.map(renderOrderCard).join('')}
     </div>
   `;
 }
 
 /* ACCOUNT */
 function renderAccount() {
-  const cfg   = S.settings;
-  const phone = getWAPhone();
-  const name  = cfg.storeName || 'Empório GO';
-  const addr  = cfg.lojaAddress || cfg.address || '';
+  const cfg        = S.settings;
+  const phone      = getWAPhone();
+  const cu         = S.customer;
+  const hasProfile = !!cu.name;
+  const initial    = hasProfile ? cu.name.trim().charAt(0).toUpperCase() : '?';
   return `
     <div class="view-header">
       <div class="view-header-title"><h2>Minha Conta</h2></div>
     </div>
     <div class="account-body">
-      <div class="account-store-card">
-        <img src="assets/logo.png" alt="${esc(name)}" class="account-logo" />
-        <div>
-          <div class="account-store-name">${esc(name)}</div>
-          ${addr ? `<div class="account-store-addr">${esc(addr)}</div>` : ''}
+      <div class="account-profile-card">
+        <div class="account-avatar">${initial}</div>
+        <div class="account-profile-info">
+          ${hasProfile ? `
+            <div class="account-profile-name">${esc(cu.name)}</div>
+            ${cu.phone ? `<div class="account-profile-phone">${esc(cu.phone)}</div>` : ''}
+            ${cu.address ? `<div class="account-profile-addr">${esc(cu.address)}${cu.number ? ', ' + cu.number : ''}</div>` : ''}
+          ` : `
+            <div class="account-profile-name">Olá! Faça seu cadastro</div>
+            <div class="account-profile-phone">Seus dados ficam salvos para próximos pedidos</div>
+          `}
+        </div>
+        <button class="account-edit-btn" id="btn-edit-profile" title="Editar perfil">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18">
+            <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+            <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+          </svg>
+        </button>
+      </div>
+
+      <div id="profile-form" class="profile-form hidden">
+        <div class="profile-form-inner">
+          <div class="checkout-section-title">Editar perfil</div>
+          <div class="form-field">
+            <label>Nome completo</label>
+            <input type="text" id="pf-name" value="${esc(cu.name || '')}" placeholder="Ex.: João Silva" autocomplete="name" />
+          </div>
+          <div class="form-field">
+            <label>WhatsApp</label>
+            <input type="tel" id="pf-phone" value="${esc(cu.phone || '')}" placeholder="(92) 9 9999-9999" autocomplete="tel" />
+          </div>
+          <div class="form-field">
+            <label>Rua / Avenida</label>
+            <input type="text" id="pf-address" value="${esc(cu.address || '')}" placeholder="Ex.: Rua das Acácias" autocomplete="street-address" />
+          </div>
+          <div class="form-row">
+            <div class="form-field">
+              <label>Número</label>
+              <input type="text" id="pf-number" value="${esc(cu.number || '')}" placeholder="123" />
+            </div>
+            <div class="form-field">
+              <label>Complemento</label>
+              <input type="text" id="pf-complement" value="${esc(cu.complement || '')}" placeholder="Apto, Bloco…" />
+            </div>
+          </div>
+          <div class="profile-form-btns">
+            <button class="btn-profile-cancel" id="btn-profile-cancel">Cancelar</button>
+            <button class="btn-profile-save" id="btn-profile-save">Salvar</button>
+          </div>
         </div>
       </div>
+
       <div class="account-menu">
         ${phone ? `
           <button class="account-menu-item" id="btn-wa-account">
@@ -1278,6 +1564,19 @@ function renderAccount() {
           <span>Limpar carrinho</span>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="16" height="16"><polyline points="9 18 15 12 9 6"/></svg>
         </button>
+        ${hasProfile ? `
+          <button class="account-menu-item account-menu-danger" id="btn-clear-profile">
+            <span class="account-menu-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22">
+                <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
+                <circle cx="12" cy="7" r="4"/>
+                <line x1="18" y1="8" x2="23" y2="13"/><line x1="23" y1="8" x2="18" y2="13"/>
+              </svg>
+            </span>
+            <span>Apagar dados do perfil</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="16" height="16"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+        ` : ''}
       </div>
     </div>
   `;
@@ -1286,10 +1585,42 @@ function renderAccount() {
 function wireOrders(c) {
   c.querySelector('#btn-wa-orders')?.addEventListener('click', () => openWhatsApp('Olá! Gostaria de verificar meu pedido.'));
 }
+
 function wireAccount(c) {
   c.querySelector('#btn-wa-account')?.addEventListener('click', () => openWhatsApp('Olá! Gostaria de falar com o Empório GO.'));
   c.querySelector('#btn-clear-cart')?.addEventListener('click', () => {
     if (confirm('Limpar carrinho?')) { S.cart = []; saveCart(); updateCartBadge(); go('home', {}, 'tab'); }
+  });
+  c.querySelector('#btn-clear-profile')?.addEventListener('click', () => {
+    if (confirm('Apagar seus dados de cadastro?')) {
+      S.customer = {};
+      localStorage.removeItem('eg:customer');
+      go('account', {}, 'tab');
+    }
+  });
+
+  const editBtn     = c.querySelector('#btn-edit-profile');
+  const profileForm = c.querySelector('#profile-form');
+  editBtn?.addEventListener('click', () => {
+    profileForm?.classList.toggle('hidden');
+    if (!profileForm?.classList.contains('hidden')) {
+      profileForm.querySelector('#pf-name')?.focus();
+    }
+  });
+
+  c.querySelector('#btn-profile-cancel')?.addEventListener('click', () => {
+    profileForm?.classList.add('hidden');
+  });
+
+  c.querySelector('#btn-profile-save')?.addEventListener('click', () => {
+    const name       = c.querySelector('#pf-name')?.value.trim()       || '';
+    const phone      = c.querySelector('#pf-phone')?.value.trim()      || '';
+    const address    = c.querySelector('#pf-address')?.value.trim()    || '';
+    const number     = c.querySelector('#pf-number')?.value.trim()     || '';
+    const complement = c.querySelector('#pf-complement')?.value.trim() || '';
+    if (!name) { alert('Informe seu nome.'); return; }
+    saveCustomer({ name, phone, address, number, complement });
+    go('account', {}, 'tab');
   });
 }
 
@@ -1330,6 +1661,8 @@ function renderSkeleton() {
 
 async function init() {
   loadCart();
+  loadCustomer();
+  loadOrders();
 
   // Mostra o app shell com skeleton imediatamente
   const splash = document.getElementById('splash');
@@ -1353,8 +1686,21 @@ async function init() {
   // Pré-carrega imagens em background para que fiquem em cache do browser
   preloadImages();
 
-  // Substitui skeleton pelo conteúdo real (fade, sem slide)
-  go('home', {}, 'replace');
+  // Fade-out do skeleton via callback (sem await — evita race condition com a nav)
+  const launchHome = () => go('home', {}, 'replace');
+  if (window.gsap) {
+    window.gsap.to(skelDiv, { opacity: 0, duration: 0.18, ease: 'power1.in', onComplete: launchHome });
+  } else {
+    skelDiv.style.transition = 'opacity 0.18s';
+    skelDiv.style.opacity = '0';
+    setTimeout(launchHome, 180);
+  }
 }
 
 init().catch(console.error);
+
+// Elimina qualquer seleção de texto no instante em que ela é criada
+document.addEventListener('selectionchange', () => {
+  const sel = window.getSelection();
+  if (sel && sel.toString().length > 0) sel.removeAllRanges();
+});

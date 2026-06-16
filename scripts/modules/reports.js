@@ -3,16 +3,16 @@
  * Relatório financeiro completo: bruto x líquido, formas de pagamento,
  * fiados, produtos mais vendidos, horários de pico, entregas, doses/copão.
  */
-import { db, fmt, icon, clearNode, manausNow } from '../core.js';
+import { db, fmt, icon, clearNode, manausNow, auth } from '../core.js';
 import { productImage } from '../product-art.js';
 
 export const meta = {
   id: 'reports',
-  label: 'Relatórios',
+  label: 'Histórico',
   icon: 'trendUp',
-  title: 'Relatórios',
-  subtitle: 'Análise financeira do empório',
-  roles: ['admin']
+  title: 'Histórico',
+  subtitle: 'Resumo de vendas',
+  roles: ['admin', 'vendedor']
 };
 
 // Taxas estimadas de cartão (%). Sobrescritas por settings/company se existir.
@@ -29,6 +29,7 @@ const PERIODS = [
 let state = { period: '30', data: null };
 
 export async function render(root) {
+  if (!auth.isAdmin()) { await renderSellerHistory(root); return; }
   clearNode(root);
   root.innerHTML = `
     <div class="page-header">
@@ -309,4 +310,80 @@ function paymentBreakdown(byPay, bruto) {
           <span class="rep-pay-val">${fmt.currency(r.value)}</span>
         </div>`).join('')}
     </div>`;
+}
+
+/* ─── Visão simplificada para vendedor ───────────────────────── */
+async function renderSellerHistory(root) {
+  clearNode(root);
+  root.innerHTML = `
+    <div class="page-header">
+      <h3>Histórico do dia</h3>
+      <div id="hist-date" class="text-mute small"></div>
+    </div>
+    <div id="hist-body" style="display:flex;flex-direction:column;gap:var(--sp-4)">
+      <div class="rep-loading">Carregando…</div>
+    </div>
+  `;
+
+  const { startOfDay } = manausNow();
+  const allSales = await db.list('sales', { orderBy: 'createdAt', orderDir: 'desc' });
+  const today = allSales.filter(s => (s.createdAt || 0) >= startOfDay);
+
+  const dateStr = new Date().toLocaleDateString('pt-BR', { timeZone: 'America/Manaus', weekday: 'long', day: '2-digit', month: 'long' });
+  root.querySelector('#hist-date').textContent = dateStr;
+
+  const body = root.querySelector('#hist-body');
+
+  // Totais
+  const total    = today.reduce((s, v) => s + (v.total || 0), 0);
+  const payTally = {};
+  today.forEach(s => { payTally[s.paymentMethod] = (payTally[s.paymentMethod] || 0) + (s.total || 0); });
+  const PAY = { dinheiro: 'Dinheiro', pix: 'PIX', debito: 'Débito', credito: 'Crédito', fiado: 'Fiado' };
+
+  body.innerHTML = `
+    <!-- KPI -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--sp-3)">
+      <div class="kpi-card">
+        <div class="kpi-label">Total hoje</div>
+        <div class="kpi-value">${fmt.currency(total)}</div>
+        <div class="kpi-sub">${today.length} venda${today.length !== 1 ? 's' : ''}</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Formas de pagamento</div>
+        <div style="margin-top:var(--sp-2)">
+          ${Object.entries(payTally).map(([k, v]) =>
+            `<div style="display:flex;justify-content:space-between;font-size:.85rem;padding:2px 0">
+               <span class="text-mute">${PAY[k] || k}</span>
+               <span class="bold">${fmt.currency(v)}</span>
+             </div>`).join('') || '<span class="text-mute small">Sem vendas</span>'}
+        </div>
+      </div>
+    </div>
+
+    <!-- Lista de vendas -->
+    <div class="table-wrap">
+      <div class="table-scroll">
+        <table class="data-table">
+          <thead><tr>
+            <th>Horário</th><th>Itens</th><th>Pagamento</th><th class="cell-num">Total</th>
+          </tr></thead>
+          <tbody>
+            ${today.length === 0 ? `<tr><td colspan="4"><div class="empty-state">${icon('sales',{size:40})}<h4>Nenhuma venda hoje</h4></div></td></tr>` :
+              today.map(s => {
+                const time = s.createdAt
+                  ? new Date(s.createdAt).toLocaleTimeString('pt-BR', { timeZone: 'America/Manaus', hour: '2-digit', minute: '2-digit' })
+                  : '--:--';
+                const items = (s.items || []).map(i => `${i.qty}× ${i.name}`).join(', ');
+                return `<tr>
+                  <td class="cell-mono">${time}</td>
+                  <td style="font-size:.82rem;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${items}</td>
+                  <td><span class="badge">${PAY[s.paymentMethod] || s.paymentMethod || '-'}</span></td>
+                  <td class="cell-num bold">${fmt.currency(s.total)}</td>
+                </tr>`;
+              }).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
 }

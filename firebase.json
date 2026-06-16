@@ -13,6 +13,7 @@
     "rewrites": [
       { "source": "/instalar",      "destination": "/instalar.html" },
       { "source": "/seed-produtos", "destination": "/seed-produtos.html" },
+      { "source": "/cadastro",      "destination": "/cadastro.html" },
       { "source": "/loja",          "destination": "/loja.html" },
       { "source": "/loja/**", "destination": "/loja.html" },
       { "source": "**",       "destination": "/index.html" }

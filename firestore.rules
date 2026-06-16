@@ -52,6 +52,8 @@ service cloud.firestore {
     match /settings/{id} {
       allow read:   if true;    // loja pública lê configurações
       allow write:  if isAdmin();
+      // Vendedores precisam incrementar o contador de sequência de vendas
+      allow write:  if isStaff() && id == 'counter';
     }
 
     // === CLIENTES ===
@@ -105,6 +107,11 @@ service cloud.firestore {
                        (isDeliverer() && resource.data.delivery.delivererId == request.auth.uid
                           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['delivery', 'updatedAt', 'status']));
       allow delete: if isAdmin();
+    }
+
+    // === DEV TOOLS (temporário — remover antes de produção) ===
+    match /devtools/{id} {
+      allow read, write: if true;
     }
 
     // === FALLBACK ===

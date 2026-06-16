@@ -23,3 +23,12 @@ jobs:
           channelId: live
           projectId: adegas-pf
 
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Deploy Firestore Rules
+        run: node scripts/deploy-rules.mjs
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}

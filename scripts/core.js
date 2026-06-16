@@ -219,108 +219,103 @@ export const ui = {
     });
   },
 
-  // Abre câmera e lê código de barras — retorna o código ou null se cancelado.
-  // Usa BarcodeDetector nativo (Chrome/Edge/Android) com fallback para ZXing.
-  scanBarcode() {
-    const body = document.createElement('div');
-    body.innerHTML = `
-      <div id="scan-wrap" style="position:relative;background:#000;border-radius:10px;
-           overflow:hidden;aspect-ratio:4/3;max-height:280px;margin-bottom:12px">
-        <video id="scan-video" autoplay playsinline muted
-               style="width:100%;height:100%;object-fit:cover;display:block"></video>
-        <div style="position:absolute;inset:0;pointer-events:none;
-                    background:linear-gradient(rgba(0,0,0,.4) 0%,transparent 30%,transparent 70%,rgba(0,0,0,.4) 100%)">
-          <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
-                      width:220px;height:88px;border:2px solid #d4a843;border-radius:6px;
-                      box-shadow:0 0 0 9999px rgba(0,0,0,.35)"></div>
-        </div>
-      </div>
-      <p id="scan-hint" style="text-align:center;font-size:.82rem;color:var(--text-3);line-height:1.5">
-        Aponte a câmera para o código de barras do produto
-      </p>
-    `;
-
-    return new Promise(async (resolve) => {
+  async scanBarcode() {
+    return new Promise((resolve) => {
       let stream = null;
-      let active = true;
+      let animFrame = null;
+      let settled = false;
 
-      const finish = (code) => {
-        active = false;
+      // Own overlay — does NOT touch modal-host so the product form stays open
+      const overlay = document.createElement('div');
+      overlay.style.cssText = [
+        'position:fixed;inset:0;z-index:9999;',
+        'background:rgba(0,0,0,.78);',
+        'display:flex;align-items:center;justify-content:center;',
+      ].join('');
+      overlay.innerHTML = `
+        <div style="background:var(--surface-1,#1c1c1e);border-radius:14px;padding:20px 20px 16px;
+                    width:min(400px,96vw);display:flex;flex-direction:column;gap:14px;
+                    box-shadow:0 8px 40px rgba(0,0,0,.6);">
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <span style="font-weight:600;font-size:.95rem;">📷 Escanear código de barras</span>
+            <button id="_scan-x" style="background:none;border:none;cursor:pointer;font-size:1.3rem;
+                    line-height:1;color:var(--text-1,#fff);padding:4px;">✕</button>
+          </div>
+          <div style="position:relative;border-radius:10px;overflow:hidden;background:#000;aspect-ratio:4/3;">
+            <video id="_scan-video" autoplay playsinline muted style="width:100%;height:100%;object-fit:cover;display:block;"></video>
+            <div style="position:absolute;inset:0;pointer-events:none;display:flex;align-items:center;justify-content:center;">
+              <div style="width:72%;height:34%;border:2.5px solid rgba(212,175,55,.95);border-radius:8px;
+                          box-shadow:0 0 0 9999px rgba(0,0,0,.42);"></div>
+            </div>
+          </div>
+          <p id="_scan-status" style="color:var(--text-2,#aaa);font-size:.82rem;text-align:center;margin:0;">
+            Iniciando câmera…
+          </p>
+          <button id="_scan-cancel" style="background:none;border:1px solid var(--border,#444);
+                  border-radius:8px;padding:10px;cursor:pointer;color:var(--text-1,#fff);font-size:.9rem;">
+            Cancelar
+          </button>
+        </div>
+      `;
+      document.body.appendChild(overlay);
+
+      const done = (result) => {
+        if (settled) return;
+        settled = true;
+        if (animFrame) cancelAnimationFrame(animFrame);
         if (stream) stream.getTracks().forEach(t => t.stop());
-        ui.closeModal(code);
-        resolve(code);
+        overlay.remove();
+        resolve(result);
       };
 
-      const cancelBtn = el('button', { class: 'btn btn-ghost', type: 'button',
-        onClick: () => finish(null) }, 'Cancelar');
+      overlay.querySelector('#_scan-x').onclick = () => done(null);
+      overlay.querySelector('#_scan-cancel').onclick = () => done(null);
 
-      ui.modal({ title: '📷 Escanear código de barras', narrow: true, body, footer: [cancelBtn] })
-        .then(() => { active = false; if (stream) stream.getTracks().forEach(t => t.stop()); });
+      const statusEl = overlay.querySelector('#_scan-status');
+      const video = overlay.querySelector('#_scan-video');
 
-      const setHint = (t) => { const h = document.getElementById('scan-hint'); if (h) h.textContent = t; };
-      const setError = (msg) => {
-        const w = document.getElementById('scan-wrap');
-        if (w) w.innerHTML = `
-          <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;
-                      height:200px;gap:10px;color:var(--danger)">
-            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-              <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-            </svg>
-            <strong style="font-size:.95rem">${fmt.escape(msg)}</strong>
-          </div>`;
-      };
+      navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false })
+        .then(async (s) => {
+          stream = s;
+          video.srcObject = s;
+          await video.play();
+          statusEl.textContent = 'Aponte para o código de barras…';
 
-      try {
-        stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 } }
+          if ('BarcodeDetector' in window) {
+            const detector = new BarcodeDetector({ formats: ['ean_13', 'ean_8', 'code_128', 'code_39', 'upc_a', 'upc_e', 'itf', 'codabar'] });
+            const scan = async () => {
+              if (settled) return;
+              try {
+                const codes = await detector.detect(video);
+                if (codes.length) { done(codes[0].rawValue); return; }
+              } catch (_) {}
+              animFrame = requestAnimationFrame(scan);
+            };
+            animFrame = requestAnimationFrame(scan);
+          } else {
+            statusEl.textContent = 'Carregando leitor…';
+            const script = document.createElement('script');
+            script.src = 'https://unpkg.com/@zxing/library@0.20.0/umd/index.min.js';
+            script.onload = () => {
+              const reader = new ZXing.BrowserMultiFormatReader();
+              statusEl.textContent = 'Aponte para o código de barras…';
+              reader.decodeFromVideoElement(video)
+                .then(result => done(result?.text ?? null))
+                .catch(() => {});
+              overlay.querySelector('#_scan-cancel').onclick = () => {
+                try { reader.reset(); } catch (_) {}
+                done(null);
+              };
+            };
+            script.onerror = () => {
+              statusEl.textContent = 'Erro ao carregar leitor. Tente o leitor USB.';
+            };
+            document.head.appendChild(script);
+          }
+        })
+        .catch((err) => {
+          statusEl.textContent = `Câmera indisponível: ${err.message}`;
         });
-        const video = document.getElementById('scan-video');
-        if (!video || !active) return;
-        video.srcObject = stream;
-        await video.play();
-
-        // 1ª opção: BarcodeDetector nativo (Chrome ≥83, Edge ≥83, Android Chrome)
-        if ('BarcodeDetector' in window) {
-          const formats = ['ean_13','ean_8','upc_a','upc_e','code_128','code_39','itf','qr_code'];
-          const det = new BarcodeDetector({ formats });
-          const loop = async () => {
-            if (!active) return;
-            try {
-              const hits = await det.detect(video);
-              if (hits.length) { finish(hits[0].rawValue); return; }
-            } catch {}
-            requestAnimationFrame(loop);
-          };
-          requestAnimationFrame(loop);
-          return;
-        }
-
-        // Fallback: ZXing (carregado dinamicamente)
-        setHint('Carregando leitor de câmera…');
-        if (!window.ZXing) {
-          await new Promise((res, rej) => {
-            const s = document.createElement('script');
-            s.src = 'https://unpkg.com/@zxing/library@0.20.0/umd/index.min.js';
-            s.onload = res; s.onerror = rej;
-            document.head.appendChild(s);
-          });
-        }
-        setHint('Aponte a câmera para o código de barras do produto');
-        const reader = new window.ZXing.BrowserMultiFormatReader();
-        reader.decodeFromVideoDevice(undefined, video, (result, err) => {
-          if (!active) { try { reader.reset(); } catch {} return; }
-          if (result) { reader.reset(); finish(result.getText()); }
-        });
-
-      } catch (err) {
-        const msg = err?.name === 'NotAllowedError'
-          ? 'Permissão de câmera negada. Libere nas configurações do navegador.'
-          : err?.name === 'NotFoundError'
-          ? 'Nenhuma câmera encontrada no dispositivo.'
-          : (err?.message || 'Câmera indisponível.');
-        setError(msg);
-        setHint('Use o leitor USB ou digite o código manualmente.');
-      }
     });
   }
 };
@@ -575,7 +570,11 @@ export const db = {
   async nextSaleCode() {
     const counter = await this.get('settings', 'counter') || { id: 'counter', saleSeq: 0 };
     const next = (counter.saleSeq || 0) + 1;
-    await this.createWithId('settings', 'counter', { saleSeq: next });
+    try {
+      await this.createWithId('settings', 'counter', { saleSeq: next });
+    } catch {
+      // regra ainda não propagada — continua com sequência local
+    }
     return next;
   }
 };
