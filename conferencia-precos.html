@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Empório GO — Conferência de Preços</title>
+<link rel="icon" href="./assets/logo.png">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:      #0d1b2a;
+  --bg-2:    #0a1424;
+  --surface: #16263d;
+  --surface-2:#1d3251;
+  --line:    rgba(255,255,255,.08);
+  --gold:    #e8c44a;
+  --gold-dim:rgba(232,196,74,.5);
+  --text:    #f3f6fa;
+  --text-2:  #93a6bd;
+  --text-3:  #5d748f;
+  --green:   #22c55e;
+  --green-bg:rgba(34,197,94,.12);
+  --amber:   #f59e0b;
+  --amber-bg:rgba(245,158,11,.12);
+  --red:     #ef4444;
+}
+
+body {
+  background: radial-gradient(ellipse at 50% -10%, #1e3a5f 0%, #0d1b2a 55%, #060e18 100%);
+  min-height: 100dvh;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color: var(--text);
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ── Topbar ─────────────────────────────────────────────────── */
+.topbar {
+  position: sticky; top: 0; z-index: 20;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 18px;
+  background: rgba(6,14,24,.85);
+  backdrop-filter: blur(18px) saturate(160%);
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+  border-bottom: 1px solid var(--line);
+}
+.topbar-brand { display: flex; align-items: center; gap: 10px; }
+.topbar-logo {
+  width: 34px; height: 34px; border-radius: 50%;
+  border: 1.5px solid var(--gold-dim); object-fit: cover; background: var(--surface);
+}
+.topbar-title { font-size: .82rem; font-weight: 800; letter-spacing: 2px; color: var(--gold); text-transform: uppercase; }
+.topbar-sub   { font-size: .62rem; color: var(--text-2); letter-spacing: 1.5px; text-transform: uppercase; }
+.topbar-actions { display: flex; align-items: center; gap: 6px; }
+.icon-btn {
+  width: 38px; height: 38px; border-radius: 10px;
+  background: rgba(255,255,255,.05); border: 1px solid var(--line);
+  color: var(--text-2); cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: background .15s, color .15s;
+}
+.icon-btn:hover { background: rgba(255,255,255,.1); color: var(--text); }
+
+/* ── Layout ─────────────────────────────────────────────────── */
+.wrap { max-width: 720px; margin: 0 auto; padding: 16px 14px 80px; }
+
+/* ── Tabs ───────────────────────────────────────────────────── */
+.tabs { display: flex; gap: 8px; margin-bottom: 14px; }
+.tab {
+  flex: 1; padding: 12px; border-radius: 12px; border: 1px solid var(--line);
+  background: rgba(255,255,255,.04); color: var(--text-2);
+  font-size: .9rem; font-weight: 700; cursor: pointer; transition: all .15s;
+  display: flex; align-items: center; justify-content: center; gap: 7px;
+}
+.tab.active { background: var(--gold); color: #0d1b2a; border-color: var(--gold); }
+.tab .badge-n {
+  background: rgba(0,0,0,.18); color: inherit; font-size: .72rem; font-weight: 800;
+  padding: 1px 8px; border-radius: 9px;
+}
+.tab:not(.active) .badge-n { background: rgba(245,158,11,.22); color: var(--amber); }
+
+/* ── Filters ────────────────────────────────────────────────── */
+.filters { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+.filters input, .filters select {
+  background: var(--bg-2); border: 1px solid var(--line); border-radius: 10px;
+  padding: 11px 13px; color: var(--text); font-size: .9rem; outline: none;
+}
+.filters input { flex: 1; min-width: 140px; }
+.filters input:focus, .filters select:focus { border-color: var(--gold); }
+
+/* ── Summary ────────────────────────────────────────────────── */
+.summary { font-size: .76rem; color: var(--text-2); margin-bottom: 12px; padding-left: 2px; }
+.summary strong { color: var(--gold); }
+
+/* ── Product card ───────────────────────────────────────────── */
+.cat-head {
+  font-size: .68rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1.4px;
+  color: var(--text-3); margin: 16px 0 8px; padding-left: 4px;
+}
+.pcard {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 14px;
+  padding: 13px 14px; margin-bottom: 9px; transition: border-color .15s;
+}
+.pcard.has-sug { border-color: var(--gold-dim); background: linear-gradient(160deg, rgba(232,196,74,.06), var(--surface)); }
+.pcard-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 11px; }
+.pcard-name { font-size: .94rem; font-weight: 700; line-height: 1.3; }
+.pcard-meta { font-size: .72rem; color: var(--text-2); margin-top: 2px; }
+.pcard-cur { font-size: .72rem; color: var(--text-3); white-space: nowrap; text-align: right; line-height: 1.5; }
+.pcard-cur b { color: var(--text); font-weight: 700; }
+
+.sug-row { display: flex; gap: 9px; }
+.sug-field { flex: 1; }
+.sug-field label {
+  display: block; font-size: .62rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .6px; color: var(--text-3); margin-bottom: 5px;
+}
+.sug-field .inp-wrap { position: relative; }
+.sug-field .prefix {
+  position: absolute; left: 11px; top: 50%; transform: translateY(-50%);
+  font-size: .85rem; color: var(--text-3); pointer-events: none;
+}
+.sug-field input {
+  width: 100%; background: var(--bg-2); border: 1px solid var(--line); border-radius: 10px;
+  padding: 12px 12px 12px 28px; color: var(--text); font-size: 1rem; outline: none;
+  font-variant-numeric: tabular-nums; transition: border-color .15s, box-shadow .15s;
+}
+.sug-field.qty input { padding-left: 12px; }
+.sug-field input:focus { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(232,196,74,.14); }
+.sug-field input.saved { border-color: var(--green); }
+
+.save-tag { font-size: .66rem; margin-top: 5px; min-height: 13px; }
+.save-tag.ok { color: var(--green); }
+.save-tag.saving { color: var(--amber); }
+
+/* ── Review card ────────────────────────────────────────────── */
+.rcard {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 14px;
+  padding: 13px 14px; margin-bottom: 9px; display: flex; gap: 12px; align-items: flex-start;
+}
+.rcard input[type=checkbox] { width: 20px; height: 20px; margin-top: 2px; accent-color: var(--gold); flex-shrink: 0; }
+.rcard-body { flex: 1; min-width: 0; }
+.rcard-name { font-size: .92rem; font-weight: 700; margin-bottom: 7px; }
+.diff-line { display: flex; gap: 7px; align-items: center; font-size: .8rem; margin-bottom: 4px; }
+.diff-line .lbl { color: var(--text-3); width: 58px; flex-shrink: 0; }
+.diff-old { color: var(--text-3); text-decoration: line-through; }
+.diff-arrow { color: var(--text-3); }
+.diff-new { color: var(--gold); font-weight: 800; }
+.diff-up   { color: var(--green); font-size: .72rem; }
+.diff-down { color: var(--red); font-size: .72rem; }
+.rcard-foot { display:flex; justify-content: space-between; align-items:center; margin-top:7px; }
+.rcard-by { font-size: .66rem; color: var(--text-3); }
+.discard-btn { background: none; border: none; color: var(--text-3); font-size: .72rem; cursor: pointer; text-decoration: underline; }
+.discard-btn:hover { color: var(--red); }
+
+/* ── Action bar ─────────────────────────────────────────────── */
+.actionbar {
+  position: sticky; bottom: 0; z-index: 15;
+  display: flex; gap: 9px; padding: 12px 0 0;
+  margin-top: 14px;
+  background: linear-gradient(transparent, var(--bg) 30%);
+}
+.btn {
+  flex: 1; padding: 14px; border-radius: 12px; border: none; cursor: pointer;
+  font-size: .92rem; font-weight: 800; letter-spacing: .3px; transition: background .15s, transform .1s, opacity .15s;
+}
+.btn:active { transform: scale(.98); }
+.btn-primary { background: var(--gold); color: #0d1b2a; }
+.btn-primary:hover:not(:disabled) { background: #f5d45a; }
+.btn:disabled { opacity: .45; cursor: default; }
+.btn-ghost { background: rgba(255,255,255,.06); color: var(--text); border: 1px solid var(--line); }
+.btn-ghost:hover:not(:disabled) { background: rgba(255,255,255,.12); }
+.btn-block { width: 100%; }
+
+.empty { text-align: center; color: var(--text-3); font-size: .88rem; padding: 50px 16px; }
+.loading { text-align: center; color: var(--text-2); font-size: 1rem; padding: 60px 0; }
+
+/* ── Login overlay ──────────────────────────────────────────── */
+.login-overlay {
+  position: fixed; inset: 0; z-index: 100;
+  background: radial-gradient(ellipse at 50% -10%, #1e3a5f 0%, #0d1b2a 55%, #060e18 100%);
+  display: flex; align-items: center; justify-content: center; padding: 24px;
+}
+.login-box { width: 100%; max-width: 360px; text-align: center; }
+.login-logo {
+  width: 78px; height: 78px; border-radius: 50%; margin: 0 auto 18px;
+  border: 2px solid var(--gold-dim); object-fit: cover; background: var(--surface);
+}
+.login-title { font-size: 1.5rem; font-weight: 900; letter-spacing: 3px; color: var(--gold); margin-bottom: 4px; }
+.login-sub   { font-size: .7rem; color: var(--text-2); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 28px; }
+.login-field { margin-bottom: 14px; text-align: left; }
+.login-field label { display: block; font-size: .7rem; font-weight: 600; text-transform: uppercase; color: var(--text-2); letter-spacing: .8px; margin-bottom: 7px; }
+.login-field input {
+  width: 100%; background: var(--bg-2); border: 1px solid var(--line); border-radius: 10px;
+  padding: 14px 15px; color: var(--text); font-size: 1rem; outline: none; transition: border-color .15s, box-shadow .15s;
+}
+.login-field input:focus { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(232,196,74,.14); }
+.login-err { color: #ff7070; font-size: .82rem; min-height: 18px; margin: 8px 0; }
+.login-btn { width: 100%; padding: 15px; border-radius: 12px; border: none; cursor: pointer; font-size: .95rem; font-weight: 800; background: var(--gold); color: #0d1b2a; }
+.login-btn:disabled { opacity: .55; }
+
+/* ── Toast ──────────────────────────────────────────────────── */
+.toast-host { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); z-index: 300; display: flex; flex-direction: column; gap: 8px; align-items: center; pointer-events: none; }
+.toast {
+  background: var(--surface-2); color: var(--text); border: 1px solid var(--line);
+  border-radius: 12px; padding: 13px 20px; font-size: .9rem; font-weight: 600;
+  box-shadow: 0 10px 30px rgba(0,0,0,.5); animation: toast-in .3s cubic-bezier(.34,1.56,.64,1);
+  display: flex; align-items: center; gap: 9px; max-width: 90vw;
+}
+.toast.success { border-color: var(--green); }
+.toast.danger  { border-color: var(--red); }
+.toast.fade { animation: toast-out .26s ease forwards; }
+@keyframes toast-in  { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes toast-out { to { opacity: 0; transform: translateY(16px); } }
+
+.hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<!-- ── Login overlay ── -->
+<div class="login-overlay" id="login-overlay">
+  <div class="login-box">
+    <img class="login-logo" src="./assets/logo.png" alt="" onerror="this.style.display='none'">
+    <div class="login-title">EMPÓRIO GO</div>
+    <div class="login-sub">Conferência de Preços</div>
+    <div class="login-field">
+      <label for="login-email">E-mail</label>
+      <input id="login-email" type="email" placeholder="seu@email.com" autocomplete="username">
+    </div>
+    <div class="login-field">
+      <label for="login-pass">Senha</label>
+      <input id="login-pass" type="password" placeholder="••••••••" autocomplete="current-password">
+    </div>
+    <div class="login-err" id="login-err"></div>
+    <button class="login-btn" id="login-btn">Entrar</button>
+  </div>
+</div>
+
+<!-- ── App ── -->
+<div id="app" class="hidden">
+  <div class="topbar">
+    <div class="topbar-brand">
+      <img class="topbar-logo" src="./assets/logo.png" alt="" onerror="this.style.display='none'">
+      <div>
+        <div class="topbar-title">Conferência de Preços</div>
+        <div class="topbar-sub" id="user-label">—</div>
+      </div>
+    </div>
+    <div class="topbar-actions">
+      <a href="./index.html" class="icon-btn" title="Painel admin">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
+      </a>
+      <button class="icon-btn" id="logout-btn" title="Sair">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <div class="tabs">
+      <button class="tab active" id="tab-fill" data-tab="fill">📝 Preencher</button>
+      <button class="tab" id="tab-review" data-tab="review">✅ Revisar <span class="badge-n" id="pending-n">0</span></button>
+    </div>
+
+    <!-- PREENCHER -->
+    <div id="view-fill">
+      <div class="filters">
+        <input id="search" type="search" placeholder="🔎 Buscar produto…" autocomplete="off">
+        <select id="cat-filter"><option value="">Todas categorias</option></select>
+      </div>
+      <div class="summary" id="fill-summary"></div>
+      <div id="fill-list"><div class="loading">⏳ Carregando produtos…</div></div>
+    </div>
+
+    <!-- REVISAR -->
+    <div id="view-review" class="hidden">
+      <div class="summary" id="review-summary"></div>
+      <div id="review-list"></div>
+      <div class="actionbar hidden" id="review-actions">
+        <button class="btn btn-ghost" id="apply-sel">Aplicar selecionados</button>
+        <button class="btn btn-primary" id="apply-all">Aplicar todos</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast-host" id="toast-host"></div>
+
+<script type="module">
+import { initializeApp }
+  from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js';
+import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut }
+  from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js';
+import { getFirestore, collection, getDocs, query, orderBy, doc, getDoc, updateDoc, writeBatch, deleteField }
+  from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js';
+import { firebaseConfig }
+  from './scripts/firebase-config.js';
+
+const app  = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db   = getFirestore(app);
+const SAVED_KEY = '_kk'; // login compartilhado com quiosque/cadastro
+
+/* ── Helpers ─────────────────────────────────────────────────── */
+const $ = s => document.querySelector(s);
+const esc = s => (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const brl = v => (v ?? 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+const norm = s => (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+const parsePrice = v => { const n = parseFloat(String(v).replace(/\./g,'').replace(',', '.')); return isFinite(n) ? n : null; };
+const parseQty = v => { const n = parseInt(String(v).replace(/\D/g,''), 10); return isFinite(n) ? n : null; };
+
+let CURRENT_USER = '';
+let PRODUCTS = [];
+
+function toast(msg, type = 'info') {
+  const host = $('#toast-host');
+  const t = document.createElement('div');
+  t.className = `toast ${type}`;
+  t.textContent = msg;
+  host.appendChild(t);
+  setTimeout(() => { t.classList.add('fade'); setTimeout(() => t.remove(), 260); }, 2400);
+}
+
+/* ── Auth ────────────────────────────────────────────────────── */
+onAuthStateChanged(auth, async user => {
+  if (user) {
+    let role = null;
+    try {
+      const uDoc = await getDoc(doc(db, 'users', user.uid));
+      role = uDoc.exists() ? uDoc.data().role : null;
+    } catch {}
+    if (role !== 'admin' && role !== 'vendedor') {
+      localStorage.removeItem(SAVED_KEY);
+      $('#login-overlay').classList.remove('hidden');
+      $('#app').classList.add('hidden');
+      $('#login-err').textContent = 'Acesso restrito a administradores e vendedores.';
+      await signOut(auth);
+      return;
+    }
+    CURRENT_USER = (user.email || '').split('@')[0];
+    $('#user-label').textContent = CURRENT_USER;
+    $('#login-overlay').classList.add('hidden');
+    $('#app').classList.remove('hidden');
+    loadProducts();
+  } else {
+    const raw = localStorage.getItem(SAVED_KEY);
+    if (raw) {
+      try { const { e, p } = JSON.parse(atob(raw)); await signInWithEmailAndPassword(auth, e, p); return; }
+      catch { localStorage.removeItem(SAVED_KEY); }
+    }
+    $('#login-overlay').classList.remove('hidden');
+    $('#app').classList.add('hidden');
+    $('#login-email').focus();
+  }
+});
+
+async function doLogin() {
+  const email = $('#login-email').value.trim();
+  const pass  = $('#login-pass').value;
+  const btn = $('#login-btn'), err = $('#login-err');
+  if (!email || !pass) { err.textContent = 'Preencha e-mail e senha.'; return; }
+  btn.disabled = true; btn.textContent = 'Entrando…'; err.textContent = '';
+  try {
+    await signInWithEmailAndPassword(auth, email, pass);
+    localStorage.setItem(SAVED_KEY, btoa(JSON.stringify({ e: email, p: pass })));
+  } catch {
+    err.textContent = 'E-mail ou senha incorretos.';
+    btn.disabled = false; btn.textContent = 'Entrar';
+  }
+}
+$('#login-btn').onclick = doLogin;
+$('#login-pass').onkeydown = e => { if (e.key === 'Enter') doLogin(); };
+$('#logout-btn').onclick = async () => { localStorage.removeItem(SAVED_KEY); await signOut(auth); location.reload(); };
+
+/* ── Carregar produtos ───────────────────────────────────────── */
+async function loadProducts() {
+  try {
+    const snap = await getDocs(query(collection(db, 'products'), orderBy('name')));
+    PRODUCTS = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+      .filter(p => (p.barcode || '').trim());     // só com código de barras
+    buildCatFilter();
+    renderFill();
+    updatePendingCount();
+  } catch (e) {
+    $('#fill-list').innerHTML = `<div class="empty">❌ Erro ao carregar: ${esc(e.message)}</div>`;
+  }
+}
+
+function buildCatFilter() {
+  const cats = [...new Set(PRODUCTS.map(p => p.category || 'Outros'))].sort();
+  const sel = $('#cat-filter');
+  sel.innerHTML = '<option value="">Todas categorias</option>' +
+    cats.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
+}
+
+/* ── Aba PREENCHER ───────────────────────────────────────────── */
+function renderFill() {
+  const q = norm($('#search').value);
+  const cat = $('#cat-filter').value;
+  let list = PRODUCTS.slice();
+  if (cat) list = list.filter(p => (p.category || 'Outros') === cat);
+  if (q) list = list.filter(p => norm(p.name).includes(q) || norm(p.brand).includes(q) || (p.barcode||'').includes(q));
+
+  const withSug = PRODUCTS.filter(hasSug).length;
+  $('#fill-summary').innerHTML = `<strong>${PRODUCTS.length}</strong> produtos com código · <strong>${withSug}</strong> com sugestão pendente`;
+
+  if (!list.length) { $('#fill-list').innerHTML = `<div class="empty">Nenhum produto encontrado.</div>`; return; }
+
+  // agrupar por categoria
+  const groups = {};
+  list.forEach(p => { const c = p.category || 'Outros'; (groups[c] = groups[c] || []).push(p); });
+  const cats = Object.keys(groups).sort();
+
+  $('#fill-list').innerHTML = cats.map(c => `
+    <div class="cat-head">${esc(c)}</div>
+    ${groups[c].map(fillCard).join('')}
+  `).join('');
+
+  // wire inputs
+  list.forEach(p => {
+    const priceEl = document.getElementById(`p_${p.id}`);
+    const qtyEl   = document.getElementById(`q_${p.id}`);
+    if (priceEl) priceEl.oninput = () => scheduleSave(p.id);
+    if (qtyEl)   qtyEl.oninput   = () => scheduleSave(p.id);
+  });
+}
+
+function fillCard(p) {
+  const sp = p.suggestedPrice != null ? String(p.suggestedPrice).replace('.', ',') : '';
+  const sq = p.suggestedStock != null ? p.suggestedStock : '';
+  return `
+  <div class="pcard ${hasSug(p) ? 'has-sug' : ''}" id="card_${p.id}">
+    <div class="pcard-top">
+      <div>
+        <div class="pcard-name">${esc(p.name)}</div>
+        <div class="pcard-meta">${esc(p.brand || '')}${p.brand ? ' · ' : ''}cód ${esc(p.barcode)}</div>
+      </div>
+      <div class="pcard-cur">
+        atual: <b>${brl(p.price)}</b><br>
+        estoque: <b>${p.stock ?? 0}</b>
+      </div>
+    </div>
+    <div class="sug-row">
+      <div class="sug-field">
+        <label>Preço sugerido</label>
+        <div class="inp-wrap">
+          <span class="prefix">R$</span>
+          <input id="p_${p.id}" inputmode="decimal" placeholder="0,00" value="${sp}">
+        </div>
+      </div>
+      <div class="sug-field qty">
+        <label>Qtd sugerida</label>
+        <div class="inp-wrap">
+          <input id="q_${p.id}" inputmode="numeric" placeholder="0" value="${sq}">
+        </div>
+      </div>
+    </div>
+    <div class="save-tag" id="tag_${p.id}"></div>
+  </div>`;
+}
+
+const saveTimers = {};
+function scheduleSave(id) {
+  const tag = document.getElementById(`tag_${id}`);
+  if (tag) { tag.className = 'save-tag saving'; tag.textContent = 'salvando…'; }
+  clearTimeout(saveTimers[id]);
+  saveTimers[id] = setTimeout(() => saveSug(id), 650);
+}
+
+async function saveSug(id) {
+  const p = PRODUCTS.find(x => x.id === id);
+  if (!p) return;
+  const priceEl = document.getElementById(`p_${id}`);
+  const qtyEl   = document.getElementById(`q_${id}`);
+  const priceVal = priceEl.value.trim();
+  const qtyVal   = qtyEl.value.trim();
+  const price = priceVal === '' ? null : parsePrice(priceVal);
+  const qty   = qtyVal === '' ? null : parseQty(qtyVal);
+
+  const upd = { };
+  upd.suggestedPrice = price == null ? deleteField() : price;
+  upd.suggestedStock = qty   == null ? deleteField() : qty;
+  if (price == null && qty == null) {
+    upd.suggestedAt = deleteField();
+    upd.suggestedBy = deleteField();
+  } else {
+    upd.suggestedAt = Date.now();
+    upd.suggestedBy = CURRENT_USER;
+  }
+
+  try {
+    await updateDoc(doc(db, 'products', id), upd);
+    // espelha local
+    if (price == null) delete p.suggestedPrice; else p.suggestedPrice = price;
+    if (qty == null)   delete p.suggestedStock; else p.suggestedStock = qty;
+    if (price == null && qty == null) { delete p.suggestedAt; delete p.suggestedBy; }
+    else { p.suggestedAt = upd.suggestedAt; p.suggestedBy = CURRENT_USER; }
+
+    const tag = document.getElementById(`tag_${id}`);
+    if (tag) { tag.className = 'save-tag ok'; tag.textContent = (price==null&&qty==null) ? 'limpo' : '✓ salvo'; }
+    const card = document.getElementById(`card_${id}`);
+    if (card) card.classList.toggle('has-sug', hasSug(p));
+    [priceEl, qtyEl].forEach(el => { if (el && el.value.trim()) el.classList.add('saved'); else el && el.classList.remove('saved'); });
+    updatePendingCount();
+  } catch (e) {
+    const tag = document.getElementById(`tag_${id}`);
+    if (tag) { tag.className = 'save-tag'; tag.style.color = 'var(--red)'; tag.textContent = 'erro ao salvar'; }
+  }
+}
+
+$('#search').oninput = renderFill;
+$('#cat-filter').onchange = renderFill;
+
+/* ── Aba REVISAR ─────────────────────────────────────────────── */
+const hasSug = p => p.suggestedPrice != null || p.suggestedStock != null;
+
+function updatePendingCount() {
+  const n = PRODUCTS.filter(hasSug).length;
+  $('#pending-n').textContent = n;
+}
+
+function renderReview() {
+  const pend = PRODUCTS.filter(hasSug).sort((a,b) => (b.suggestedAt||0) - (a.suggestedAt||0));
+  $('#review-summary').innerHTML = `<strong>${pend.length}</strong> ${pend.length === 1 ? 'sugestão pendente' : 'sugestões pendentes'}`;
+  if (!pend.length) {
+    $('#review-list').innerHTML = `<div class="empty">Nenhuma sugestão pendente.<br>Preencha na aba <b>Preencher</b>.</div>`;
+    $('#review-actions').classList.add('hidden');
+    return;
+  }
+  $('#review-actions').classList.remove('hidden');
+  $('#review-list').innerHTML = pend.map(reviewCard).join('');
+  $('#review-list').querySelectorAll('.discard-btn').forEach(b => {
+    b.onclick = () => discardSug(b.dataset.id);
+  });
+}
+
+function deltaTag(oldV, newV) {
+  if (oldV == null || newV == null || oldV === newV) return '';
+  const up = newV > oldV;
+  const diff = up ? `+${(newV - oldV).toFixed(2).replace(/\.00$/,'')}` : `${(newV - oldV).toFixed(2).replace(/\.00$/,'')}`;
+  return `<span class="${up ? 'diff-up' : 'diff-down'}">(${diff})</span>`;
+}
+
+function reviewCard(p) {
+  const lines = [];
+  if (p.suggestedPrice != null) {
+    lines.push(`<div class="diff-line">
+      <span class="lbl">Preço</span>
+      <span class="diff-old">${brl(p.price)}</span>
+      <span class="diff-arrow">→</span>
+      <span class="diff-new">${brl(p.suggestedPrice)}</span>
+      ${deltaTag(p.price, p.suggestedPrice)}
+    </div>`);
+  }
+  if (p.suggestedStock != null) {
+    lines.push(`<div class="diff-line">
+      <span class="lbl">Estoque</span>
+      <span class="diff-old">${p.stock ?? 0}</span>
+      <span class="diff-arrow">→</span>
+      <span class="diff-new">${p.suggestedStock}</span>
+      ${deltaTag(p.stock ?? 0, p.suggestedStock)}
+    </div>`);
+  }
+  return `
+  <div class="rcard">
+    <input type="checkbox" class="rsel" data-id="${p.id}" checked>
+    <div class="rcard-body">
+      <div class="rcard-name">${esc(p.name)}</div>
+      ${lines.join('')}
+      <div class="rcard-foot">
+        <span class="rcard-by">${p.suggestedBy ? 'por ' + esc(p.suggestedBy) : ''}</span>
+        <button class="discard-btn" data-id="${p.id}">descartar</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+async function applyProducts(ids) {
+  if (!ids.length) { toast('Nenhum item selecionado.', 'danger'); return; }
+  $('#apply-sel').disabled = true; $('#apply-all').disabled = true;
+  const batch = writeBatch(db);
+  const now = Date.now();
+  for (const id of ids) {
+    const p = PRODUCTS.find(x => x.id === id);
+    if (!p) continue;
+    const upd = { updatedAt: now,
+      suggestedPrice: deleteField(), suggestedStock: deleteField(),
+      suggestedAt: deleteField(), suggestedBy: deleteField() };
+    if (p.suggestedPrice != null) upd.price = p.suggestedPrice;
+    if (p.suggestedStock != null) upd.stock = p.suggestedStock;
+    batch.update(doc(db, 'products', id), upd);
+  }
+  try {
+    await batch.commit();
+    ids.forEach(id => {
+      const p = PRODUCTS.find(x => x.id === id);
+      if (!p) return;
+      if (p.suggestedPrice != null) p.price = p.suggestedPrice;
+      if (p.suggestedStock != null) p.stock = p.suggestedStock;
+      delete p.suggestedPrice; delete p.suggestedStock; delete p.suggestedAt; delete p.suggestedBy;
+    });
+    toast(`✓ ${ids.length} ${ids.length === 1 ? 'produto atualizado' : 'produtos atualizados'}`, 'success');
+    renderReview(); updatePendingCount(); renderFill();
+  } catch (e) {
+    toast('Erro ao aplicar: ' + e.message, 'danger');
+  } finally {
+    $('#apply-sel').disabled = false; $('#apply-all').disabled = false;
+  }
+}
+
+async function discardSug(id) {
+  const p = PRODUCTS.find(x => x.id === id);
+  if (!p) return;
+  try {
+    await updateDoc(doc(db, 'products', id), {
+      suggestedPrice: deleteField(), suggestedStock: deleteField(),
+      suggestedAt: deleteField(), suggestedBy: deleteField()
+    });
+    delete p.suggestedPrice; delete p.suggestedStock; delete p.suggestedAt; delete p.suggestedBy;
+    toast('Sugestão descartada.');
+    renderReview(); updatePendingCount(); renderFill();
+  } catch (e) { toast('Erro: ' + e.message, 'danger'); }
+}
+
+$('#apply-all').onclick = () => {
+  const ids = PRODUCTS.filter(hasSug).map(p => p.id);
+  if (confirm(`Aplicar ${ids.length} sugestões aos preços/estoques reais?`)) applyProducts(ids);
+};
+$('#apply-sel').onclick = () => {
+  const ids = [...document.querySelectorAll('.rsel:checked')].map(c => c.dataset.id);
+  if (!ids.length) { toast('Selecione ao menos um item.', 'danger'); return; }
+  if (confirm(`Aplicar ${ids.length} ${ids.length === 1 ? 'item selecionado' : 'itens selecionados'}?`)) applyProducts(ids);
+};
+
+/* ── Tabs ────────────────────────────────────────────────────── */
+document.querySelectorAll('.tab').forEach(t => {
+  t.onclick = () => {
+    document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+    t.classList.add('active');
+    const tab = t.dataset.tab;
+    $('#view-fill').classList.toggle('hidden', tab !== 'fill');
+    $('#view-review').classList.toggle('hidden', tab !== 'review');
+    if (tab === 'review') renderReview();
+    if (tab === 'fill') renderFill();
+  };
+});
+</script>
+</body>
+</html>
