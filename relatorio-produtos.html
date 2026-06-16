@@ -182,6 +182,11 @@ td { padding: 7px 11px; border-bottom: 1px solid #e0e0e0; vertical-align: top; }
 <div class="btn-bar">
   <button class="btn" onclick="window.print()">🖨 Salvar como PDF</button>
   <button class="btn btn-outline" onclick="location.reload()">↺ Recarregar</button>
+  <button class="btn btn-outline" id="btn-whatsapp" style="display:none" onclick="copiarWhatsApp()">📋 Copiar para WhatsApp</button>
+</div>
+<div id="wpp-toast" style="display:none;background:#25D366;color:#fff;padding:10px 16px;
+     border-radius:6px;margin-bottom:12px;font-weight:700;font-size:.85rem">
+  ✅ Texto copiado! Cole direto no WhatsApp.
 </div>
 
 <div id="progress-wrap">
@@ -513,10 +518,103 @@ try {
   document.getElementById('progress-wrap').style.display = 'none';
   document.getElementById('report').style.display = '';
 
+  // Guardar dados para o botão WhatsApp
+  window._wppData = { all, correct, nameDiff, catDiff, catOnlyDiff, suspicious, notFound, noBarcode };
+  document.getElementById('btn-whatsapp').style.display = '';
+
 } catch (e) {
   document.getElementById('progress-label').textContent = '❌ Erro: ' + e.message;
   document.getElementById('progress-fill').style.background = '#c0392b';
 }
+window.copiarWhatsApp = function () {
+  const d = window._wppData;
+  if (!d) return;
+  const brl = v => (v ?? 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  const dt  = new Date().toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+  const totalProblems = d.suspicious.length + d.nameDiff.length + d.catOnlyDiff.length;
+
+  const lines = [];
+
+  lines.push('*📦 EMPÓRIO GO — RELATÓRIO DE PRODUTOS*');
+  lines.push(`_Gerado em ${dt}_`);
+  lines.push('');
+
+  lines.push('*📊 RESUMO*');
+  lines.push(`• Total cadastrado: *${d.all.length} produtos*`);
+  lines.push(`• Com código de barras: ${d.all.length - d.noBarcode.length}`);
+  lines.push(`• Sem código de barras: ${d.noBarcode.length}`);
+  lines.push(`• ✅ Verificados e corretos: ${d.correct.length}`);
+  lines.push(`• ⚠ Com algum problema: ${totalProblems}`);
+  lines.push(`• ❌ Não encontrado no Cosmos: ${d.notFound.length}`);
+  lines.push('');
+
+  if (d.suspicious.length) {
+    lines.push(`*🚨 SUSPEITOS — pode não ser bebida (${d.suspicious.length})*`);
+    d.suspicious.forEach(({ p, cName }) => {
+      lines.push(`• ${p.name} [${p.category || '—'}]`);
+      lines.push(`  Cosmos diz: _${cName}_`);
+    });
+    lines.push('');
+  }
+
+  if (d.nameDiff.length) {
+    lines.push(`*⚠ NOME DIVERGENTE DO COSMOS (${d.nameDiff.length})*`);
+    d.nameDiff.forEach(({ p, cName, cCat }) => {
+      lines.push(`• ${p.name} [${p.category || '—'}]`);
+      lines.push(`  Cosmos: _${cName}_${cCat && cCat !== p.category ? ` → categoria: *${cCat}*` : ''}`);
+    });
+    lines.push('');
+  }
+
+  if (d.catOnlyDiff.length) {
+    lines.push(`*📂 CATEGORIA POSSIVELMENTE ERRADA (${d.catOnlyDiff.length})*`);
+    d.catOnlyDiff.forEach(({ p, cCat }) => {
+      lines.push(`• ${p.name}`);
+      lines.push(`  Está em *${p.category || '—'}* → Cosmos sugere *${cCat}*`);
+    });
+    lines.push('');
+  }
+
+  if (d.notFound.length) {
+    lines.push(`*❌ NÃO ENCONTRADO NO COSMOS (${d.notFound.length})*`);
+    d.notFound.forEach(({ p }) => {
+      lines.push(`• ${p.name} [${p.category || '—'}] — código: ${p.barcode}`);
+    });
+    lines.push('');
+  }
+
+  lines.push(`*✅ PRODUTOS CORRETOS (${d.correct.length})*`);
+  d.correct.forEach(({ p }) => {
+    lines.push(`• ${p.name} [${p.category || '—'}] — ${brl(p.price)} — estoque: ${p.stock ?? 0}`);
+  });
+  lines.push('');
+
+  if (d.noBarcode.length) {
+    lines.push(`*🏷 SEM CÓDIGO DE BARRAS (${d.noBarcode.length})*`);
+    d.noBarcode.forEach(p => {
+      lines.push(`• ${p.name} [${p.category || '—'}] — ${brl(p.price)}`);
+    });
+    lines.push('');
+  }
+
+  lines.push('_Fonte: Firestore + Cosmos Bluesoft · Empório GO_');
+
+  const text = lines.join('\n');
+  navigator.clipboard.writeText(text).then(() => {
+    const toast = document.getElementById('wpp-toast');
+    toast.style.display = 'block';
+    setTimeout(() => { toast.style.display = 'none'; }, 4000);
+  }).catch(() => {
+    // Fallback: textarea para copiar manualmente
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.cssText = 'position:fixed;top:10px;left:10px;width:90vw;height:80vh;z-index:9999;font-size:.8rem;padding:12px';
+    document.body.appendChild(ta);
+    ta.select();
+    alert('Selecione tudo (Ctrl+A) e copie (Ctrl+C), depois feche.');
+    setTimeout(() => ta.remove(), 10000);
+  });
+};
 </script>
 </body>
 </html>
