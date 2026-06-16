@@ -341,7 +341,8 @@ function filtered() {
     const s = state.search;
     arr = arr.filter(p =>
       (p.name || '').toLowerCase().includes(s) ||
-      (p.brand || '').toLowerCase().includes(s)
+      (p.brand || '').toLowerCase().includes(s) ||
+      (p.barcode || '').includes(s)
     );
   }
   if (state.sort === 'az')     arr.sort((a, b) => (a.name || '').localeCompare(b.name || ''));

@@ -81,6 +81,27 @@ export async function render(root) {
       </div>
     </div>
 
+    <div class="reg-catalog-section" id="reg-catalog-section">
+      <div class="reg-cat-header">
+        <div class="reg-cat-title">Catálogo de produtos</div>
+        <div class="reg-cat-tabs" id="reg-cat-tabs">
+          <button class="reg-tab active" data-tab="nocode">🏷 Sem código</button>
+          <button class="reg-tab" data-tab="noprice">💰 Sem preço</button>
+          <button class="reg-tab" data-tab="ok">✅ Corretos</button>
+        </div>
+      </div>
+      <div class="reg-cat-filter">
+        <select id="reg-cat-select">
+          <option value="all">Todas as categorias</option>
+          ${CATEGORIES.map(c => `<option value="${c}">${c}</option>`).join('')}
+        </select>
+        <input id="reg-cat-search" class="reg-cat-search-input" placeholder="Buscar nome ou código…" autocomplete="off" />
+      </div>
+      <div id="reg-catalog-list" class="reg-catalog-list">
+        <div class="reg-checking"><div class="reg-spinner"></div>Carregando produtos…</div>
+      </div>
+    </div>
+
     <style>
       .reg-card { background: var(--surface-1, #16263d); border: 1px solid var(--line, rgba(255,255,255,.08));
         border-radius: 18px; padding: 24px 20px; text-align: center; max-width: 560px; margin: 0 auto;
@@ -141,6 +162,44 @@ export async function render(root) {
       .reg-log-sub { font-size: .72rem; color: var(--text-2, #93a6bd); }
       .reg-log-time { font-size: .7rem; color: var(--text-3, #5d748f); }
       .reg-log-empty { text-align: center; color: var(--text-3, #5d748f); font-size: .82rem; padding: 20px 0; }
+
+      /* ── Catálogo ─────────────────────────────────────────── */
+      .reg-catalog-section { max-width: 640px; margin: 36px auto 0; }
+      .reg-cat-header { margin-bottom: 14px; }
+      .reg-cat-title { font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px;
+        color: var(--text-2, #93a6bd); margin-bottom: 10px; }
+      .reg-cat-tabs { display: flex; gap: 8px; flex-wrap: wrap; }
+      .reg-tab { background: var(--surface-1, #16263d); border: 1px solid var(--line, rgba(255,255,255,.08));
+        border-radius: 20px; padding: 7px 16px; font-size: .8rem; font-weight: 600; cursor: pointer;
+        color: var(--text-2, #93a6bd); transition: all .15s; }
+      .reg-tab:hover { border-color: var(--gold-400, #d4af37); color: var(--text-1, #f3f6fa); }
+      .reg-tab.active { background: var(--gold-400, #d4af37); color: #1a1000; border-color: transparent; }
+      .reg-cat-filter { display: flex; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+      .reg-cat-filter select { flex: 0 0 auto; background: var(--surface-1, #16263d);
+        border: 1px solid var(--line, rgba(255,255,255,.1)); border-radius: 8px;
+        padding: 8px 12px; font-size: .82rem; color: var(--text-1, #f3f6fa); outline: none; }
+      .reg-cat-search-input { flex: 1; min-width: 140px; background: var(--surface-1, #16263d);
+        border: 1px solid var(--line, rgba(255,255,255,.1)); border-radius: 8px;
+        padding: 8px 12px; font-size: .82rem; color: var(--text-1, #f3f6fa); outline: none; }
+      .reg-cat-search-input::placeholder { color: var(--text-3, #5d748f); }
+      .reg-catalog-list { display: flex; flex-direction: column; gap: 6px; }
+      .reg-citem { display: flex; align-items: center; gap: 12px; background: var(--surface-1, #16263d);
+        border: 1px solid var(--line, rgba(255,255,255,.07)); border-radius: 11px;
+        padding: 11px 14px; cursor: pointer; transition: border-color .12s; }
+      .reg-citem:hover { border-color: var(--gold-400, #d4af37); }
+      .reg-citem-icon { width: 36px; height: 36px; border-radius: 9px; flex-shrink: 0;
+        background: rgba(255,255,255,.06); display: flex; align-items: center; justify-content: center; font-size: 1.3rem; }
+      .reg-citem-body { flex: 1; min-width: 0; }
+      .reg-citem-name { font-size: .88rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .reg-citem-meta { font-size: .72rem; color: var(--text-2, #93a6bd); margin-top: 2px; display: flex; gap: 8px; flex-wrap: wrap; }
+      .reg-citem-badges { display: flex; flex-direction: column; gap: 4px; align-items: flex-end; flex-shrink: 0; }
+      .reg-cbadge { font-size: .64rem; font-weight: 700; padding: 2px 8px; border-radius: 5px; white-space: nowrap; }
+      .reg-cbadge.nocode  { background: rgba(99,102,241,.2);  color: #a5b4fc; border: 1px solid rgba(99,102,241,.3); }
+      .reg-cbadge.noprice { background: rgba(245,158,11,.15); color: #fbbf24; border: 1px solid rgba(245,158,11,.3); }
+      .reg-cbadge.ok      { background: rgba(34,197,94,.1);   color: #4ade80; border: 1px solid rgba(34,197,94,.2); }
+      .reg-citem-code { font-family: monospace; font-size: .7rem; color: var(--text-3, #5d748f); letter-spacing: .5px; }
+      .reg-cat-empty { text-align: center; color: var(--text-3, #5d748f); font-size: .82rem; padding: 28px 0; }
+      .reg-cat-count { font-size: .72rem; color: var(--text-3, #5d748f); margin-bottom: 10px; }
     </style>
   `;
 
@@ -161,6 +220,7 @@ export async function render(root) {
 
   wireScanner();
   focusInput();
+  loadCatalog();
 }
 
 function focusInput() {
@@ -341,6 +401,85 @@ function resetScan() {
   const result = document.getElementById('reg-result');
   if (result) result.innerHTML = '';
   focusInput();
+}
+
+/* ── Catálogo ────────────────────────────────────────────────── */
+let _catalogAll  = [];
+let _catalogTab  = 'nocode';
+let _catalogCat  = 'all';
+let _catalogQ    = '';
+
+async function loadCatalog() {
+  _catalogAll = await db.list('products', { orderBy: 'name' });
+  wireTabsAndFilters();
+  paintCatalog();
+}
+
+function wireTabsAndFilters() {
+  document.getElementById('reg-cat-tabs')?.querySelectorAll('.reg-tab').forEach(btn => {
+    btn.onclick = () => {
+      _catalogTab = btn.dataset.tab;
+      document.querySelectorAll('.reg-tab').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      paintCatalog();
+    };
+  });
+  document.getElementById('reg-cat-select').onchange = e => { _catalogCat = e.target.value; paintCatalog(); };
+  document.getElementById('reg-cat-search').oninput  = e => { _catalogQ   = e.target.value.toLowerCase(); paintCatalog(); };
+}
+
+function paintCatalog() {
+  const list = document.getElementById('reg-catalog-list');
+  if (!list) return;
+
+  let items = [..._catalogAll];
+
+  if (_catalogTab === 'nocode')  items = items.filter(p => !(p.barcode || '').trim());
+  if (_catalogTab === 'noprice') items = items.filter(p => !p.price || p.price <= 0);
+  if (_catalogTab === 'ok')      items = items.filter(p => (p.barcode || '').trim() && p.price > 0);
+
+  if (_catalogCat !== 'all') items = items.filter(p => p.category === _catalogCat);
+
+  if (_catalogQ) {
+    items = items.filter(p =>
+      (p.name || '').toLowerCase().includes(_catalogQ) ||
+      (p.barcode || '').includes(_catalogQ) ||
+      (p.brand || '').toLowerCase().includes(_catalogQ)
+    );
+  }
+
+  if (items.length === 0) {
+    list.innerHTML = `<div class="reg-cat-empty">Nenhum produto nesta seleção.</div>`;
+    return;
+  }
+
+  const catEmoji = { Cerveja:'🍺', Refrigerante:'🥤', Água:'💧', Energético:'⚡', Destilado:'🥃',
+    Vinho:'🍷', Suco:'🍹', Dose:'🥃', Cigarro:'🚬', Outros:'📦' };
+
+  list.innerHTML = `<div class="reg-cat-count">${items.length} produto${items.length === 1 ? '' : 's'}</div>` +
+    items.map(p => {
+      const hasCode  = !!(p.barcode || '').trim();
+      const hasPrice = !!(p.price > 0);
+      const badges = [];
+      if (!hasCode)  badges.push(`<span class="reg-cbadge nocode">Sem código</span>`);
+      if (!hasPrice) badges.push(`<span class="reg-cbadge noprice">Sem preço</span>`);
+      if (hasCode && hasPrice) badges.push(`<span class="reg-cbadge ok">✓ OK</span>`);
+      return `
+      <div class="reg-citem" data-id="${p.id}">
+        <div class="reg-citem-icon">${catEmoji[p.category] || '📦'}</div>
+        <div class="reg-citem-body">
+          <div class="reg-citem-name">${fmt.escape(p.name || '—')}</div>
+          <div class="reg-citem-meta">
+            <span>${fmt.escape(p.category || '—')}</span>
+            ${p.brand ? `<span>${fmt.escape(p.brand)}</span>` : ''}
+            ${hasPrice ? `<span>${fmt.currency(p.price)}</span>` : ''}
+            <span>estoque: ${p.stock ?? 0}</span>
+          </div>
+          ${hasCode ? `<div class="reg-citem-code">${fmt.escape(p.barcode)}</div>` : ''}
+        </div>
+        <div class="reg-citem-badges">${badges.join('')}</div>
+      </div>`;
+    }).join('');
 }
 
 /* ── Log da sessão ──────────────────────────────────────────── */
