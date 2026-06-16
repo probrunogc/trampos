@@ -16,13 +16,14 @@ import * as Deliverers  from './modules/deliverers.js';
 import * as Users       from './modules/users.js';
 import * as Settings    from './modules/settings.js';
 import * as Stock       from './modules/stock.js';
+import * as Register    from './modules/register.js';
 
 const MODULES = [
-  Dashboard, Sales, Reports, Customers, Products, Banners, Deliveries, Deliverers, Users, Settings, Stock
+  Dashboard, Sales, Reports, Customers, Products, Banners, Deliveries, Deliverers, Users, Settings, Stock, Register
 ];
 
 const SECTIONS = [
-  { title: 'Operação',  ids: ['dashboard', 'sales', 'stock', 'reports', 'deliveries'] },
+  { title: 'Operação',  ids: ['dashboard', 'sales', 'register', 'stock', 'reports', 'deliveries'] },
   { title: 'Cadastros', ids: ['customers', 'products', 'banners', 'deliverers'] },
   { title: 'Sistema',   ids: ['users', 'settings'] }
 ];
