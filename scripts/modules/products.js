@@ -39,7 +39,7 @@ function cosmosCat(desc) {
   return map.find(([k]) => d.includes(k))?.[1] || null;
 }
 
-let state = { search: '', category: 'all', sort: 'az', list: [], salesCount: {} };
+let state = { search: '', category: 'all', sort: 'az', filters: new Set(), list: [], salesCount: {} };
 
 /* ── Firebase Storage ───────────────────────────────────────── */
 let _storageInstance = null;
@@ -190,9 +190,6 @@ export async function render(root) {
           <option value="az">A → Z</option>
           <option value="recent">Mais recentes</option>
           <option value="sold">Mais vendidos</option>
-          <option value="nophoto">Sem foto</option>
-          <option value="withbarcode">Com código de barras</option>
-          <option value="nobarcode">Sem código de barras</option>
         </select>
         <span id="count" class="text-mute small"></span>
         <button class="btn btn-primary btn-sm" id="btn-new2">
@@ -336,11 +333,11 @@ async function runCleanup() {
 function filtered() {
   let arr = [...state.list];
   if (state.category !== 'all') arr = arr.filter(p => p.category === state.category);
-  if (state.sort === 'nophoto')    arr = arr.filter(p => !p.image && !(p.images?.length));
-  if (state.sort === 'zero')       arr = arr.filter(p => (p.stock ?? 0) === 0);
-  if (state.sort === 'noprice')    arr = arr.filter(p => !p.price || p.price <= 0);
-  if (state.sort === 'withbarcode') arr = arr.filter(p => (p.barcode || '').trim() !== '');
-  if (state.sort === 'nobarcode')   arr = arr.filter(p => !(p.barcode || '').trim());
+  if (state.filters.has('nophoto'))     arr = arr.filter(p => !p.image && !(p.images?.length));
+  if (state.filters.has('zero'))        arr = arr.filter(p => (p.stock ?? 0) === 0);
+  if (state.filters.has('noprice'))     arr = arr.filter(p => !p.price || p.price <= 0);
+  if (state.filters.has('withbarcode')) arr = arr.filter(p => (p.barcode || '').trim() !== '');
+  if (state.filters.has('nobarcode'))   arr = arr.filter(p => !(p.barcode || '').trim());
   if (state.search) {
     const s = state.search;
     arr = arr.filter(p =>
@@ -367,36 +364,49 @@ function paintAlerts() {
   const noBarcode   = state.list.filter(p => !(p.barcode || '').trim()).length;
 
   const chips = [
-    noName      && { key: 'noprice',     label: `${noName} sem nome`,          color: 'var(--danger,#e74c3c)' },
-    noPrice     && { key: 'noprice',     label: `${noPrice} sem preço`,         color: 'var(--danger,#e74c3c)' },
-    noStock     && { key: 'zero',        label: `${noStock} sem estoque`,        color: '#e67e22' },
-    noPhoto     && { key: 'nophoto',     label: `${noPhoto} sem foto`,           color: '#3498db' },
-    withBarcode && { key: 'withbarcode', label: `${withBarcode} com código`,     color: '#27ae60' },
-    noBarcode   && { key: 'nobarcode',   label: `${noBarcode} sem código`,       color: '#8e44ad' },
+    noName      && { key: 'noprice',     label: `${noName} sem nome`,      color: '#e74c3c', icon: '⚠' },
+    noPrice     && { key: 'noprice',     label: `${noPrice} sem preço`,     color: '#e74c3c', icon: '⚠' },
+    noStock     && { key: 'zero',        label: `${noStock} sem estoque`,   color: '#e67e22', icon: '⚠' },
+    noPhoto     && { key: 'nophoto',     label: `${noPhoto} sem foto`,      color: '#3498db', icon: '⚠' },
+    withBarcode && { key: 'withbarcode', label: `${withBarcode} com código`, color: '#27ae60', icon: '✓' },
+    noBarcode   && { key: 'nobarcode',   label: `${noBarcode} sem código`,  color: '#8e44ad', icon: '⚠' },
   ].filter(Boolean);
 
   if (!chips.length) { wrap.innerHTML = ''; return; }
 
+  const active = state.filters;
   wrap.innerHTML = `
-    <div style="display:flex;flex-wrap:wrap;gap:6px;padding:8px 0 4px">
-      ${chips.map(c => `
-        <button class="alert-chip" data-filter="${c.key}"
-          style="background:${c.color}18;border:1px solid ${c.color}55;color:${c.color};
-                 padding:4px 10px;border-radius:20px;font-size:.78rem;font-weight:600;cursor:pointer">
-          ⚠ ${c.label}
-        </button>`).join('')}
-      <span class="text-mute small" style="align-self:center;margin-left:4px">
-        — clique para filtrar
-      </span>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;padding:8px 0 4px;align-items:center">
+      ${chips.map(c => {
+        const on = active.has(c.key);
+        return `<button class="alert-chip" data-filter="${c.key}"
+          style="background:${on ? c.color : c.color+'18'};
+                 border:1px solid ${on ? c.color : c.color+'55'};
+                 color:${on ? '#fff' : c.color};
+                 padding:4px 10px;border-radius:20px;font-size:.78rem;font-weight:600;
+                 cursor:pointer;transition:all .15s">
+          ${on ? '✕' : c.icon} ${c.label}
+        </button>`;
+      }).join('')}
+      ${active.size > 0 ? `<button id="chip-clear-all"
+        style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.15);
+               color:var(--text-3);padding:4px 10px;border-radius:20px;
+               font-size:.78rem;cursor:pointer">
+        Limpar filtros
+      </button>` : `<span class="text-mute small">— combine tags para filtrar</span>`}
     </div>`;
 
   wrap.querySelectorAll('.alert-chip').forEach(btn => {
     btn.onclick = () => {
       const f = btn.dataset.filter;
-      state.sort = (state.sort === f) ? 'az' : f;
-      document.getElementById('filter-sort').value = state.sort;
+      if (state.filters.has(f)) state.filters.delete(f);
+      else state.filters.add(f);
       paint();
     };
+  });
+  wrap.querySelector('#chip-clear-all')?.addEventListener('click', () => {
+    state.filters.clear();
+    paint();
   });
 }
 
