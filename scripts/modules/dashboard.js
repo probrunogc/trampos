@@ -124,6 +124,22 @@ export async function render(root) {
       </div>
     </section>
 
+    <section class="dash-shortcuts" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-bottom:var(--sp-5)">
+      <a href="/cadastro" target="_blank" rel="noopener" class="shortcut-card" style="
+          display:flex;align-items:center;gap:14px;padding:16px 18px;
+          background:var(--surface-2);border:1px solid var(--line);border-radius:12px;
+          text-decoration:none;color:inherit;transition:border-color .15s,box-shadow .15s;cursor:pointer"
+        onmouseover="this.style.borderColor='var(--gold-400)';this.style.boxShadow='0 0 0 2px rgba(212,175,55,.18)'"
+        onmouseout="this.style.borderColor='var(--line)';this.style.boxShadow=''">
+        <div style="font-size:1.7rem;line-height:1">📦</div>
+        <div>
+          <div style="font-weight:600;font-size:.88rem;margin-bottom:2px">Registro Rápido</div>
+          <div style="font-size:.75rem;color:var(--text-3)">Escanear e cadastrar produtos</div>
+        </div>
+        <div style="margin-left:auto;color:var(--text-3);font-size:.8rem">↗</div>
+      </a>
+    </section>
+
     <section class="dash-row">
       <div class="panel">
         <div class="panel-head">
