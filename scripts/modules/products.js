@@ -732,52 +732,6 @@ async function openForm(id = null) {
   }
   if (isEdit) renderImages();
 
-  /* ── Botão câmera + Cosmos lookup ───────────────────────── */
-  const camBtn = form.querySelector('#btn-cam-scan');
-  const barcodeField = form.querySelector('#field-barcode');
-
-  if (camBtn && barcodeField) {
-    // Cosmos lookup — auto-preenche nome/marca/categoria após barcode
-    const triggerCosmos = async (barcode) => {
-      if (!barcode || barcode.length < 8) return;
-      const nameField  = form.querySelector('[name="name"]');
-      const brandField = form.querySelector('[name="brand"]');
-      const catField   = form.querySelector('[name="category"]');
-      if (nameField?.value.trim()) return; // não sobrescreve nome já preenchido
-
-      camBtn.disabled = true;
-      camBtn.textContent = '⏳ Buscando…';
-      const data = await cosmosLookup(barcode);
-      camBtn.disabled = false;
-      camBtn.innerHTML = '📷 Câmera';
-
-      if (!data) { ui.toast('Produto não encontrado na Cosmos — preencha o nome.', 'info'); return; }
-      if (nameField  && !nameField.value.trim())  nameField.value  = data.description || '';
-      if (brandField && !brandField.value.trim()) brandField.value = data.brand?.name || '';
-      const cat = cosmosCat(data.ncm?.description || data.description || '');
-      if (cat && catField) catField.value = cat;
-      if (data.description) ui.toast('✔ Produto encontrado na Cosmos', 'success');
-    };
-
-    // Scan por câmera
-    camBtn.addEventListener('click', async () => {
-      const code = await ui.scanBarcode();
-      if (!code) return;
-      barcodeField.value = code;
-      ui.toast(`✔ Código escaneado: ${code}`, 'success');
-      await triggerCosmos(code);
-    });
-
-    // Scan por leitor USB (Enter no campo barcode)
-    barcodeField.addEventListener('keydown', async (e) => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        await triggerCosmos(barcodeField.value.trim());
-      }
-    });
-    barcodeField.addEventListener('blur', () => triggerCosmos(barcodeField.value.trim()));
-  }
-
   /* ── Add file ───────────────────────────────────────────── */
   function addFile(file) {
     const blobUrl = URL.createObjectURL(file);
