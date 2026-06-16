@@ -212,6 +212,9 @@ body {
 @keyframes toast-out { to { opacity: 0; transform: translateY(16px); } }
 
 .hidden { display: none !important; }
+
+.live-dot { color: var(--green); font-weight: 700; animation: livepulse 1.6s ease-in-out infinite; }
+@keyframes livepulse { 0%,100% { opacity: 1; } 50% { opacity: .35; } }
 </style>
 </head>
 <body>
@@ -242,7 +245,7 @@ body {
       <img class="topbar-logo" src="./assets/logo.png" alt="" onerror="this.style.display='none'">
       <div>
         <div class="topbar-title">Conferência de Preços</div>
-        <div class="topbar-sub" id="user-label">—</div>
+        <div class="topbar-sub"><span id="user-label">—</span> <span id="live-dot" class="live-dot hidden">● ao vivo</span></div>
       </div>
     </div>
     <div class="topbar-actions">
@@ -290,7 +293,7 @@ import { initializeApp }
   from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js';
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut }
   from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js';
-import { getFirestore, collection, getDocs, query, orderBy, doc, getDoc, updateDoc, writeBatch, deleteField }
+import { getFirestore, collection, getDocs, onSnapshot, query, orderBy, doc, getDoc, updateDoc, writeBatch, deleteField }
   from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js';
 import { firebaseConfig }
   from './scripts/firebase-config.js';
@@ -371,25 +374,51 @@ $('#login-btn').onclick = doLogin;
 $('#login-pass').onkeydown = e => { if (e.key === 'Enter') doLogin(); };
 $('#logout-btn').onclick = async () => { localStorage.removeItem(SAVED_KEY); await signOut(auth); location.reload(); };
 
-/* ── Carregar produtos ───────────────────────────────────────── */
-async function loadProducts() {
-  try {
-    const snap = await getDocs(query(collection(db, 'products'), orderBy('name')));
-    PRODUCTS = snap.docs.map(d => ({ id: d.id, ...d.data() }))
-      .filter(p => (p.barcode || '').trim());     // só com código de barras
-    buildCatFilter();
-    renderFill();
-    updatePendingCount();
-  } catch (e) {
-    $('#fill-list').innerHTML = `<div class="empty">❌ Erro ao carregar: ${esc(e.message)}</div>`;
+/* ── Carregar produtos (TEMPO REAL) ──────────────────────────── */
+let unsub = null;
+let firstSnap = true;
+function loadProducts() {
+  if (unsub) unsub();
+  unsub = onSnapshot(
+    query(collection(db, 'products'), orderBy('name')),
+    snap => {
+      PRODUCTS = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+        .filter(p => (p.barcode || '').trim());     // só com código de barras
+      buildCatFilter();
+      if (firstSnap) { firstSnap = false; $('#live-dot')?.classList.remove('hidden'); }
+      onData();
+    },
+    err => { $('#fill-list').innerHTML = `<div class="empty">❌ Erro ao carregar: ${esc(err.message)}</div>`; }
+  );
+}
+
+// Reage a cada atualização vinda do Firestore sem atrapalhar quem está digitando
+function onData() {
+  updatePendingCount();
+  const activeTab = document.querySelector('.tab.active').dataset.tab;
+  if (activeTab === 'review') {
+    renderReview();
+  } else {
+    const ae = document.activeElement;
+    const typing = ae && ae.id && (ae.id.startsWith('p_') || ae.id.startsWith('q_'));
+    if (typing) {
+      // não re-renderiza pra não apagar o que o funcionário está digitando;
+      // só atualiza o resumo e a contagem
+      const withSug = PRODUCTS.filter(hasSug).length;
+      $('#fill-summary').innerHTML = `<strong>${PRODUCTS.length}</strong> produtos com código · <strong>${withSug}</strong> com sugestão pendente`;
+    } else {
+      renderFill();
+    }
   }
 }
 
 function buildCatFilter() {
+  const cur = $('#cat-filter').value;
   const cats = [...new Set(PRODUCTS.map(p => p.category || 'Outros'))].sort();
   const sel = $('#cat-filter');
   sel.innerHTML = '<option value="">Todas categorias</option>' +
     cats.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
+  if (cur) sel.value = cur;
 }
 
 /* ── Aba PREENCHER ───────────────────────────────────────────── */
@@ -519,6 +548,10 @@ function updatePendingCount() {
 }
 
 function renderReview() {
+  // preserva seleção atual dos checkboxes ao re-renderizar em tempo real
+  const hadAny = document.querySelectorAll('.rsel').length > 0;
+  const prevSel = new Set([...document.querySelectorAll('.rsel:checked')].map(c => c.dataset.id));
+
   const pend = PRODUCTS.filter(hasSug).sort((a,b) => (b.suggestedAt||0) - (a.suggestedAt||0));
   $('#review-summary').innerHTML = `<strong>${pend.length}</strong> ${pend.length === 1 ? 'sugestão pendente' : 'sugestões pendentes'}`;
   if (!pend.length) {
@@ -528,6 +561,10 @@ function renderReview() {
   }
   $('#review-actions').classList.remove('hidden');
   $('#review-list').innerHTML = pend.map(reviewCard).join('');
+  // restaura seleção anterior (na primeira renderização tudo já vem marcado)
+  if (hadAny) {
+    document.querySelectorAll('.rsel').forEach(c => { c.checked = prevSel.has(c.dataset.id); });
+  }
   $('#review-list').querySelectorAll('.discard-btn').forEach(b => {
     b.onclick = () => discardSug(b.dataset.id);
   });
