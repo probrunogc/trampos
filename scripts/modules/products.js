@@ -191,6 +191,8 @@ export async function render(root) {
           <option value="recent">Mais recentes</option>
           <option value="sold">Mais vendidos</option>
           <option value="nophoto">Sem foto</option>
+          <option value="withbarcode">Com código de barras</option>
+          <option value="nobarcode">Sem código de barras</option>
         </select>
         <span id="count" class="text-mute small"></span>
         <button class="btn btn-primary btn-sm" id="btn-new2">
@@ -334,9 +336,11 @@ async function runCleanup() {
 function filtered() {
   let arr = [...state.list];
   if (state.category !== 'all') arr = arr.filter(p => p.category === state.category);
-  if (state.sort === 'nophoto') arr = arr.filter(p => !p.image && !(p.images?.length));
-  if (state.sort === 'zero')    arr = arr.filter(p => (p.stock ?? 0) === 0);
-  if (state.sort === 'noprice') arr = arr.filter(p => !p.price || p.price <= 0);
+  if (state.sort === 'nophoto')    arr = arr.filter(p => !p.image && !(p.images?.length));
+  if (state.sort === 'zero')       arr = arr.filter(p => (p.stock ?? 0) === 0);
+  if (state.sort === 'noprice')    arr = arr.filter(p => !p.price || p.price <= 0);
+  if (state.sort === 'withbarcode') arr = arr.filter(p => (p.barcode || '').trim() !== '');
+  if (state.sort === 'nobarcode')   arr = arr.filter(p => !(p.barcode || '').trim());
   if (state.search) {
     const s = state.search;
     arr = arr.filter(p =>
@@ -355,16 +359,20 @@ function paintAlerts() {
   const wrap = document.getElementById('alerts-wrap');
   if (!wrap || !state.list.length) return;
 
-  const noPhoto  = state.list.filter(p => !p.image && !(p.images?.length)).length;
-  const noPrice  = state.list.filter(p => !p.price || p.price <= 0).length;
-  const noStock  = state.list.filter(p => (p.stock ?? 0) === 0).length;
-  const noName   = state.list.filter(p => !p.name?.trim()).length;
+  const noPhoto    = state.list.filter(p => !p.image && !(p.images?.length)).length;
+  const noPrice    = state.list.filter(p => !p.price || p.price <= 0).length;
+  const noStock    = state.list.filter(p => (p.stock ?? 0) === 0).length;
+  const noName     = state.list.filter(p => !p.name?.trim()).length;
+  const withBarcode = state.list.filter(p => (p.barcode || '').trim() !== '').length;
+  const noBarcode   = state.list.filter(p => !(p.barcode || '').trim()).length;
 
   const chips = [
-    noName   && { key: 'noprice', label: `${noName} sem nome`,   color: 'var(--danger,#e74c3c)' },
-    noPrice  && { key: 'noprice', label: `${noPrice} sem preço`, color: 'var(--danger,#e74c3c)' },
-    noStock  && { key: 'zero',    label: `${noStock} sem estoque`, color: '#e67e22' },
-    noPhoto  && { key: 'nophoto', label: `${noPhoto} sem foto`,  color: '#3498db' },
+    noName      && { key: 'noprice',     label: `${noName} sem nome`,          color: 'var(--danger,#e74c3c)' },
+    noPrice     && { key: 'noprice',     label: `${noPrice} sem preço`,         color: 'var(--danger,#e74c3c)' },
+    noStock     && { key: 'zero',        label: `${noStock} sem estoque`,        color: '#e67e22' },
+    noPhoto     && { key: 'nophoto',     label: `${noPhoto} sem foto`,           color: '#3498db' },
+    withBarcode && { key: 'withbarcode', label: `${withBarcode} com código`,     color: '#27ae60' },
+    noBarcode   && { key: 'nobarcode',   label: `${noBarcode} sem código`,       color: '#8e44ad' },
   ].filter(Boolean);
 
   if (!chips.length) { wrap.innerHTML = ''; return; }
