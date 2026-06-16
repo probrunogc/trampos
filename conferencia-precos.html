@@ -87,6 +87,17 @@ body {
 .filters input { flex: 1; min-width: 140px; }
 .filters input:focus, .filters select:focus { border-color: var(--gold); }
 
+/* ── Chips de status ────────────────────────────────────────── */
+.chips { display: flex; gap: 7px; flex-wrap: wrap; margin-bottom: 12px; }
+.chip {
+  padding: 8px 13px; border-radius: 20px; border: 1px solid var(--line);
+  background: rgba(255,255,255,.04); color: var(--text-2);
+  font-size: .8rem; font-weight: 600; cursor: pointer; white-space: nowrap;
+  transition: all .15s;
+}
+.chip:hover { background: rgba(255,255,255,.08); color: var(--text); }
+.chip.active { background: var(--gold); color: #0d1b2a; border-color: var(--gold); }
+
 /* ── Summary ────────────────────────────────────────────────── */
 .summary { font-size: .76rem; color: var(--text-2); margin-bottom: 12px; padding-left: 2px; }
 .summary strong { color: var(--gold); }
@@ -270,6 +281,12 @@ body {
         <input id="search" type="search" placeholder="🔎 Buscar produto…" autocomplete="off">
         <select id="cat-filter"><option value="">Todas categorias</option></select>
       </div>
+      <div class="chips" id="status-chips">
+        <button class="chip active" data-f="all">Todos</button>
+        <button class="chip" data-f="zero">⚠️ Zerados (s/ preço ou estoque)</button>
+        <button class="chip" data-f="noprice">Sem preço</button>
+        <button class="chip" data-f="nostock">Sem estoque</button>
+      </div>
       <div class="summary" id="fill-summary"></div>
       <div id="fill-list"><div class="loading">⏳ Carregando produtos…</div></div>
     </div>
@@ -313,6 +330,7 @@ const parseQty = v => { const n = parseInt(String(v).replace(/\D/g,''), 10); ret
 
 let CURRENT_USER = '';
 let PRODUCTS = [];
+let STATUS_FILTER = 'all';
 
 function toast(msg, type = 'info') {
   const host = $('#toast-host');
@@ -404,8 +422,9 @@ function onData() {
     if (typing) {
       // não re-renderiza pra não apagar o que o funcionário está digitando;
       // só atualiza o resumo e a contagem
+      const zeroCount = PRODUCTS.filter(p => noPrice(p) || noStock(p)).length;
       const withSug = PRODUCTS.filter(hasSug).length;
-      $('#fill-summary').innerHTML = `<strong>${PRODUCTS.length}</strong> produtos com código · <strong>${withSug}</strong> com sugestão pendente`;
+      $('#fill-summary').innerHTML = `<strong>${PRODUCTS.length}</strong> com código · <strong>${zeroCount}</strong> zerados · <strong>${withSug}</strong> com sugestão`;
     } else {
       renderFill();
     }
@@ -422,15 +441,22 @@ function buildCatFilter() {
 }
 
 /* ── Aba PREENCHER ───────────────────────────────────────────── */
+const noPrice = p => !(p.price > 0);
+const noStock = p => !(p.stock > 0);
+
 function renderFill() {
   const q = norm($('#search').value);
   const cat = $('#cat-filter').value;
   let list = PRODUCTS.slice();
   if (cat) list = list.filter(p => (p.category || 'Outros') === cat);
+  if (STATUS_FILTER === 'zero')    list = list.filter(p => noPrice(p) || noStock(p));
+  if (STATUS_FILTER === 'noprice') list = list.filter(noPrice);
+  if (STATUS_FILTER === 'nostock') list = list.filter(noStock);
   if (q) list = list.filter(p => norm(p.name).includes(q) || norm(p.brand).includes(q) || (p.barcode||'').includes(q));
 
+  const zeroCount = PRODUCTS.filter(p => noPrice(p) || noStock(p)).length;
   const withSug = PRODUCTS.filter(hasSug).length;
-  $('#fill-summary').innerHTML = `<strong>${PRODUCTS.length}</strong> produtos com código · <strong>${withSug}</strong> com sugestão pendente`;
+  $('#fill-summary').innerHTML = `Mostrando <strong>${list.length}</strong> de <strong>${PRODUCTS.length}</strong> · <strong>${zeroCount}</strong> zerados · <strong>${withSug}</strong> com sugestão`;
 
   if (!list.length) { $('#fill-list').innerHTML = `<div class="empty">Nenhum produto encontrado.</div>`; return; }
 
@@ -538,6 +564,14 @@ async function saveSug(id) {
 
 $('#search').oninput = renderFill;
 $('#cat-filter').onchange = renderFill;
+document.querySelectorAll('#status-chips .chip').forEach(ch => {
+  ch.onclick = () => {
+    document.querySelectorAll('#status-chips .chip').forEach(c => c.classList.remove('active'));
+    ch.classList.add('active');
+    STATUS_FILTER = ch.dataset.f;
+    renderFill();
+  };
+});
 
 /* ── Aba REVISAR ─────────────────────────────────────────────── */
 const hasSug = p => p.suggestedPrice != null || p.suggestedStock != null;
