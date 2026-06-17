@@ -78,8 +78,8 @@ export async function render(root) {
                          padding:12px 8px;border-radius:10px;border:2px solid #b8860b;
                          background:linear-gradient(135deg,rgba(184,134,11,.18),rgba(184,134,11,.06));
                          cursor:pointer;color:inherit;transition:transform .12s,box-shadow .12s,background .15s"
-                  onmousedown="this.style.transform='scale(.93)';this.style.boxShadow='none'"
-                  onmouseup="this.style.transform='';this.style.boxShadow=''"
+                  onmousedown="this.style.transform='scale(.93)'"
+                  onmouseup="this.style.transform=''"
                   ontouchstart="this.style.transform='scale(.93)'"
                   ontouchend="this.style.transform=''">
             <span style="font-size:1.8rem;line-height:1;filter:drop-shadow(0 2px 4px rgba(0,0,0,.4))">🚬</span>
@@ -91,37 +91,13 @@ export async function render(root) {
                          padding:12px 8px;border-radius:10px;border:2px solid #7b3fa0;
                          background:linear-gradient(135deg,rgba(123,63,160,.18),rgba(123,63,160,.06));
                          cursor:pointer;color:inherit;transition:transform .12s,box-shadow .12s,background .15s"
-                  onmousedown="this.style.transform='scale(.93)';this.style.boxShadow='none'"
-                  onmouseup="this.style.transform='';this.style.boxShadow=''"
+                  onmousedown="this.style.transform='scale(.93)'"
+                  onmouseup="this.style.transform=''"
                   ontouchstart="this.style.transform='scale(.93)'"
                   ontouchend="this.style.transform=''">
             <span style="font-size:1.8rem;line-height:1;filter:drop-shadow(0 2px 4px rgba(0,0,0,.4))">🥃</span>
             <span style="font-weight:700;font-size:.88rem">Dose</span>
             <span style="font-size:.7rem;color:var(--text-2)">Venda rápida</span>
-          </button>
-          <button id="pdv-open-carteira" type="button"
-                  style="display:flex;align-items:center;justify-content:center;gap:6px;
-                         padding:8px 10px;border-radius:8px;border:1.5px dashed rgba(184,134,11,.45);
-                         background:rgba(184,134,11,.06);cursor:pointer;color:inherit;
-                         font-size:.78rem;transition:border-color .12s,background .12s,transform .1s"
-                  onmousedown="this.style.transform='scale(.95)'"
-                  onmouseup="this.style.transform=''"
-                  ontouchstart="this.style.transform='scale(.95)'"
-                  ontouchend="this.style.transform=''">
-            <span>📦</span>
-            <span style="font-weight:600;color:var(--text-2)">Abrir carteira</span>
-          </button>
-          <button id="pdv-open-garrafa" type="button"
-                  style="display:flex;align-items:center;justify-content:center;gap:6px;
-                         padding:8px 10px;border-radius:8px;border:1.5px dashed rgba(123,63,160,.45);
-                         background:rgba(123,63,160,.06);cursor:pointer;color:inherit;
-                         font-size:.78rem;transition:border-color .12s,background .12s,transform .1s"
-                  onmousedown="this.style.transform='scale(.95)'"
-                  onmouseup="this.style.transform=''"
-                  ontouchstart="this.style.transform='scale(.95)'"
-                  ontouchend="this.style.transform=''">
-            <span>🍾</span>
-            <span style="font-weight:600;color:var(--text-2)">Abrir garrafa</span>
           </button>
         </div>
         <div class="pdv-category-bar" id="pdv-cats"></div>
@@ -259,10 +235,8 @@ export async function render(root) {
   paintTroco();
 
   // Quick-add atalhos
-  document.getElementById('pdv-quick-cigarro').onclick  = () => openQuickAdd('Cigarro', '🚬 Cigarro — Retalho rápido');
-  document.getElementById('pdv-quick-dose').onclick     = () => openQuickAdd('Dose',    '🥃 Dose — Venda rápida');
-  document.getElementById('pdv-open-carteira').onclick  = () => openStockDeduct('Cigarro',  '📦 Abrir carteira de cigarro', '🚬');
-  document.getElementById('pdv-open-garrafa').onclick   = () => openStockDeduct('Destilado', '🍾 Abrir garrafa de destilado', '🍾');
+  document.getElementById('pdv-quick-cigarro').onclick  = () => openQuickAdd('Cigarro', '🚬 Cigarro — Retalho rápido', { openLabel: '📦 Abrir carteira' });
+  document.getElementById('pdv-quick-dose').onclick     = () => openQuickAdd('Dose',    '🥃 Dose — Venda rápida',        { openLabel: '🍾 Abrir garrafa', openCategory: 'Destilado' });
 
   // Delivery toggle
   document.getElementById('pdv-delivery').onchange = (e) => {
@@ -633,15 +607,17 @@ function showCheckResult(product, code) {
 function paintAll() { paintProducts(); paintCart(); paintTotals(); }
 
 /* ─── Quick-add modal (Cigarro / Dose) — com animação ────────── */
-function openQuickAdd(category, title) {
+function openQuickAdd(category, title, opts = {}) {
   const prods = state.products.filter(p => p.category === category);
   if (prods.length === 0) {
     ui.toast(`Nenhum produto cadastrado em "${category}". Cadastre em Produtos primeiro.`, 'warning', { duration: 4500 });
     return;
   }
 
-  const qtys = {};
-  prods.forEach(p => { qtys[p.id] = 0; });
+  const qtys   = {};
+  const prices = {};
+  const armed  = {};
+  prods.forEach(p => { qtys[p.id] = 0; prices[p.id] = p.price; });
 
   const body = el('div');
   body.className = 'qa-body';
@@ -651,7 +627,7 @@ function openQuickAdd(category, title) {
 
   const updateTotalBar = () => {
     const totalQty = Object.values(qtys).reduce((s, v) => s + v, 0);
-    const totalVal = prods.reduce((s, p) => s + (qtys[p.id] || 0) * p.price, 0);
+    const totalVal = prods.reduce((s, p) => s + (qtys[p.id] || 0) * (prices[p.id] ?? p.price), 0);
     if (totalQty > 0) {
       totalBar.className = 'qa-total';
       totalBar.innerHTML = `<span><strong>${totalQty}</strong> item(s) selecionado(s)</span><span class="qa-total-val">${fmt.currency(totalVal)}</span>`;
@@ -674,7 +650,7 @@ function openQuickAdd(category, title) {
       countEl.classList.toggle('qa-count--pos', q > 0);
       if (q > 0) {
         countEl.classList.remove('qa-pop');
-        void countEl.offsetWidth; // force reflow para reiniciar animação
+        void countEl.offsetWidth;
         countEl.classList.add('qa-pop');
       }
     }
@@ -683,6 +659,7 @@ function openQuickAdd(category, title) {
     if (decBtn) decBtn.disabled = q === 0;
 
     const p = prods.find(x => x.id === id);
+    const unitPrice = prices[id] ?? p?.price ?? 0;
     let subEl = row.querySelector('.qa-subtotal');
     if (p && q > 0) {
       if (!subEl) {
@@ -690,7 +667,7 @@ function openQuickAdd(category, title) {
         subEl.className = 'qa-subtotal';
         row.appendChild(subEl);
       }
-      subEl.textContent = fmt.currency(q * p.price);
+      subEl.textContent = fmt.currency(q * unitPrice);
     } else if (subEl) {
       subEl.remove();
     }
@@ -712,27 +689,81 @@ function openQuickAdd(category, title) {
         updateRow(id);
       };
     });
-    // Toque na linha do produto = +1 rápido
     body.querySelectorAll('.qa-item-info').forEach(area => {
-      area.onclick = () => {
+      area.onclick = (e) => {
+        if (e.target.closest('.qa-price-input') || e.target.closest('.qa-open-btn')) return;
         const id = area.closest('[data-qid]').dataset.qid;
         qtys[id]++;
         updateRow(id);
       };
     });
+    body.querySelectorAll('.qa-price-input').forEach(input => {
+      input.onclick = (e) => e.stopPropagation();
+      input.oninput = () => {
+        const id = input.dataset.pid;
+        prices[id] = parseFloat(input.value) || 0;
+        updateRow(id);
+      };
+    });
+    if (opts.openLabel) {
+      body.querySelectorAll('.qa-open-btn').forEach(btn => {
+        btn.onclick = async (e) => {
+          e.stopPropagation();
+          const id = btn.dataset.pid;
+          if (!armed[id]) {
+            armed[id] = true;
+            btn.classList.add('armed');
+            btn.textContent = 'Confirmar?';
+            armed[`_t_${id}`] = setTimeout(() => {
+              delete armed[id];
+              btn.classList.remove('armed');
+              btn.textContent = opts.openLabel;
+            }, 3000);
+          } else {
+            clearTimeout(armed[`_t_${id}`]);
+            delete armed[id];
+            btn.classList.remove('armed');
+            const p = prods.find(x => x.id === id);
+            if (!p) return;
+            btn.disabled = true;
+            btn.textContent = '…';
+            try {
+              await db.runStockTransaction([{ productId: p.id, qty: 1 }]);
+              const local = state.products.find(x => x.id === p.id);
+              if (local) local.stock = Math.max(0, (local.stock || 0) - 1);
+              btn.textContent = '✓ Aberto';
+              const stockEl = body.querySelector(`[data-qid="${id}"] .qa-stock-info`);
+              const newStock = local?.stock ?? 0;
+              if (stockEl) {
+                stockEl.className = `qa-stock-info${newStock <= 0 ? ' stock-out' : ''}`;
+                stockEl.textContent = newStock <= 0 ? '⚠ Sem estoque' : `Estoque: ${newStock}`;
+              }
+              ui.toast(`${opts.openLabel} — ${p.name} baixado do estoque ✓`, 'success');
+            } catch (err) {
+              btn.disabled = false;
+              btn.textContent = opts.openLabel;
+              ui.toast('Erro ao baixar estoque: ' + (err.message || 'Tente novamente.'), 'danger');
+            }
+          }
+        };
+      });
+    }
   };
 
-  // Render inicial
   body.innerHTML = prods.map(p => {
     const out = (p.stock ?? 0) <= 0;
+    const openBtn = opts.openLabel
+      ? `<button class="qa-open-btn" data-pid="${p.id}" type="button">${fmt.escape(opts.openLabel)}</button>`
+      : '';
     return `
       <div class="qa-item" data-qid="${p.id}">
         <div class="qa-item-info">
           <div class="qa-item-name">${fmt.escape(p.name)}</div>
           <div class="qa-item-meta">
-            <span>${fmt.currency(p.price)}</span>
-            <span class="${out ? 'stock-out' : ''}">${out ? '⚠ Sem estoque' : `Estoque: ${p.stock}`}</span>
+            <label class="qa-price-label">R$<input class="qa-price-input" type="number" step="0.50" min="0" data-pid="${p.id}" value="${p.price.toFixed(2)}"></label>
+            <span class="qa-stock-info${out ? ' stock-out' : ''}">${out ? '⚠ Sem estoque' : `Estoque: ${p.stock}`}</span>
           </div>
+          ${openBtn}
         </div>
         <div class="qa-counter">
           <button class="qa-btn qa-btn-dec" disabled>−</button>
@@ -755,11 +786,12 @@ function openQuickAdd(category, title) {
       if (qty <= 0) continue;
       const p = prods.find(x => x.id === productId);
       if (!p) continue;
+      const unitPrice = prices[productId] ?? p.price;
       const existing = state.cart.find(i => i.productId === productId);
       if (existing) {
         existing.qty += qty;
       } else {
-        state.cart.push({ productId: p.id, name: p.name, unitPrice: p.price, costPrice: p.costPrice || 0, qty, stock: p.stock });
+        state.cart.push({ productId: p.id, name: p.name, unitPrice, costPrice: p.costPrice || 0, qty, stock: p.stock });
       }
       added++;
     }

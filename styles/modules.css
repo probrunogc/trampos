@@ -638,6 +638,47 @@
 }
 .qa-pop { animation: qa-pop-kf .26s cubic-bezier(.36,.07,.19,.97); }
 
+/* Price input per row */
+.qa-price-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: .75rem;
+  color: var(--text-3);
+}
+.qa-price-input {
+  width: 56px;
+  padding: 1px 4px;
+  background: rgba(255,255,255,.07);
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  color: var(--cream);
+  font-size: .75rem;
+  text-align: right;
+  -moz-appearance: textfield;
+}
+.qa-price-input::-webkit-inner-spin-button,
+.qa-price-input::-webkit-outer-spin-button { -webkit-appearance: none; }
+.qa-price-input:focus { outline: none; border-color: var(--gold-500); }
+
+/* "Abrir carteira / garrafa" inline button */
+.qa-open-btn {
+  margin-top: 6px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1.5px solid var(--line);
+  background: rgba(255,255,255,.04);
+  color: var(--text-3);
+  font-size: .72rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .14s, border-color .14s, color .14s;
+  white-space: nowrap;
+}
+.qa-open-btn:hover:not(:disabled) { border-color: var(--gold-500); color: var(--gold-300); background: rgba(212,175,55,.1); }
+.qa-open-btn.armed { border-color: var(--danger); color: var(--danger); background: rgba(220,38,38,.12); }
+.qa-open-btn:disabled { opacity: .5; cursor: not-allowed; }
+
 /* Stock deduct modal (Abrir carteira / garrafa) */
 .sd-list { display: flex; flex-direction: column; gap: 8px; margin-top: var(--sp-3); }
 .sd-item {
@@ -1149,11 +1190,16 @@
    ========================================================= */
 /* Kiosk: a grade preenche 100% da área (flex acima cuida da altura).
    Reduz o respiro lateral para caber mais produtos no canvas do quiosque. */
-.kiosk-mode .pdv-layout { height: 100%; }
-.kiosk-mode .page-content:has(.pdv-layout) { padding: var(--sp-3) var(--sp-4); }
+.kiosk-mode .pdv-layout {
+  height: 100%;
+  grid-template-columns: 1fr clamp(300px, 32%, 420px); /* coluna do cart responsiva */
+  overflow: hidden;
+}
+.kiosk-mode .page-content:has(.pdv-layout) { padding: var(--sp-3) var(--sp-4); overflow: hidden; }
 .kiosk-mode .pdv-cart {
-  min-width: 420px;
-  max-width: 420px;
+  min-width: 0;   /* deixa a coluna do grid controlar */
+  max-width: none;
+  overflow: hidden;
 }
 
 /* Grid: fill 1366px canvas with well-proportioned touch targets */
