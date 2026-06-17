@@ -161,6 +161,134 @@ async function processProductImage(file, onStatus) {
   return cropped;
 }
 
+/* ── Buscar fotos — Open Food Facts ────────────────────────── */
+async function fetchOFFImage(barcode) {
+  try {
+    const res = await fetch(`https://world.openfoodfacts.org/api/v0/product/${barcode}.json`);
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (data.status !== 1 || !data.product) return null;
+    return data.product.image_front_url || data.product.image_url || null;
+  } catch { return null; }
+}
+
+async function saveProductPhoto(p, imgUrl, onStatus = () => {}) {
+  onStatus('Baixando…');
+  const res = await fetch(imgUrl);
+  if (!res.ok) throw new Error('Download falhou');
+  const blob = await res.blob();
+  const file = new File([blob], 'produto.jpg', { type: blob.type || 'image/jpeg' });
+  const processed = await processProductImage(file, onStatus);
+  onStatus('Enviando…');
+  const ext = processed.type === 'image/jpeg' ? 'jpg' : 'png';
+  const url = await uploadFile(processed, ext);
+  await db.update('products', p.id, { image: url, images: [url] });
+  p.image = url; p.images = [url];
+  return url;
+}
+
+async function openPhotoSearch() {
+  const candidates = state.list.filter(p =>
+    p.barcode?.trim() &&
+    !p.image && !(Array.isArray(p.images) && p.images.filter(Boolean).length)
+  );
+
+  if (!candidates.length) {
+    ui.toast('Todos os produtos com código de barras já têm foto.', 'info');
+    return;
+  }
+
+  const results = {};
+  candidates.forEach(p => { results[p.id] = { url: null, savedUrl: null, status: 'idle' }; });
+
+  const listEl = el('div', { class: 'pf-list' });
+
+  function re() {
+    listEl.innerHTML = candidates.map(p => {
+      const r = results[p.id];
+      let thumb, act;
+      if (r.status === 'loading' || r.status === 'saving') {
+        thumb = `<div class="pf-thumb pf-loading"><div class="pf-spin"></div></div>`;
+        act = `<span class="text-mute small">${r.status === 'saving' ? 'Salvando…' : 'Buscando…'}</span>`;
+      } else if (r.status === 'found') {
+        thumb = `<img class="pf-thumb" src="${fmt.escape(r.url)}" crossorigin="anonymous">`;
+        act = `<button class="btn btn-primary btn-sm" data-save="${p.id}">Salvar</button>`;
+      } else if (r.status === 'saved') {
+        thumb = `<img class="pf-thumb" src="${fmt.escape(r.savedUrl || r.url)}">`;
+        act = `<span class="badge badge-success">✓ Salvo</span>`;
+      } else if (r.status === 'miss') {
+        thumb = `<div class="pf-thumb pf-miss">—</div>`;
+        act = `<span class="text-mute small">Não encontrado</span>`;
+      } else if (r.status === 'error') {
+        thumb = `<div class="pf-thumb pf-miss">!</div>`;
+        act = `<button class="btn btn-ghost btn-sm" data-fetch="${p.id}">Tentar de novo</button>`;
+      } else {
+        thumb = `<div class="pf-thumb pf-idle"></div>`;
+        act = `<button class="btn btn-ghost btn-sm" data-fetch="${p.id}">Buscar</button>`;
+      }
+      return `<div class="pf-row">
+        ${thumb}
+        <div class="pf-info">
+          <div class="pf-name">${fmt.escape(p.name)}</div>
+          <div class="pf-bc">${fmt.escape(p.barcode)}</div>
+        </div>
+        <div class="pf-act">${act}</div>
+      </div>`;
+    }).join('');
+
+    listEl.querySelectorAll('[data-fetch]').forEach(btn => {
+      btn.onclick = async () => {
+        const r = results[btn.dataset.fetch];
+        const cand = candidates.find(x => x.id === btn.dataset.fetch);
+        r.status = 'loading'; re();
+        const url = await fetchOFFImage(cand.barcode.trim());
+        r.status = url ? 'found' : 'miss'; r.url = url; re();
+      };
+    });
+
+    listEl.querySelectorAll('[data-save]').forEach(btn => {
+      btn.onclick = async () => {
+        const id = btn.dataset.save;
+        const r = results[id];
+        const cand = candidates.find(x => x.id === id);
+        r.status = 'saving'; re();
+        try {
+          r.savedUrl = await saveProductPhoto(cand, r.url);
+          r.status = 'saved'; paint();
+        } catch (e) { console.error(e); r.status = 'error'; }
+        re();
+      };
+    });
+  }
+  re();
+
+  const allBtn = el('button', { class: 'btn btn-outline btn-sm', type: 'button' }, '🔍 Buscar todos');
+  allBtn.onclick = async () => {
+    allBtn.disabled = true; allBtn.textContent = 'Buscando…';
+    for (const p of candidates) {
+      if (results[p.id].status !== 'idle') continue;
+      results[p.id].status = 'loading'; re();
+      const url = await fetchOFFImage(p.barcode.trim());
+      results[p.id].status = url ? 'found' : 'miss';
+      results[p.id].url = url; re();
+    }
+    allBtn.textContent = '✓ Concluído';
+  };
+
+  const note = el('p', { style: 'color:var(--text-2);font-size:.85rem;margin-bottom:12px' });
+  note.textContent = `${candidates.length} produto${candidates.length !== 1 ? 's' : ''} com código de barras sem foto. Fonte: Open Food Facts.`;
+  const topBar = el('div', { style: 'display:flex;justify-content:flex-end;margin-bottom:12px' }, allBtn);
+  const container = el('div');
+  container.append(note, topBar, listEl);
+
+  await ui.modal({
+    title: '🖼 Buscar fotos online',
+    wide: true,
+    body: container,
+    footer: [el('button', { class: 'btn btn-ghost', type: 'button', onClick: () => ui.closeModal() }, 'Fechar')],
+  });
+}
+
 /* ── Render ─────────────────────────────────────────────────── */
 export async function render(root) {
   clearNode(root);
@@ -170,6 +298,9 @@ export async function render(root) {
       <div class="page-header-actions">
         <button class="btn btn-danger btn-sm" id="btn-cleanup" style="display:none">
           🧹 Limpar inválidos
+        </button>
+        <button class="btn btn-outline btn-sm" id="btn-photos" style="display:none">
+          🖼 Buscar fotos
         </button>
         <button class="btn btn-primary" id="btn-new">
           ${icon('plus', { size: 16 })} <span>Novo produto</span>
@@ -225,6 +356,10 @@ export async function render(root) {
     const cleanBtn = document.getElementById('btn-cleanup');
     cleanBtn.style.display = '';
     cleanBtn.onclick = () => runCleanup();
+
+    const photoBtn = document.getElementById('btn-photos');
+    photoBtn.style.display = '';
+    photoBtn.onclick = () => openPhotoSearch();
   }
 
   const [products, sales] = await Promise.all([
@@ -720,6 +855,11 @@ async function openForm(id = null) {
               </div>
             </div>`;
         }).join('')}
+        ${isEdit && p?.barcode ? `
+        <button type="button" class="img-add-card" id="btn-off-img" title="Buscar foto pelo código de barras">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <span>Buscar online</span>
+        </button>` : ''}
         <label class="img-add-card" title="Adicionar foto">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
           <span>Foto</span>
@@ -745,6 +885,23 @@ async function openForm(id = null) {
         renderImages();
       };
     });
+
+    const offBtn = wrap.querySelector('#btn-off-img');
+    if (offBtn) {
+      offBtn.onclick = async () => {
+        const span = offBtn.querySelector('span');
+        offBtn.disabled = true; span.textContent = 'Buscando…';
+        try {
+          const url = await fetchOFFImage(p.barcode.trim());
+          if (!url) { ui.toast('Nenhuma foto encontrada no Open Food Facts.', 'warning'); return; }
+          images.push({ url, file: null, blobUrl: null, processing: false, status: '' });
+          renderImages();
+          ui.toast('Foto encontrada! Clique em "Ajustar" para processar.', 'success');
+        } finally {
+          if (offBtn.isConnected) { offBtn.disabled = false; span.textContent = 'Buscar online'; }
+        }
+      };
+    }
   }
   if (isEdit) renderImages();
 
