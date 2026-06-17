@@ -874,147 +874,156 @@ function openBrandModal(brands, title, opts = {}) {
   const armed  = {};
   brands.forEach(b => { prices[b.id] = b.price; qtys[b.id] = 0; });
 
-  const body = el('div');
-  body.className = 'qa-body';
+  // ── body: slider with two panels ──────────────────────────
+  const wrap = el('div');
+  wrap.className = 'bm-wrap';
 
-  const totalBar = el('div');
-  totalBar.className = 'qa-total hidden';
+  const slider = el('div');
+  slider.className = 'bm-slider';
+  wrap.appendChild(slider);
 
-  const updateTotalBar = () => {
-    const totalQty = Object.values(qtys).reduce((s, v) => s + v, 0);
-    const totalVal = brands.reduce((s, b) => s + (qtys[b.id] || 0) * (prices[b.id] ?? b.price), 0);
-    if (totalQty > 0) {
-      totalBar.className = 'qa-total';
-      totalBar.innerHTML = `<span><strong>${totalQty}</strong> item(s) selecionado(s)</span><span class="qa-total-val">${fmt.currency(totalVal)}</span>`;
-    } else {
-      totalBar.className = 'qa-total hidden';
-      totalBar.innerHTML = '';
-    }
-  };
+  const gridPanel   = el('div');
+  gridPanel.className = 'bm-panel';
+  const detailPanel = el('div');
+  detailPanel.className = 'bm-panel';
+  slider.appendChild(gridPanel);
+  slider.appendChild(detailPanel);
 
-  const updateCard = (id) => {
-    const card = body.querySelector(`[data-bid="${id}"]`);
-    if (!card) return;
-    const q = qtys[id];
-    card.classList.toggle('brand-card--active', q > 0);
-    const countEl = card.querySelector('.qa-count');
-    if (countEl) {
-      countEl.textContent = q;
-      countEl.classList.toggle('qa-count--pos', q > 0);
-      if (q > 0) {
-        countEl.classList.remove('qa-pop');
-        void countEl.offsetWidth;
-        countEl.classList.add('qa-pop');
-      }
-    }
-    const decBtn = card.querySelector('.qa-btn-dec');
-    if (decBtn) decBtn.disabled = q === 0;
-    updateTotalBar();
-  };
+  // ── shared footer buttons (shown/hidden per panel) ─────────
+  const closeBtn  = el('button', { class: 'btn btn-ghost',    type: 'button' }, 'Fechar');
+  closeBtn.onclick = () => ui.closeModal(null);
 
-  body.innerHTML = `<div class="brand-grid">${brands.map(b => {
-    const openBtn = opts.openLabel
-      ? `<button class="qa-open-btn" data-bid="${b.id}" type="button">${fmt.escape(opts.openLabel)}</button>`
-      : '';
-    return `
-      <div class="brand-card" data-bid="${b.id}">
-        <div class="brand-card-name">${fmt.escape(b.name)}</div>
-        <label class="qa-price-label">R$<input class="qa-price-input" type="number" step="0.50" min="0" data-bid="${b.id}" value="${b.price.toFixed(2)}"></label>
-        ${openBtn}
-        <div class="qa-counter brand-card-counter">
-          <button class="qa-btn qa-btn-dec" disabled>−</button>
-          <span class="qa-count">0</span>
-          <button class="qa-btn qa-btn-inc">+</button>
-        </div>
-      </div>`;
-  }).join('')}</div>`;
-  body.appendChild(totalBar);
+  const backBtn   = el('button', { class: 'btn btn-ghost',    type: 'button' }, '← Voltar');
+  const addBtn    = el('button', { class: 'btn btn-primary',  type: 'button' }, 'Adicionar ao carrinho');
 
-  body.querySelectorAll('.qa-price-input').forEach(input => {
-    input.onclick = e => e.stopPropagation();
-    input.oninput = () => {
-      prices[input.dataset.bid] = parseFloat(input.value) || 0;
-      updateTotalBar();
-    };
-  });
-
-  body.querySelectorAll('.brand-card').forEach(card => {
-    card.onclick = e => {
-      if (e.target.closest('.qa-price-input') || e.target.closest('.qa-open-btn') || e.target.closest('.qa-btn')) return;
-      const id = card.dataset.bid;
-      qtys[id]++;
-      updateCard(id);
-    };
-  });
-
-  body.querySelectorAll('.qa-btn-dec').forEach(btn => {
-    btn.onclick = e => {
-      e.stopPropagation();
-      const id = btn.closest('[data-bid]').dataset.bid;
-      if (qtys[id] > 0) { qtys[id]--; updateCard(id); }
-    };
-  });
-  body.querySelectorAll('.qa-btn-inc').forEach(btn => {
-    btn.onclick = e => {
-      e.stopPropagation();
-      const id = btn.closest('[data-bid]').dataset.bid;
-      qtys[id]++;
-      updateCard(id);
-    };
-  });
-
-  if (opts.openLabel) {
-    body.querySelectorAll('.qa-open-btn').forEach(btn => {
-      btn.onclick = async e => {
-        e.stopPropagation();
-        const id = btn.dataset.bid;
-        const brand = brands.find(b => b.id === id);
-        if (!armed[id]) {
-          armed[id] = true;
-          btn.classList.add('armed');
-          btn.textContent = 'Confirmar?';
-          armed[`_t_${id}`] = setTimeout(() => {
-            delete armed[id];
-            btn.classList.remove('armed');
-            btn.textContent = opts.openLabel;
-          }, 3000);
-        } else {
-          clearTimeout(armed[`_t_${id}`]);
-          delete armed[id];
-          btn.disabled = true;
-          btn.textContent = 'Aberto';
-          ui.toast(`${opts.openLabel} — ${brand?.name ?? ''} registrado.`, 'success');
-        }
-      };
-    });
-  }
-
-  const cancelBtn = el('button', { class: 'btn btn-ghost', type: 'button' }, 'Cancelar');
-  cancelBtn.onclick = () => ui.closeModal(null);
-
-  const addBtn = el('button', { class: 'btn btn-primary', type: 'button' }, 'Adicionar ao carrinho');
-  addBtn.onclick = () => {
+  const commitCart = () => {
     let added = 0;
     for (const b of brands) {
       const qty = qtys[b.id] || 0;
       if (qty <= 0) continue;
       const unitPrice = prices[b.id] ?? b.price;
       const existing = state.cart.find(i => i.productId == null && i.name === b.name);
-      if (existing) {
-        existing.qty += qty;
-      } else {
-        state.cart.push({ productId: null, name: b.name, unitPrice, costPrice: 0, qty, stock: null });
-      }
+      if (existing) { existing.qty += qty; }
+      else { state.cart.push({ productId: null, name: b.name, unitPrice, costPrice: 0, qty, stock: null }); }
       added++;
     }
-    if (added === 0) { ui.toast('Selecione ao menos um item.', 'warning'); return; }
+    if (added === 0) { ui.toast('Selecione ao menos um item.', 'warning'); return false; }
     paintCart();
     paintTotals();
     ui.closeModal(true);
     ui.toast(`${added} item(s) adicionado(s) ao carrinho`, 'success');
+    return true;
+  };
+  addBtn.onclick = commitCart;
+
+  // ── grid panel ─────────────────────────────────────────────
+  const renderGrid = () => {
+    const totalQty = Object.values(qtys).reduce((s, v) => s + v, 0);
+    const totalVal = brands.reduce((s, b) => s + (qtys[b.id] || 0) * (prices[b.id] ?? b.price), 0);
+
+    closeBtn.style.display  = '';
+    backBtn.style.display   = 'none';
+    addBtn.style.display    = totalQty > 0 ? '' : 'none';
+    addBtn.textContent = totalQty > 0
+      ? `Adicionar (${totalQty}x — ${fmt.currency(totalVal)})`
+      : 'Adicionar ao carrinho';
+
+    gridPanel.innerHTML = `<div class="bm-grid">${brands.map(b => {
+      const q = qtys[b.id] || 0;
+      return `
+        <button class="bm-card${q > 0 ? ' bm-card--on' : ''}" data-bid="${b.id}" type="button">
+          ${q > 0 ? `<span class="bm-badge">${q}</span>` : ''}
+          <span class="bm-card-name">${fmt.escape(b.name)}</span>
+          <span class="bm-card-price">${fmt.currency(prices[b.id] ?? b.price)}</span>
+        </button>`;
+    }).join('')}</div>`;
+
+    gridPanel.querySelectorAll('.bm-card').forEach(card => {
+      card.onclick = () => {
+        const brand = brands.find(b => b.id === card.dataset.bid);
+        if (brand) showDetail(brand);
+      };
+    });
   };
 
-  ui.modal({ title, body, footer: [cancelBtn, addBtn], narrow: true });
+  // ── detail panel ───────────────────────────────────────────
+  const showDetail = (brand) => {
+    slider.classList.add('bm-slide');
+    closeBtn.style.display = 'none';
+    addBtn.style.display   = 'none';
+    backBtn.style.display  = '';
+
+    const openBtnHtml = opts.openLabel
+      ? `<button id="bm-open" class="bm-open-btn" type="button">${fmt.escape(opts.openLabel)}</button>`
+      : '';
+
+    detailPanel.innerHTML = `
+      <div class="bm-detail">
+        <div class="bm-detail-name">${fmt.escape(brand.name)}</div>
+
+        <div class="bm-field">
+          <div class="bm-field-label">Preco por unidade (R$)</div>
+          <input type="number" id="bm-price" class="bm-price-input"
+                 value="${(prices[brand.id] ?? brand.price).toFixed(2)}"
+                 step="0.50" min="0" inputmode="decimal">
+        </div>
+
+        <div class="bm-qty-row">
+          <button class="bm-qty-btn" id="bm-dec" type="button">−</button>
+          <span class="bm-qty-num" id="bm-qty">${qtys[brand.id] || 0}</span>
+          <button class="bm-qty-btn bm-qty-btn--inc" id="bm-inc" type="button">+</button>
+        </div>
+
+        ${openBtnHtml}
+      </div>`;
+
+    document.getElementById('bm-price').oninput = function () {
+      prices[brand.id] = parseFloat(this.value) || 0;
+    };
+
+    const qtyEl = () => document.getElementById('bm-qty');
+    document.getElementById('bm-dec').onclick = () => {
+      if ((qtys[brand.id] || 0) > 0) { qtys[brand.id]--; const q = qtyEl(); if (q) q.textContent = qtys[brand.id]; }
+    };
+    document.getElementById('bm-inc').onclick = () => {
+      qtys[brand.id] = (qtys[brand.id] || 0) + 1;
+      const q = qtyEl(); if (q) q.textContent = qtys[brand.id];
+    };
+
+    if (opts.openLabel) {
+      const openBtn = document.getElementById('bm-open');
+      if (openBtn) {
+        const id = brand.id;
+        openBtn.onclick = () => {
+          if (!armed[id]) {
+            armed[id] = true;
+            openBtn.classList.add('armed');
+            openBtn.textContent = 'Confirmar?';
+            armed[`_t_${id}`] = setTimeout(() => {
+              delete armed[id];
+              openBtn.classList.remove('armed');
+              openBtn.textContent = opts.openLabel;
+            }, 3000);
+          } else {
+            clearTimeout(armed[`_t_${id}`]);
+            delete armed[id];
+            openBtn.disabled = true;
+            openBtn.textContent = 'Aberto';
+            ui.toast(`${opts.openLabel} — ${brand.name} registrado.`, 'success');
+          }
+        };
+      }
+    }
+  };
+
+  backBtn.onclick = () => {
+    slider.classList.remove('bm-slide');
+    renderGrid();
+  };
+
+  // ── initial render ─────────────────────────────────────────
+  renderGrid();
+  ui.modal({ title, body: wrap, footer: [closeBtn, backBtn, addBtn], narrow: true });
 }
 
 function openQuickAdd(category, title, opts = {}) {

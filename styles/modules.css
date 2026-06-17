@@ -584,37 +584,144 @@
 .pdv-quick-sub   { font-size: .7rem; color: var(--text-2); }
 
 /* =========================================================
-   PDV — Brand-card grid (modal Cigarro / Dose)
+   PDV — Brand modal (two-panel slide: grid → detail)
    ========================================================= */
-.brand-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-  gap: 8px;
+.bm-wrap   { overflow: hidden; }
+.bm-slider {
+  display: flex;
+  width: 200%;
+  transition: transform .28s cubic-bezier(.4, 0, .2, 1);
 }
-.brand-card {
+.bm-slider.bm-slide { transform: translateX(-50%); }
+.bm-panel  { width: 50%; flex-shrink: 0; }
+
+/* Grid */
+.bm-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  padding: 2px;
+}
+.bm-card {
+  position: relative;
   display: flex;
   flex-direction: column;
-  gap: 7px;
-  padding: 12px 10px;
-  border-radius: 10px;
-  background: rgba(255,255,255,.04);
+  align-items: flex-start;
+  gap: 5px;
+  padding: 16px 14px;
+  border-radius: 12px;
+  background: rgba(255,255,255,.05);
   border: 1.5px solid transparent;
   cursor: pointer;
-  transition: border-color .18s, background .18s;
+  color: inherit;
+  text-align: left;
+  transition: border-color .15s, background .15s, transform .08s;
   user-select: none;
 }
-.brand-card:hover { background: rgba(255,255,255,.07); }
-.brand-card--active {
+.bm-card:active { transform: scale(.95); }
+.bm-card:hover  { background: rgba(255,255,255,.09); }
+.bm-card--on {
   border-color: var(--gold-500);
-  background: rgba(212,175,55,.08);
+  background: rgba(212,175,55,.1);
 }
-.brand-card-name {
+.bm-badge {
+  position: absolute;
+  top: 7px;
+  right: 9px;
+  background: var(--gold-500);
+  color: var(--navy-1000, #0a1628);
+  font-size: .68rem;
+  font-weight: 800;
+  min-width: 20px;
+  text-align: center;
+  padding: 1px 5px;
+  border-radius: 20px;
+  line-height: 1.5;
+}
+.bm-card-name  { font-weight: 700; font-size: .9rem; color: var(--cream); line-height: 1.2; }
+.bm-card-price { font-size: .75rem; color: var(--text-3); }
+
+/* Detail */
+.bm-detail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  padding: var(--sp-1) 0 var(--sp-2);
+}
+.bm-detail-name {
+  font-family: var(--font-brand);
+  font-size: 1.35rem;
   font-weight: 700;
-  font-size: .86rem;
-  color: var(--cream);
-  line-height: 1.25;
+  color: var(--gold-200);
+  letter-spacing: .02em;
 }
-.brand-card-counter { justify-content: flex-start; }
+.bm-field       { display: flex; flex-direction: column; gap: 5px; }
+.bm-field-label { font-size: .73rem; color: var(--text-3); }
+.bm-price-input {
+  width: 100%;
+  padding: 10px 14px;
+  background: rgba(255,255,255,.07);
+  border: 1.5px solid var(--line);
+  border-radius: 10px;
+  color: var(--cream);
+  font-size: 1.5rem;
+  font-weight: 700;
+  text-align: center;
+  -moz-appearance: textfield;
+}
+.bm-price-input::-webkit-inner-spin-button,
+.bm-price-input::-webkit-outer-spin-button { -webkit-appearance: none; }
+.bm-price-input:focus { outline: none; border-color: var(--gold-500); }
+
+.bm-qty-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 28px;
+  padding: 8px 0;
+}
+.bm-qty-btn {
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  border: 2px solid var(--line);
+  background: rgba(255,255,255,.06);
+  color: inherit;
+  font-size: 1.7rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: background .12s, border-color .12s, transform .08s;
+}
+.bm-qty-btn:hover { background: rgba(212,175,55,.18); border-color: var(--gold-500); }
+.bm-qty-btn:active { transform: scale(.84); }
+.bm-qty-btn--inc { border-color: var(--gold-600); color: var(--gold-300); }
+.bm-qty-btn--inc:hover { background: var(--gold-500); color: var(--navy-1000, #0a1628); }
+.bm-qty-num {
+  font-size: 3.2rem;
+  font-weight: 900;
+  min-width: 72px;
+  text-align: center;
+  color: var(--gold-200);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.bm-open-btn {
+  width: 100%;
+  padding: 13px;
+  border-radius: 10px;
+  border: 1.5px solid var(--line);
+  background: rgba(255,255,255,.04);
+  color: var(--text-3);
+  font-weight: 600;
+  font-size: .85rem;
+  cursor: pointer;
+  transition: border-color .14s, color .14s, background .14s;
+}
+.bm-open-btn:hover:not(:disabled) { border-color: var(--gold-500); color: var(--gold-300); background: rgba(212,175,55,.08); }
+.bm-open-btn.armed { border-color: var(--danger); color: var(--danger); background: rgba(220,38,38,.1); }
+.bm-open-btn:disabled { opacity: .5; cursor: not-allowed; }
 
 /* =========================================================
    PDV — Quick-add modal (Cigarro / Dose) e Controle de Estoque
