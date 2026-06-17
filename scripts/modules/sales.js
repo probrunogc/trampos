@@ -985,14 +985,10 @@ async function finishSale() {
 
     const created = await db.create('sales', sale);
 
-    // Baixar estoque atomicamente (batch — ou falha tudo junto)
-    const stockUpdates = state.cart
-      .map(it => {
-        const p = state.products.find(x => x.id === it.productId);
-        return p ? { id: p.id, data: { stock: Math.max(0, (p.stock || 0) - it.qty) } } : null;
-      })
-      .filter(Boolean);
-    if (stockUpdates.length) await db.batchUpdate('products', stockUpdates);
+    // Baixar estoque via Firestore transaction — garante atomicidade mesmo com
+    // múltiplos caixas vendendo o mesmo item simultaneamente.
+    const stockItems = state.cart.map(i => ({ productId: i.productId, qty: i.qty }));
+    if (stockItems.length) await db.runStockTransaction(stockItems);
 
     ui.toast(`Venda ${code} registrada!`, 'success', { title: 'Sucesso' });
 

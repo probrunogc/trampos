@@ -3,7 +3,7 @@
  * Relatório financeiro completo: bruto x líquido, formas de pagamento,
  * fiados, produtos mais vendidos, horários de pico, entregas, doses/copão.
  */
-import { db, fmt, icon, clearNode, manausNow, auth } from '../core.js';
+import { db, fmt, ui, icon, clearNode, manausNow, auth } from '../core.js';
 import { productImage } from '../product-art.js';
 
 export const meta = {
@@ -102,6 +102,7 @@ function paint() {
 
   // ---- agregados ----
   let bruto = 0, descontos = 0, taxasEntrega = 0, taxasCartao = 0, custoProdutos = 0;
+  let zeroCostRevenue = 0; // receita de itens sem custo cadastrado
   const byPay = {};        // pagamento -> { count, value }
   const byHour = Array(24).fill(0);
   const byDay = {};        // ts -> value
@@ -139,6 +140,7 @@ function paint() {
       // Prefere o custo congelado no momento da venda; cai para o custo atual do produto
       const unitCost = it.unitCost != null ? Number(it.unitCost) : (costMap[it.productId] || 0);
       custoProdutos += qty * unitCost;
+      if (unitCost === 0) zeroCostRevenue += rev;
       if (doseIds.has(it.productId)) { doseQty += qty; doseRevenue += rev; }
     });
 
@@ -161,6 +163,18 @@ function paint() {
     .sort((a, b) => a.ts - b.ts);
 
   box.innerHTML = `
+    ${zeroCostRevenue > 0 ? `
+      <div style="display:flex;align-items:center;gap:10px;padding:10px 16px;margin-bottom:var(--sp-4);
+                  background:rgba(230,126,34,0.1);border:1px solid rgba(230,126,34,0.35);border-radius:8px;
+                  font-size:.84rem;color:var(--text-2)">
+        <span style="font-size:1.1rem;flex-shrink:0">⚠</span>
+        <span>
+          <strong style="color:#e67e22">${fmt.currency(zeroCostRevenue)}</strong>
+          (${bruto ? (zeroCostRevenue / bruto * 100).toFixed(1) : 0}% do faturamento) vem de itens
+          <strong>sem custo cadastrado</strong> — o Lucro Bruto está subestimado.
+          <a href="#/products" style="color:var(--gold-300);margin-left:6px">Cadastrar custos →</a>
+        </span>
+      </div>` : ''}
     <section class="rep-kpis">
       ${kpi('money', 'Faturamento Bruto', fmt.currency(bruto), `${list.length} vendas`)}
       ${kpi('trendUp', 'Faturamento Líquido', fmt.currency(liquido), `− ${fmt.currency(taxasCartao)} em taxas`)}
@@ -251,7 +265,58 @@ function paint() {
         ${doseRanking()}
       </div>
     </section>
+
+    <section class="panel" style="margin-top:var(--sp-4)" id="rep-recent-sales">
+      <div class="panel-head">
+        <h4>Vendas recentes</h4>
+        <span class="text-mute small">últimas 20 — clique para cancelar se necessário</span>
+      </div>
+      <div class="table-scroll">
+        <table class="data-table">
+          <thead><tr>
+            <th>Código</th><th>Data/Hora</th><th>Cliente</th>
+            <th>Itens</th><th>Pagamento</th>
+            <th class="cell-num">Total</th><th>Status</th><th></th>
+          </tr></thead>
+          <tbody id="rep-recent-tbody">
+            ${sales.slice(0, 20).map(s => {
+              const isCancelled = s.status === 'cancelled';
+              const dt = s.createdAt
+                ? new Date(s.createdAt).toLocaleString('pt-BR', { timeZone: 'America/Manaus', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
+                : '—';
+              const PAY = { dinheiro: 'Dinheiro', pix: 'PIX', debito: 'Débito', credito: 'Crédito', fiado: 'Fiado' };
+              const itemSummary = (s.items || []).slice(0, 2).map(i => `${i.qty}× ${fmt.escape(i.name)}`).join(', ')
+                + ((s.items || []).length > 2 ? ` +${(s.items || []).length - 2}` : '');
+              return `<tr>
+                <td class="cell-mono">${fmt.escape(s.code || '—')}</td>
+                <td class="text-mute small">${dt}</td>
+                <td>${fmt.escape(s.customer?.name || 'Avulso')}</td>
+                <td style="font-size:.8rem;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${itemSummary}</td>
+                <td><span class="badge">${PAY[s.paymentMethod] || s.paymentMethod || '—'}</span></td>
+                <td class="cell-num bold">${fmt.currency(s.total)}</td>
+                <td>${isCancelled
+                  ? '<span class="badge badge-danger">Cancelada</span>'
+                  : '<span class="badge badge-success badge-dot">Paga</span>'}</td>
+                <td>${isCancelled ? '' : `
+                  <button class="btn btn-ghost btn-sm rep-cancel-sale"
+                          data-id="${s.id}"
+                          style="color:var(--danger);border-color:var(--danger);opacity:.7"
+                          title="Cancelar esta venda e estornar estoque">
+                    Cancelar
+                  </button>`}
+                </td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    </section>
   `;
+
+  // Wire cancel buttons on recent sales list
+  box.querySelectorAll('.rep-cancel-sale').forEach(btn => {
+    btn.onclick = () => cancelSale(btn.dataset.id);
+  });
 
   function doseRanking() {
     const doses = Object.values(prodAgg)
@@ -267,6 +332,41 @@ function paint() {
           <span class="rep-dose-bar-qty">${d.qty}</span>
         </div>`).join('')}
     </div>`;
+  }
+}
+
+async function cancelSale(saleId) {
+  const sale = state.data?.sales?.find(s => s.id === saleId);
+  if (!sale) { ui.toast('Venda não encontrada.', 'warning'); return; }
+  if (sale.status === 'cancelled') { ui.toast('Esta venda já está cancelada.', 'info'); return; }
+
+  const ok = await ui.confirm({
+    title: 'Cancelar venda',
+    message: `Cancelar ${sale.code || 'esta venda'} (${fmt.currency(sale.total)})? O estoque dos itens será restituído automaticamente.`,
+    okText: 'Cancelar venda',
+    cancelText: 'Manter',
+    danger: true
+  });
+  if (!ok) return;
+
+  try {
+    await db.update('sales', saleId, { status: 'cancelled', cancelledAt: Date.now() });
+
+    // Restituir estoque via transação
+    const stockItems = (sale.items || [])
+      .filter(i => i.productId)
+      .map(i => ({ productId: i.productId, qty: Number(i.qty) || 0 }))
+      .filter(i => i.qty > 0);
+    if (stockItems.length) await db.runStockTransaction(stockItems, { reverse: true });
+
+    // Atualiza state local para refletir imediatamente sem recarregar
+    const idx = state.data.sales.findIndex(s => s.id === saleId);
+    if (idx >= 0) state.data.sales[idx] = { ...state.data.sales[idx], status: 'cancelled', cancelledAt: Date.now() };
+
+    ui.toast(`Venda ${sale.code || ''} cancelada. Estoque restituído.`, 'success');
+    paint(); // re-render com a venda marcada como cancelada
+  } catch (err) {
+    ui.toast(err.message || 'Erro ao cancelar venda.', 'danger');
   }
 }
 

@@ -580,6 +580,40 @@ export const db = {
     await batch.commit();
   },
 
+  // Atualiza estoque de múltiplos produtos atomicamente via Firestore transaction.
+  // reverse=false → decrementa (venda); reverse=true → incrementa (cancelamento).
+  async runStockTransaction(items, { reverse = false } = {}) {
+    await initFirebase();
+    if (_fb.demo) {
+      const arr = lsAll('products');
+      for (const { productId, qty } of items) {
+        const idx = arr.findIndex(r => r.id === productId);
+        if (idx >= 0) {
+          const cur = arr[idx].stock || 0;
+          arr[idx].stock = reverse ? cur + qty : Math.max(0, cur - qty);
+          arr[idx].updatedAt = Date.now();
+        }
+      }
+      lsSave('products', arr);
+      notifyWatchers('products');
+      return;
+    }
+    const { fs, db: fsDb } = _fb;
+    return fs.runTransaction(fsDb, async (transaction) => {
+      const refs = items.map(({ productId }) => fs.doc(fsDb, 'products', productId));
+      // Todas as leituras antes de qualquer escrita (requisito Firestore)
+      const snaps = await Promise.all(refs.map(r => transaction.get(r)));
+      snaps.forEach((snap, i) => {
+        const { qty } = items[i];
+        const cur = snap.exists() ? (snap.data().stock || 0) : 0;
+        transaction.update(refs[i], {
+          stock: reverse ? cur + qty : Math.max(0, cur - qty),
+          updatedAt: Date.now()
+        });
+      });
+    });
+  },
+
   async nextSaleCode() {
     const counter = await this.get('settings', 'counter') || { id: 'counter', saleSeq: 0 };
     const next = (counter.saleSeq || 0) + 1;
