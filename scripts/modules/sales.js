@@ -36,11 +36,26 @@ let state = {
 
 const CATEGORIES = ['Cerveja', 'Refrigerante', 'Água', 'Energético', 'Destilado', 'Vinho', 'Suco', 'Dose', 'Cigarro', 'Outros'];
 const PAYMENTS = [
-  { id: 'dinheiro', label: 'Dinheiro', icon: '💵' },
-  { id: 'pix',      label: 'PIX',      icon: '📱' },
-  { id: 'debito',   label: 'Débito',   icon: '💳' },
-  { id: 'credito',  label: 'Crédito',  icon: '💳' },
-  { id: 'fiado',    label: 'Fiado',    icon: '📋' },
+  {
+    id: 'dinheiro', label: 'Dinheiro', fee: 0,
+    icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="5" width="22" height="14" rx="2"/><circle cx="12" cy="12" r="3"/><path d="M5 5v14M19 5v14"/></svg>`,
+  },
+  {
+    id: 'pix', label: 'PIX', fee: 0,
+    icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>`,
+  },
+  {
+    id: 'debito', label: 'Débito', fee: 1.02,
+    icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/><line x1="7" y1="15" x2="11" y2="15"/></svg>`,
+  },
+  {
+    id: 'credito', label: 'Crédito', fee: 3.29,
+    icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/><rect x="5" y="13" width="3" height="3" rx="0.5"/></svg>`,
+  },
+  {
+    id: 'fiado', label: 'Fiado', fee: 0,
+    icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><line x1="9" y1="9" x2="15" y2="9"/><line x1="9" y1="13" x2="15" y2="13"/></svg>`,
+  },
 ];
 
 const CIGARRO_BRANDS = [
@@ -246,7 +261,7 @@ export async function render(root) {
         .forEach(b => b.classList.toggle('active', b.dataset.pay === state.paymentMethod));
       const recvInput = document.getElementById('pdv-received');
       if (recvInput) recvInput.value = '';
-      paintTroco();
+      paintTotals();
     };
   });
   document.getElementById('pdv-received').oninput = e => {
@@ -299,6 +314,7 @@ export async function render(root) {
   // O leitor injeta os dígitos muito rápido (< 50ms/char) e encerra com Enter.
   // Capturamos no document para funcionar mesmo sem o campo de busca focado.
   wireScanner();
+  wireShortcuts();
 
   paintAll();
 
@@ -580,6 +596,27 @@ function wireScanner() {
   };
 
   document.addEventListener('keydown', window._scannerHandler);
+}
+
+function wireShortcuts() {
+  if (window._pdvShortcutHandler) document.removeEventListener('keydown', window._pdvShortcutHandler);
+
+  window._pdvShortcutHandler = (e) => {
+    // Não ativa se houver modal aberto ou foco em campo de texto
+    const mh = document.getElementById('modal-host');
+    if (mh && !mh.classList.contains('hidden')) return;
+    const tag = document.activeElement?.tagName?.toLowerCase();
+    if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
+
+    if (e.key === 'F1') { e.preventDefault(); document.getElementById('pdv-quick-cigarro')?.click(); }
+    if (e.key === 'F2') { e.preventDefault(); document.getElementById('pdv-quick-dose')?.click(); }
+    if (e.key === 'F3') { e.preventDefault(); document.getElementById('pdv-finish')?.click(); }
+    if (e.key === 'F4') { e.preventDefault(); document.getElementById('pdv-sangria')?.click(); }
+    if (e.key === 'F6') { e.preventDefault(); document.getElementById('pdv-fechar-caixa')?.click(); }
+    if (e.key === 'F8') { e.preventDefault(); document.getElementById('pdv-clear')?.click(); }
+  };
+
+  document.addEventListener('keydown', window._pdvShortcutHandler);
 }
 
 const COSMOS_TOKEN = '82haA2Xclw-x7pepzbU0Yg';
@@ -1396,11 +1433,21 @@ function paintCart() {
   document.getElementById('pdv-finish').disabled = false;
 }
 
-function paintTotals() {
+function _calcTotals() {
   const subtotal = state.cart.reduce((s, i) => s + i.qty * i.unitPrice, 0);
   const discount = Math.max(0, state.discount || 0);
-  const fee = state.needsDelivery ? (state.deliveryFee || 0) : 0;
-  const total = Math.max(0, subtotal - discount + fee);
+  const deliveryFee = state.needsDelivery ? (state.deliveryFee || 0) : 0;
+  const payMethod = PAYMENTS.find(p => p.id === state.paymentMethod);
+  const payFeeRate = payMethod?.fee || 0;
+  const base = Math.max(0, subtotal - discount + deliveryFee);
+  const paymentFee = Math.round(base * payFeeRate) / 100;
+  const total = Math.max(0, base + paymentFee);
+  return { subtotal, discount, deliveryFee, payFeeRate, paymentFee, payMethod, base, total };
+}
+
+function paintTotals() {
+  const { subtotal, discount, deliveryFee, payFeeRate, paymentFee, payMethod, total } = _calcTotals();
+  const inputStyle = 'width:80px;padding:3px 6px;border:1px solid var(--line);background:transparent;border-radius:4px;color:var(--cream);text-align:right';
 
   document.getElementById('pdv-totals').innerHTML = `
     <div class="pdv-total-row">
@@ -1410,16 +1457,21 @@ function paintTotals() {
       <span>Desconto</span>
       <span>
         <input type="number" min="0" step="0.01" value="${discount}"
-          id="pdv-discount" style="width:80px;padding:3px 6px;border:1px solid var(--line);background:transparent;border-radius:4px;color:var(--cream);text-align:right" />
+          id="pdv-discount" style="${inputStyle}" />
       </span>
     </div>
     ${state.needsDelivery ? `
       <div class="pdv-total-row">
         <span>Taxa entrega</span>
         <span>
-          <input type="number" min="0" step="0.01" value="${fee}"
-            id="pdv-fee" style="width:80px;padding:3px 6px;border:1px solid var(--line);background:transparent;border-radius:4px;color:var(--cream);text-align:right" />
+          <input type="number" min="0" step="0.01" value="${deliveryFee}"
+            id="pdv-fee" style="${inputStyle}" />
         </span>
+      </div>` : ''}
+    ${payFeeRate > 0 ? `
+      <div class="pdv-total-row" style="font-size:.82rem;color:var(--text-2)">
+        <span>Taxa ${payMethod.label} (${payFeeRate}%)</span>
+        <span>+ ${fmt.currency(paymentFee)}</span>
       </div>` : ''}
     <div class="pdv-total-row grand">
       <span>TOTAL</span><span class="total-value">${fmt.currency(total)}</span>
@@ -1438,10 +1490,7 @@ function paintTroco() {
   const isDinheiro = state.paymentMethod === 'dinheiro';
   wrap.style.display = isDinheiro ? '' : 'none';
   if (!isDinheiro) return;
-  const subtotal = state.cart.reduce((s, i) => s + i.qty * i.unitPrice, 0);
-  const discount = Math.max(0, state.discount || 0);
-  const fee = state.needsDelivery ? (state.deliveryFee || 0) : 0;
-  const total = Math.max(0, subtotal - discount + fee);
+  const { total } = _calcTotals();
   const recv = state.received || 0;
   const troco = recv >= total && recv > 0 ? recv - total : 0;
   const trocoEl = document.getElementById('pdv-troco-val');
@@ -1453,62 +1502,101 @@ function paintTroco() {
 
 async function openCustomerPicker() {
   const list = state.customers;
-
   const wrap = el('div');
-  wrap.innerHTML = `
-    <div class="table-search" style="margin-bottom: var(--sp-3); max-width: none">
-      ${icon('search')}
-      <input id="cust-search" type="search" placeholder="Buscar cliente por nome ou telefone..." />
-    </div>
-    <div id="cust-results" style="max-height: 360px; overflow-y: auto"></div>
-    <div style="margin-top: var(--sp-4); display: flex; justify-content: space-between; gap: var(--sp-2)">
-      <button type="button" class="btn btn-ghost" id="cust-walkin">Venda avulsa (sem cliente)</button>
-      <button type="button" class="btn btn-secondary" id="cust-new">+ Novo cliente</button>
-    </div>
-  `;
 
-  const paintResults = () => {
-    const q = wrap.querySelector('#cust-search').value.toLowerCase();
-    const arr = q ? list.filter(c =>
-      (c.name || '').toLowerCase().includes(q) ||
-      (c.phone || '').includes(q)
-    ) : list;
-    const box = wrap.querySelector('#cust-results');
-    if (arr.length === 0) {
-      box.innerHTML = `<div class="empty-state"><h4>Nenhum cliente encontrado</h4></div>`;
-      return;
-    }
-    box.innerHTML = arr.map(c => `
-      <div class="list-row" data-id="${c.id}" style="cursor:pointer; margin-bottom: 6px">
-        <div class="user-chip-avatar" style="width: 32px; height: 32px; font-size: .8rem">
-          ${(c.name || '?').charAt(0).toUpperCase()}
-        </div>
-        <div class="list-row-body">
-          <div class="list-row-title">${fmt.escape(c.name)}</div>
-          <div class="list-row-sub">${fmt.phone(c.phone)} · ${fmt.escape(c.address?.neighborhood || 'Sem bairro')}</div>
-        </div>
+  const showList = () => {
+    wrap.innerHTML = `
+      <div class="table-search" style="margin-bottom: var(--sp-3); max-width: none">
+        ${icon('search')}
+        <input id="cust-search" type="search" placeholder="Buscar cliente por nome ou telefone..." />
       </div>
-    `).join('');
-    box.querySelectorAll('.list-row').forEach(r => r.onclick = () => {
-      state.customer = list.find(c => c.id === r.dataset.id) || null;
+      <div id="cust-results" style="max-height: 360px; overflow-y: auto"></div>
+      <div style="margin-top: var(--sp-4); display: flex; justify-content: space-between; gap: var(--sp-2)">
+        <button type="button" class="btn btn-ghost" id="cust-walkin">Venda avulsa (sem cliente)</button>
+        <button type="button" class="btn btn-secondary" id="cust-new">+ Novo cliente</button>
+      </div>
+    `;
+
+    const paintResults = () => {
+      const q = wrap.querySelector('#cust-search').value.toLowerCase();
+      const arr = q ? list.filter(c =>
+        (c.name || '').toLowerCase().includes(q) ||
+        (c.phone || '').includes(q)
+      ) : list;
+      const box = wrap.querySelector('#cust-results');
+      if (arr.length === 0) {
+        box.innerHTML = `<div class="empty-state"><h4>Nenhum cliente encontrado</h4></div>`;
+        return;
+      }
+      box.innerHTML = arr.map(c => `
+        <div class="list-row" data-id="${c.id}" style="cursor:pointer; margin-bottom: 6px">
+          <div class="user-chip-avatar" style="width: 32px; height: 32px; font-size: .8rem">
+            ${(c.name || '?').charAt(0).toUpperCase()}
+          </div>
+          <div class="list-row-body">
+            <div class="list-row-title">${fmt.escape(c.name)}</div>
+            <div class="list-row-sub">${fmt.phone(c.phone)} · ${fmt.escape(c.address?.neighborhood || 'Sem bairro')}</div>
+          </div>
+        </div>
+      `).join('');
+      box.querySelectorAll('.list-row').forEach(r => r.onclick = () => {
+        state.customer = list.find(c => c.id === r.dataset.id) || null;
+        updateCustomerUI();
+        ui.closeModal(true);
+      });
+    };
+
+    wrap.querySelector('#cust-search').oninput = paintResults;
+    wrap.querySelector('#cust-walkin').onclick = () => {
+      state.customer = null;
       updateCustomerUI();
       ui.closeModal(true);
-    });
+    };
+    wrap.querySelector('#cust-new').onclick = showCreate;
+    paintResults();
+    wrap.querySelector('#cust-search').focus();
   };
 
-  wrap.querySelector('#cust-search').oninput = paintResults;
-  wrap.querySelector('#cust-walkin').onclick = () => {
-    state.customer = null;
-    updateCustomerUI();
-    ui.closeModal(true);
-  };
-  wrap.querySelector('#cust-new').onclick = () => {
-    ui.closeModal(false);
-    ui.toast('Cadastre o cliente na aba Clientes e volte ao PDV.', 'info');
-    location.hash = '/customers';
+  const showCreate = () => {
+    wrap.innerHTML = `
+      <div style="margin-bottom: var(--sp-3)">
+        <label class="field-label">Nome *</label>
+        <input id="qc-name" class="field-input" type="text" placeholder="Nome completo" autocomplete="off" />
+      </div>
+      <div style="margin-bottom: var(--sp-3)">
+        <label class="field-label">Telefone *</label>
+        <input id="qc-phone" class="field-input" type="tel" placeholder="(92) 99999-9999" autocomplete="off" />
+      </div>
+      <div id="qc-err" style="color: var(--danger); font-size: .8rem; min-height: 1.2em; margin-bottom: var(--sp-3)"></div>
+      <div style="display: flex; justify-content: space-between; gap: var(--sp-2)">
+        <button type="button" class="btn btn-ghost" id="qc-back">&#8592; Voltar</button>
+        <button type="button" class="btn btn-primary" id="qc-save">Criar cliente</button>
+      </div>
+    `;
+    wrap.querySelector('#qc-name').focus();
+    wrap.querySelector('#qc-back').onclick = showList;
+    wrap.querySelector('#qc-save').onclick = async () => {
+      const name = (wrap.querySelector('#qc-name').value || '').trim();
+      const phone = (wrap.querySelector('#qc-phone').value || '').trim();
+      const errEl = wrap.querySelector('#qc-err');
+      if (!name) { errEl.textContent = 'Nome obrigatório.'; return; }
+      if (!phone) { errEl.textContent = 'Telefone obrigatório.'; return; }
+      const saveBtn = wrap.querySelector('#qc-save');
+      saveBtn.disabled = true;
+      try {
+        const cust = await db.create('customers', { name, phone, createdAt: Date.now() });
+        state.customers.unshift(cust);
+        state.customer = cust;
+        updateCustomerUI();
+        ui.closeModal(true);
+      } catch {
+        errEl.textContent = 'Erro ao salvar cliente. Tente novamente.';
+        saveBtn.disabled = false;
+      }
+    };
   };
 
-  paintResults();
+  showList();
   await ui.modal({ title: 'Selecionar cliente', body: wrap, footer: '', wide: true });
 }
 
@@ -1540,7 +1628,7 @@ function updateCustomerUI() {
   box.onclick = openCustomerPicker;
 }
 
-function confirmRichSale({ subtotal, discount, fee, total }) {
+function confirmRichSale({ subtotal, discount, fee, payFeeRate, paymentFee, total }) {
   const payLabel = PAYMENTS.find(p => p.id === state.paymentMethod)?.label || state.paymentMethod;
   const recv = state.paymentMethod === 'dinheiro' ? (state.received || 0) : 0;
   const troco = recv >= total && recv > 0 ? recv - total : 0;
@@ -1555,6 +1643,7 @@ function confirmRichSale({ subtotal, discount, fee, total }) {
       <div style="display:flex;justify-content:space-between;padding:4px 0"><span>Subtotal:</span><strong>${fmt.currency(subtotal)}</strong></div>
       ${discount ? `<div style="display:flex;justify-content:space-between;padding:4px 0"><span>Desconto:</span><strong style="color:var(--gold-300)">− ${fmt.currency(discount)}</strong></div>` : ''}
       ${fee ? `<div style="display:flex;justify-content:space-between;padding:4px 0"><span>Taxa entrega:</span><strong>+ ${fmt.currency(fee)}</strong></div>` : ''}
+      ${paymentFee > 0 ? `<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:.85rem;color:var(--text-2)"><span>Taxa ${payLabel} (${payFeeRate}%):</span><strong>+ ${fmt.currency(paymentFee)}</strong></div>` : ''}
       <div style="display:flex;justify-content:space-between;padding:10px 0;border-top:1px dashed var(--line);margin-top:6px;font-family:var(--font-brand);font-size:1.2rem">
         <span class="text-gold">TOTAL</span><span class="gold-text bold">${fmt.currency(total)}</span>
       </div>
@@ -1585,13 +1674,10 @@ async function finishSale() {
     return;
   }
 
-  const subtotal = state.cart.reduce((s, i) => s + i.qty * i.unitPrice, 0);
-  const discount = state.discount || 0;
-  const fee = state.needsDelivery ? (state.deliveryFee || 0) : 0;
-  const total = subtotal - discount + fee;
+  const { subtotal, discount, deliveryFee: fee, payFeeRate, paymentFee, total } = _calcTotals();
 
   // Confirmação visual rica
-  const ok = await confirmRichSale({ subtotal, discount, fee, total });
+  const ok = await confirmRichSale({ subtotal, discount, fee, payFeeRate, paymentFee, total });
   if (!ok) return;
 
   try {
@@ -1614,6 +1700,8 @@ async function finishSale() {
       subtotal,
       discount,
       deliveryFee: fee,
+      paymentFee,
+      paymentFeeRate: payFeeRate,
       total,
       paymentMethod: state.paymentMethod,
       received: state.paymentMethod === 'dinheiro' ? (state.received || 0) : null,
@@ -1679,7 +1767,7 @@ async function finishSale() {
       .forEach(b => b.classList.toggle('active', b.dataset.pay === 'dinheiro'));
     const recvInput = document.getElementById('pdv-received');
     if (recvInput) recvInput.value = '';
-    paintTroco();
+    paintTotals();
     // Recarregar produtos para refletir estoque
     state.products = (await db.list('products', { orderBy: 'name' })).filter(p => p.active !== false);
     updateCustomerUI();

@@ -477,7 +477,8 @@
   -webkit-tap-highlight-color: transparent;
   line-height: 1.2;
 }
-.pdv-pay-icon { font-size: 1.15rem; line-height: 1; }
+.pdv-pay-icon { font-size: 1.15rem; line-height: 1; display:flex; align-items:center; justify-content:center; }
+.pdv-pay-icon svg { width: 1.15rem; height: 1.15rem; }
 .pdv-pay-btn.active {
   border-color: var(--gold-500, #d4af37);
   background: rgba(212,175,55,.12);
@@ -1648,6 +1649,7 @@
   /* Botões de pagamento: ícone maior, label menor */
   .pdv-pay-btn { padding: 6px 2px; font-size: .58rem; }
   .pdv-pay-icon { font-size: 1.05rem; }
+  .pdv-pay-icon svg { width: 1.05rem; height: 1.05rem; }
 
   /* Buscar fotos — linhas mais compactas */
   .pf-list { max-height: 52vh; }
