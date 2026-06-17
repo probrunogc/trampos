@@ -199,27 +199,102 @@ async function changeStatus(saleId, status) {
 
 /* =================================================================
  * IMPRESSÃO DO CUPOM TÉRMICO 80mm
- * Renderiza HTML no #print-host (escondido em tela) e chama window.print()
+ * Abre popup autocontido com CSS inline — compatível com Chrome
+ * --kiosk-printing (impressão direta sem dialogo do sistema).
  * ================================================================= */
+const SHOP = {
+  name:         'EMPÓRIO DAS BEBIDAS',
+  address:      'Av. Joaquim Cardoso, 12 C',
+  neighborhood: 'José Dutra · Presidente Figueiredo - AM',
+  phone:        '(92) 99139-2485',
+  instagram:    '@emporiodebebidas81',
+  igUrl:        'https://instagram.com/emporiodebebidas81',
+};
+
+const PAY_LABELS = {
+  dinheiro: 'Dinheiro', pix: 'PIX', debito: 'Cartao Debito',
+  credito: 'Cartao Credito', fiado: 'Fiado'
+};
+
 export async function printSaleCupom(saleId) {
   const sale = await db.get('sales', saleId);
   if (!sale) { ui.toast('Venda não encontrada.', 'danger'); return; }
-  const company = await db.get('settings', 'company') || { name: 'Empório das Bebidas' };
 
-  const host = document.getElementById('print-host');
-  host.innerHTML = buildCupomHTML(sale, company);
+  // QR code gerado inline (sem servico externo)
+  let qrSrc = '';
+  try {
+    const { default: QRCode } = await import('https://cdn.jsdelivr.net/npm/qrcode@1.5.3/+esm');
+    qrSrc = await QRCode.toDataURL(SHOP.igUrl, { width: 140, margin: 1 });
+  } catch { /* impressao continua sem QR */ }
 
-  // Pequeno delay para garantir layout antes da impressão
-  setTimeout(() => {
+  const logoSrc = window.location.origin + '/assets/logo.png';
+  const body    = buildCupomBody(sale, logoSrc, qrSrc);
+
+  // Tenta abrir popup (funciona direto com Chrome --kiosk-printing)
+  const win = window.open('', '_blank',
+    'width=360,height=720,menubar=no,toolbar=no,location=no,status=no,scrollbars=yes');
+  if (win) {
+    win.document.write(wrapPrintDoc(body));
+    win.document.close();
+  } else {
+    // Fallback: imprime na propria aba
+    const host = document.getElementById('print-host');
+    if (host) { host.innerHTML = body; setTimeout(() => window.print(), 80); }
+    ui.toast('Permita popups neste site para impressao direta.', 'warning', { duration: 5000 });
+  }
+}
+
+function wrapPrintDoc(body) {
+  return `<!DOCTYPE html><html lang="pt-BR"><head>
+<meta charset="UTF-8"><title>Cupom</title>
+<style>
+@page{size:80mm auto;margin:2mm 3mm}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Courier New',monospace;font-size:10pt;line-height:1.35;
+     color:#000;background:#fff;width:74mm}
+img{display:block;max-width:100%}
+.rc{text-align:center}
+.rs{display:flex;justify-content:space-between;gap:4px}
+.rb{font-weight:700}
+hr {border:0;border-top:1px dashed #000;margin:4pt 0}
+.solid{border-top:1px solid #000}
+.dbl{border-top:2px solid #000}
+.logo-wrap{text-align:center;padding:3pt 0 5pt}
+.logo-wrap img{width:24mm;height:24mm;margin:0 auto;object-fit:contain}
+.shop-name{text-align:center;font-size:13pt;font-weight:900;letter-spacing:.06em;line-height:1.1}
+.shop-info{text-align:center;font-size:8.5pt;line-height:1.6;margin:3pt 0 4pt}
+.doc-title{text-align:center;font-weight:900;font-size:10.5pt;text-transform:uppercase;
+           letter-spacing:.1em;border-top:1px solid #000;border-bottom:1px solid #000;
+           padding:2.5pt 0;margin:3pt 0}
+.block{margin:3pt 0}
+.lbl{font-size:7.5pt;text-transform:uppercase;letter-spacing:.07em}
+.addr-box{font-size:9.5pt;line-height:1.4;border:1px solid #000;padding:3pt;margin:3pt 0}
+.item{margin-bottom:2pt}
+.item-name{font-weight:700}
+.item-line{display:flex;justify-content:space-between}
+.item-meta{font-size:9pt}
+.total-box{display:flex;justify-content:space-between;font-weight:900;font-size:12pt;
+           border-top:2px solid #000;border-bottom:2px solid #000;padding:3pt 0;margin:3pt 0}
+.qr-wrap{text-align:center;margin:5pt 0 2pt}
+.qr-wrap img{width:23mm;height:23mm;margin:0 auto}
+.qr-lbl{text-align:center;font-size:9pt;font-weight:700;letter-spacing:.03em;margin-top:2pt}
+.foot{text-align:center;font-size:8pt;margin-top:5pt;line-height:1.55}
+</style></head><body>
+${body}
+<script>
+window.addEventListener('load',function(){
+  setTimeout(function(){
     window.print();
-  }, 80);
+    window.addEventListener('afterprint',function(){window.close();});
+  },200);
+});
+</script>
+</body></html>`;
 }
 
 function buildCupomHTML(sale, company) {
-  const PAYMENT_LABELS = {
-    dinheiro: 'DINHEIRO', pix: 'PIX', debito: 'CARTÃO DÉBITO',
-    credito: 'CARTÃO CRÉDITO', fiado: 'FIADO'
-  };
+  /* legado — mantido para compatibilidade com outros chamadores */
+  const PAYMENT_LABELS = PAY_LABELS;
   const a = sale.customer?.address || {};
   const addrLine = [a.street, a.number, a.complement].filter(Boolean).join(', ');
   const addrSub = [a.neighborhood, a.city, a.state].filter(Boolean).join(' — ');
@@ -316,6 +391,100 @@ function buildCupomHTML(sale, company) {
         Obrigado pela preferência!<br>
         Empório das Bebidas · ${new Date().getFullYear()}
       </div>
+    </div>
+  `;
+}
+
+function buildCupomBody(sale, logoSrc, qrSrc) {
+  const a        = sale.customer?.address || {};
+  const addrLine = [a.street, a.number, a.complement].filter(Boolean).join(', ');
+  const addrSub  = [a.neighborhood, a.city, a.state].filter(Boolean).join(' — ');
+  const payLabel = PAY_LABELS[sale.paymentMethod] || (sale.paymentMethod || '').toUpperCase();
+  const isDeliv  = !!sale.delivery;
+
+  return `
+    <div class="logo-wrap">
+      <img src="${logoSrc}" alt="Emporio das Bebidas">
+    </div>
+    <div class="shop-name">${fmt.escape(SHOP.name)}</div>
+    <div class="shop-info">
+      ${fmt.escape(SHOP.address)}<br>
+      ${fmt.escape(SHOP.neighborhood)}<br>
+      ${fmt.escape(SHOP.phone)}
+    </div>
+
+    <hr>
+    <div class="doc-title">${isDeliv ? 'Nota de Entrega' : 'Comprovante de Venda'}</div>
+
+    <div class="rs rb" style="font-size:11pt;margin-bottom:2pt">
+      <span>${fmt.escape(sale.code || '')}</span>
+      <span>${fmt.datetime(sale.createdAt)}</span>
+    </div>
+
+    ${sale.customer ? `
+      <div class="block">
+        <div class="lbl">Cliente</div>
+        <div class="rb">${fmt.escape(sale.customer.name)}</div>
+        ${sale.customer.phone ? `<div>${fmt.phone(sale.customer.phone)}</div>` : ''}
+      </div>` : '<div class="block"><div class="lbl">Consumidor final</div></div>'}
+
+    ${isDeliv && addrLine ? `
+      <div class="addr-box">
+        <div class="lbl rb">Endereco de entrega</div>
+        <div class="rb">${fmt.escape(addrLine)}</div>
+        ${addrSub ? `<div>${fmt.escape(addrSub)}</div>` : ''}
+        ${a.cep ? `<div>CEP ${fmt.cep(a.cep)}</div>` : ''}
+        ${a.reference ? `<div><em>Ref.: ${fmt.escape(a.reference)}</em></div>` : ''}
+      </div>` : ''}
+
+    <hr>
+    <div class="rb" style="font-size:9pt;margin-bottom:3pt">ITENS</div>
+
+    ${(sale.items || []).map(it => `
+      <div class="item">
+        <div class="item-name">${fmt.escape(it.name)}</div>
+        <div class="item-line">
+          <span class="item-meta">${it.qty}x ${fmt.currency(it.unitPrice)}</span>
+          <span class="item-meta rb">${fmt.currency(it.qty * it.unitPrice)}</span>
+        </div>
+      </div>`).join('')}
+
+    <hr class="solid">
+    ${sale.discount   ? `<div class="rs" style="font-size:9pt"><span>Desconto</span><span>- ${fmt.currency(sale.discount)}</span></div>` : ''}
+    ${sale.deliveryFee ? `<div class="rs" style="font-size:9pt"><span>Taxa entrega</span><span>+ ${fmt.currency(sale.deliveryFee)}</span></div>` : ''}
+
+    <div class="total-box">
+      <span>TOTAL</span>
+      <span>${fmt.currency(sale.total)}</span>
+    </div>
+
+    <div class="rs" style="margin-top:3pt">
+      <span class="lbl">Pagamento</span>
+      <span class="rb">${fmt.escape(payLabel)}</span>
+    </div>
+    ${sale.paymentMethod === 'dinheiro' && sale.received ? `
+      <div class="rs" style="font-size:9pt"><span>Recebido</span><span>${fmt.currency(sale.received)}</span></div>
+      ${(sale.troco || 0) > 0 ? `<div class="rs" style="font-size:9pt"><span>Troco</span><span>${fmt.currency(sale.troco)}</span></div>` : ''}` : ''}
+    ${sale.note ? `<div style="font-size:8.5pt;margin-top:3pt"><span class="lbl">Obs: </span>${fmt.escape(sale.note)}</div>` : ''}
+
+    ${isDeliv ? `
+      <hr class="solid">
+      <div class="rb rc" style="font-size:10pt;margin:2pt 0">INSTRUCOES DO ENTREGADOR</div>
+      <div style="font-size:9.5pt">
+        ${sale.delivery.delivererName ? `Entregador: <strong>${fmt.escape(sale.delivery.delivererName)}</strong><br>` : ''}
+        Status: <strong>${sale.delivery.status === 'pending' ? 'PENDENTE' : sale.delivery.status === 'in_route' ? 'EM ROTA' : 'ENTREGUE'}</strong>
+        ${sale.delivery.deliveredAt ? `<br>Entregue em: ${fmt.datetime(sale.delivery.deliveredAt)}` : ''}
+      </div>` : ''}
+
+    <hr class="dbl">
+
+    ${qrSrc ? `
+      <div class="qr-wrap"><img src="${qrSrc}" alt="QR Instagram"></div>
+      <div class="qr-lbl">${fmt.escape(SHOP.instagram)}</div>` : ''}
+
+    <div class="foot">
+      Obrigado pela preferencia!<br>
+      ${fmt.escape(SHOP.name)} &bull; Presidente Figueiredo - AM
     </div>
   `;
 }
