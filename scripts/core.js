@@ -153,6 +153,12 @@ export const ui = {
       const footEl = document.getElementById('modal-footer');
       const win = host.querySelector('.modal-window');
 
+      // Singleton guard: se já houver um modal aberto, resolve-o antes de
+      // reaproveitar o host. Evita modais sobrepostos (ex.: scan disparando
+      // um segundo modal por cima do "Imprimir cupom?") que deixavam o
+      // resolver pendente e a interface em estado quebrado.
+      if (host._resolveModal) host._resolveModal(null);
+
       titleEl.textContent = title || '';
       bodyEl.innerHTML = '';
       footEl.innerHTML = '';
@@ -167,11 +173,18 @@ export const ui = {
       else if (footer instanceof HTMLElement) footEl.appendChild(footer);
       else if (Array.isArray(footer)) footer.forEach(b => footEl.appendChild(b));
 
+      let closed = false;
       const close = (result) => {
+        if (closed) return;           // evita resolver/limpar duas vezes
+        closed = true;
         host.classList.add('hidden');
         host.setAttribute('aria-hidden', 'true');
         document.removeEventListener('keydown', onKey);
         host.removeEventListener('click', onClick);
+        host._resolveModal = null;    // não deixa resolver obsoleto pendurado
+        // Limpa o conteúdo para nenhum texto/markup vazar atrás da página
+        bodyEl.innerHTML = '';
+        footEl.innerHTML = '';
         resolve(result);
       };
       const onKey = (e) => { if (e.key === 'Escape') close(null); };

@@ -271,6 +271,8 @@ function setupKioskNav() {
 async function renderModule(module) {
   const user = auth.currentUser();
   if (!user) return;
+  // Garante que nenhum modal fique aberto ao trocar de tela
+  ui.closeModal(null);
   if (!userCan(module, user)) {
     ui.toast('Você não tem permissão para acessar este módulo.', 'warning');
     router.navigate('/dashboard');

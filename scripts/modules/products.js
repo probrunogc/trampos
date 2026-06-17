@@ -294,11 +294,9 @@ async function runCleanup() {
     </div>
   `;
 
-  const ok = await new Promise(resolve => {
-    const cancel = el('button', { class: 'btn btn-ghost', type: 'button', onClick: () => { ui.closeModal(false); resolve(false); } }, 'Cancelar');
-    const confirm = el('button', { class: 'btn btn-danger', type: 'button', onClick: () => { ui.closeModal(true); resolve(true); } }, 'Executar limpeza');
-    ui.modal({ title: '🧹 Limpeza de dados', body, footer: [cancel, confirm] });
-  });
+  const cancel = el('button', { class: 'btn btn-ghost', type: 'button', onClick: () => ui.closeModal(false) }, 'Cancelar');
+  const confirm = el('button', { class: 'btn btn-danger', type: 'button', onClick: () => ui.closeModal(true) }, 'Executar limpeza');
+  const ok = await ui.modal({ title: '🧹 Limpeza de dados', body, footer: [cancel, confirm] }) === true;
 
   if (!ok) return;
 

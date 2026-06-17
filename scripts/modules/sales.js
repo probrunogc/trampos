@@ -256,6 +256,12 @@ function wireScanner() {
   if (window._scannerHandler) document.removeEventListener('keydown', window._scannerHandler);
 
   window._scannerHandler = (e) => {
+    // Ignora se houver um modal aberto (confirmação de venda, "imprimir cupom?",
+    // cadastro rápido etc.) — senão um scan abriria um segundo modal por cima,
+    // sobrepondo o conteúdo e travando o fluxo.
+    const mh = document.getElementById('modal-host');
+    if (mh && !mh.classList.contains('hidden')) { _scanBuf = ''; return; }
+
     // Ignora se o foco estiver em input/textarea (digitação manual)
     const tag = document.activeElement?.tagName?.toLowerCase();
     if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
@@ -464,6 +470,9 @@ async function openQuickProductForm(prefillBarcode = '') {
 
 async function handleScannedBarcode(code) {
   if (_modalOpen) return; // evita abrir segundo modal enquanto um já está aberto
+  // Reforço: se qualquer modal estiver aberto, não processa o scan
+  const mh = document.getElementById('modal-host');
+  if (mh && !mh.classList.contains('hidden')) return;
 
   // 1. Tenta encontrar pelo campo barcode
   let product = state.products.find(p => p.barcode === code);
@@ -888,7 +897,6 @@ function updateCustomerUI() {
 }
 
 function confirmRichSale({ subtotal, discount, fee, total }) {
-  return new Promise((resolve) => {
     const body = el('div');
     body.innerHTML = `
       <p style="color: var(--text-2); margin-bottom: var(--sp-4); line-height:1.5">
@@ -910,11 +918,13 @@ function confirmRichSale({ subtotal, discount, fee, total }) {
       </div>
     `;
     const cancel = el('button', { class: 'btn btn-ghost', type: 'button',
-      onClick: () => { ui.closeModal(false); resolve(false); } }, 'Cancelar');
+      onClick: () => ui.closeModal(false) }, 'Cancelar');
     const ok = el('button', { class: 'btn btn-primary', type: 'button',
-      onClick: () => { ui.closeModal(true); resolve(true); } }, 'Confirmar venda');
-    ui.modal({ title: 'Finalizar venda', body, footer: [cancel, ok] });
-  });
+      onClick: () => ui.closeModal(true) }, 'Confirmar venda');
+    // Resolve a partir do resultado do modal — assim Escape/clicar fora
+    // cancela em vez de deixar a venda travada esperando um clique.
+    return ui.modal({ title: 'Finalizar venda', body, footer: [cancel, ok] })
+      .then(r => r === true);
 }
 
 async function finishSale() {
