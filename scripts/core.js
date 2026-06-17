@@ -232,6 +232,57 @@ export const ui = {
     });
   },
 
+  confirmWithPassword({ title = 'Confirmar operacao', message = '', okText = 'Confirmar', danger = false } = {}) {
+    return new Promise((resolve) => {
+      const body = document.createElement('div');
+      body.innerHTML = `
+        ${message ? `<p style="line-height:1.55;color:var(--text-2);margin-bottom:var(--sp-3)">${fmt.escape(message)}</p>` : ''}
+        <label class="field-label" style="margin-bottom:4px;display:block">Senha do operador</label>
+        <input type="password" id="cpw-input" class="field-input" placeholder="Digite sua senha" autocomplete="current-password">
+        <p id="cpw-err" style="color:var(--danger);font-size:.8rem;margin-top:6px;min-height:1.2em"></p>
+      `;
+
+      const cancelBtn = document.createElement('button');
+      cancelBtn.className = 'btn btn-ghost';
+      cancelBtn.textContent = 'Cancelar';
+      cancelBtn.onclick = () => { ui.closeModal(null); resolve(false); };
+
+      const okBtn = document.createElement('button');
+      okBtn.className = `btn ${danger ? 'btn-danger' : 'btn-primary'}`;
+      okBtn.textContent = okText;
+
+      const attempt = async () => {
+        const input = document.getElementById('cpw-input');
+        const errEl = document.getElementById('cpw-err');
+        const pwd = input?.value || '';
+        if (!pwd) {
+          if (errEl) errEl.textContent = 'Digite a senha.';
+          return;
+        }
+        okBtn.disabled = true;
+        okBtn.textContent = 'Verificando...';
+        const ok = await auth.verifyPassword(pwd);
+        if (ok) {
+          ui.closeModal(true);
+          resolve(true);
+        } else {
+          if (errEl) errEl.textContent = 'Senha incorreta. Tente novamente.';
+          okBtn.disabled = false;
+          okBtn.textContent = okText;
+          if (input) { input.value = ''; input.focus(); }
+        }
+      };
+
+      okBtn.onclick = attempt;
+      setTimeout(() => {
+        const input = document.getElementById('cpw-input');
+        if (input) input.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); attempt(); } });
+      }, 80);
+
+      ui.modal({ title, narrow: true, body, footer: [cancelBtn, okBtn] });
+    });
+  },
+
   async scanBarcode() {
     return new Promise((resolve) => {
       let stream = null;
@@ -676,6 +727,25 @@ export const auth = {
         throw new Error('Muitas tentativas. Tente novamente em alguns minutos.');
       }
       throw err;
+    }
+  },
+
+  async verifyPassword(password) {
+    await initFirebase();
+    if (!_currentUser) return false;
+    if (_fb.demo) {
+      const users = lsAll('users');
+      return !!users.find(u => u.email === _currentUser.email && u.password === password);
+    }
+    const { au, auth: fbAuth } = _fb;
+    const fbUser = fbAuth.currentUser;
+    if (!fbUser) return false;
+    try {
+      const cred = au.EmailAuthProvider.credential(fbUser.email, password);
+      await au.reauthenticateWithCredential(fbUser, cred);
+      return true;
+    } catch {
+      return false;
     }
   },
 

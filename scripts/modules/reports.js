@@ -462,12 +462,11 @@ async function cancelSale(saleId) {
   if (!sale) { ui.toast('Venda não encontrada.', 'warning'); return; }
   if (sale.status === 'cancelled') { ui.toast('Esta venda já está cancelada.', 'info'); return; }
 
-  const ok = await ui.confirm({
+  const ok = await ui.confirmWithPassword({
     title: 'Cancelar venda',
-    message: `Cancelar ${sale.code || 'esta venda'} (${fmt.currency(sale.total)})? O estoque dos itens será restituído automaticamente.`,
+    message: `Cancelar ${sale.code || 'esta venda'} (${fmt.currency(sale.total)})? O estoque dos itens sera restituido automaticamente.`,
     okText: 'Cancelar venda',
-    cancelText: 'Manter',
-    danger: true
+    danger: true,
   });
   if (!ok) return;
 

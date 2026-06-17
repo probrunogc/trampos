@@ -375,38 +375,46 @@ async function openSangriaModal() {
   body.innerHTML = `
     <div style="display:flex;flex-direction:column;gap:var(--sp-3)">
       <div>
-        <label class="field-label">Valor retirado (R$)</label>
+        <label class="field-label">Valor retirado (R$) <span style="color:var(--danger)">*</span></label>
         <input type="number" id="sg-amount" class="field-input" min="0.01" step="0.01" placeholder="0,00" autofocus>
       </div>
       <div>
-        <label class="field-label">Motivo (opcional)</label>
-        <input type="text" id="sg-reason" class="field-input" placeholder="Ex: reforco do cofre">
+        <label class="field-label">Motivo <span style="color:var(--danger)">*</span></label>
+        <input type="text" id="sg-reason" class="field-input" placeholder="Ex: reforco do cofre, despesa operacional">
       </div>
     </div>
   `;
   const cancelBtn = el('button', { class: 'btn btn-ghost', type: 'button' }, 'Cancelar');
   cancelBtn.onclick = () => ui.closeModal(null);
-  const confirmBtn = el('button', { class: 'btn btn-primary', type: 'button' }, 'Registrar sangria');
+  const confirmBtn = el('button', { class: 'btn btn-primary', type: 'button' }, 'Continuar');
   confirmBtn.onclick = async () => {
     const amount = parseFloat(document.getElementById('sg-amount').value) || 0;
-    if (amount <= 0) { ui.toast('Informe um valor maior que zero.', 'warning'); return; }
     const reason = document.getElementById('sg-reason').value.trim();
+    if (amount <= 0) { ui.toast('Informe um valor maior que zero.', 'warning'); return; }
+    if (!reason)     { ui.toast('O motivo e obrigatorio para sangria.', 'warning'); return; }
+
+    // Senha substitui o modal de sangria (singleton) — valores ja capturados no closure
+    const ok = await ui.confirmWithPassword({
+      title: 'Confirmar sangria',
+      message: `Retirada de ${fmt.currency(amount)}: ${reason}`,
+      okText: 'Confirmar sangria',
+      danger: true,
+    });
+    if (!ok) return;
+
     const user = auth.currentUser();
-    confirmBtn.disabled = true;
     try {
       await db.create('sangrias', {
         caixaId: state.caixaId,
         amount,
-        reason: reason || null,
+        reason,
         at: Date.now(),
         by: user ? { id: user.id || user.uid, name: user.name } : null,
       });
       const caixa = await db.get('caixas', state.caixaId);
       if (caixa) await db.update('caixas', state.caixaId, { totalSangrias: (caixa.totalSangrias || 0) + amount });
-      ui.closeModal(true);
       ui.toast(`Sangria de ${fmt.currency(amount)} registrada.`, 'success');
     } catch (err) {
-      confirmBtn.disabled = false;
       ui.toast('Erro ao registrar sangria: ' + (err.message || 'Tente novamente.'), 'danger');
     }
   };
