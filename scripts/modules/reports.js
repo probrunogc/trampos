@@ -21,12 +21,13 @@ const PAY_LABEL = { dinheiro: 'Dinheiro', pix: 'PIX', debito: 'Débito', credito
 const PAY_COLOR = { dinheiro: '#3a8a4a', pix: '#1f9aa0', debito: '#3a6ab0', credito: '#9a5ab0', fiado: '#c08a2a' };
 
 const PERIODS = [
-  { id: '7',   label: '7 dias' },
-  { id: '30',  label: '30 dias' },
-  { id: 'mes', label: 'Este mês' }
+  { id: '7',      label: '7 dias' },
+  { id: '30',     label: '30 dias' },
+  { id: 'mes',    label: 'Este mês' },
+  { id: 'custom', label: 'Personalizado' }
 ];
 
-let state = { period: '30', data: null };
+let state = { period: '30', data: null, customFrom: null, customTo: null };
 
 export async function render(root) {
   if (!auth.isAdmin()) { await renderSellerHistory(root); return; }
@@ -38,8 +39,25 @@ export async function render(root) {
         <div class="seg" id="rep-period">
           ${PERIODS.map(p => `<button class="seg-btn ${p.id === state.period ? 'active' : ''}" data-p="${p.id}">${p.label}</button>`).join('')}
         </div>
+        <button class="btn btn-ghost btn-sm" id="rep-export-csv" title="Exportar vendas do período em CSV">
+          ${icon('box', { size: 15 })}<span>CSV</span>
+        </button>
         <button class="btn btn-ghost" id="rep-print">${icon('print', { size: 16 })}<span>Imprimir</span></button>
       </div>
+    </div>
+    <div id="rep-custom-range" style="display:${state.period === 'custom' ? 'flex' : 'none'};
+         align-items:center;flex-wrap:wrap;gap:8px;padding:0 0 var(--sp-3);font-size:.85rem">
+      <label style="display:flex;align-items:center;gap:6px">
+        De:&nbsp;<input type="date" id="rep-date-from" class="input"
+          style="padding:4px 8px;max-width:160px"
+          value="${state.customFrom ? new Date(state.customFrom).toISOString().slice(0, 10) : ''}" />
+      </label>
+      <label style="display:flex;align-items:center;gap:6px">
+        Até:&nbsp;<input type="date" id="rep-date-to" class="input"
+          style="padding:4px 8px;max-width:160px"
+          value="${state.customTo ? new Date(state.customTo).toISOString().slice(0, 10) : ''}" />
+      </label>
+      <button class="btn btn-primary btn-sm" id="rep-apply-custom">Aplicar</button>
     </div>
     <div id="rep-body"><div class="rep-loading">Carregando dados…</div></div>
   `;
@@ -48,10 +66,24 @@ export async function render(root) {
     b.onclick = () => {
       state.period = b.dataset.p;
       root.querySelectorAll('#rep-period .seg-btn').forEach(x => x.classList.toggle('active', x === b));
-      paint();
+      const customRow = root.querySelector('#rep-custom-range');
+      if (customRow) customRow.style.display = state.period === 'custom' ? 'flex' : 'none';
+      if (state.period !== 'custom') paint();
     };
   });
+
+  root.querySelector('#rep-apply-custom')?.addEventListener('click', () => {
+    const fromVal = root.querySelector('#rep-date-from')?.value;
+    const toVal   = root.querySelector('#rep-date-to')?.value;
+    if (!fromVal) { ui.toast('Informe a data inicial.', 'warning'); return; }
+    // Parse as Manaus midnight (UTC-4 = UTC+0 at 04:00)
+    state.customFrom = new Date(fromVal + 'T04:00:00Z').getTime();
+    state.customTo   = toVal ? new Date(toVal   + 'T04:00:00Z').getTime() : null;
+    paint();
+  });
+
   root.querySelector('#rep-print').onclick = () => window.print();
+  root.querySelector('#rep-export-csv').onclick = exportCSV;
 
   await load();
   paint();
@@ -82,17 +114,28 @@ async function load() {
 }
 
 function rangeStart() {
+  if (state.period === 'custom') {
+    return state.customFrom ?? (manausNow().startOfDay - 29 * 24 * 60 * 60 * 1000);
+  }
   const { startOfMonth, startOfDay } = manausNow();
   if (state.period === 'mes') return startOfMonth;
   const days = Number(state.period);
   return startOfDay - (days - 1) * 24 * 60 * 60 * 1000;
 }
 
+function rangeEnd() {
+  if (state.period === 'custom' && state.customTo) {
+    return state.customTo + 24 * 60 * 60 * 1000 - 1; // até 23:59:59 do dia escolhido
+  }
+  return Date.now();
+}
+
 function paint() {
   const box = document.getElementById('rep-body');
   const { sales, fees, costMap, doseIds } = state.data;
   const start = rangeStart();
-  const list = sales.filter(s => s.createdAt >= start && s.status !== 'cancelled');
+  const end   = rangeEnd();
+  const list = sales.filter(s => s.createdAt >= start && s.createdAt <= end && s.status !== 'cancelled');
 
   if (list.length === 0) {
     box.innerHTML = `<div class="empty-state">${icon('trendUp', { size: 56 })}
@@ -218,16 +261,22 @@ function paint() {
         </div>
         ${fiadoOpen.length === 0
           ? '<p class="text-mute small">Nenhum fiado em aberto. 👍</p>'
-          : `<div class="list-compact">${fiadoOpen.slice(0, 6).map(s => `
-              <div class="list-row">
+          : `<div class="list-compact">${fiadoOpen.slice(0, 8).map(s => `
+              <div class="list-row" style="gap:6px">
                 <div class="list-rank">${icon('user', { size: 13 })}</div>
-                <div class="list-row-body">
+                <div class="list-row-body" style="flex:1;min-width:0">
                   <div class="list-row-title">${fmt.escape(s.customer?.name || 'Cliente avulso')}</div>
                   <div class="list-row-sub">${s.code || ''} · ${fmt.date(s.createdAt)}</div>
                 </div>
-                <div class="list-row-meta">${fmt.currency(s.total)}</div>
+                <div class="list-row-meta" style="flex-shrink:0">${fmt.currency(s.total)}</div>
+                <button class="btn btn-ghost btn-sm rep-settle-fiado"
+                        data-id="${s.id}"
+                        style="flex-shrink:0;color:#27ae60;border-color:#27ae60;opacity:.8"
+                        title="Marcar como quitado">
+                  ✓ Quitado
+                </button>
               </div>`).join('')}
-              ${fiadoOpen.length > 6 ? `<div class="text-mute small" style="padding:6px 4px">+ ${fiadoOpen.length - 6} outros</div>` : ''}
+              ${fiadoOpen.length > 8 ? `<div class="text-mute small" style="padding:6px 4px">+ ${fiadoOpen.length - 8} outros</div>` : ''}
             </div>`}
       </div>
     </section>
@@ -318,6 +367,11 @@ function paint() {
     btn.onclick = () => cancelSale(btn.dataset.id);
   });
 
+  // Wire fiado settlement buttons
+  box.querySelectorAll('.rep-settle-fiado').forEach(btn => {
+    btn.onclick = () => settleFiado(btn.dataset.id);
+  });
+
   function doseRanking() {
     const doses = Object.values(prodAgg)
       .filter(p => p.category === 'Dose')
@@ -332,6 +386,74 @@ function paint() {
           <span class="rep-dose-bar-qty">${d.qty}</span>
         </div>`).join('')}
     </div>`;
+  }
+}
+
+function exportCSV() {
+  if (!state.data) { ui.toast('Dados ainda carregando.', 'info'); return; }
+  const { sales } = state.data;
+  const start = rangeStart();
+  const end   = rangeEnd();
+  const list  = sales.filter(s => s.createdAt >= start && s.createdAt <= end && s.status !== 'cancelled');
+  if (list.length === 0) { ui.toast('Nenhuma venda no período para exportar.', 'info'); return; }
+
+  const PAY = { dinheiro: 'Dinheiro', pix: 'PIX', debito: 'Débito', credito: 'Crédito', fiado: 'Fiado' };
+  const rows = [
+    ['Código', 'Data', 'Hora', 'Cliente', 'Itens', 'Pagamento', 'Subtotal', 'Desconto', 'Taxa Entrega', 'Total'],
+    ...list.map(s => {
+      const dt   = new Date(s.createdAt);
+      const date = dt.toLocaleDateString('pt-BR',  { timeZone: 'America/Manaus' });
+      const time = dt.toLocaleTimeString('pt-BR',  { timeZone: 'America/Manaus', hour: '2-digit', minute: '2-digit' });
+      const itens = (s.items || []).map(i => `${i.qty}x ${i.name}`).join(' | ');
+      const num = v => (Number(v) || 0).toFixed(2).replace('.', ',');
+      return [
+        s.code || '',
+        date, time,
+        s.customer?.name || 'Avulso',
+        itens,
+        PAY[s.paymentMethod] || s.paymentMethod || '',
+        num(s.subtotal),
+        num(s.discount),
+        num(s.deliveryFee),
+        num(s.total)
+      ];
+    })
+  ];
+
+  const csv  = '﻿' + rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(';')).join('\r\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url;
+  a.download = `vendas-${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+  ui.toast(`${list.length} vendas exportadas.`, 'success');
+}
+
+async function settleFiado(saleId) {
+  const sale = state.data?.sales?.find(s => s.id === saleId);
+  if (!sale) { ui.toast('Venda não encontrada.', 'warning'); return; }
+  if (sale.fiadoSettled) { ui.toast('Este fiado já foi quitado.', 'info'); return; }
+
+  const ok = await ui.confirm({
+    title: 'Quitar fiado',
+    message: `Marcar ${sale.code || 'esta venda'} de ${sale.customer?.name || 'cliente avulso'} (${fmt.currency(sale.total)}) como quitado?`,
+    okText: 'Confirmar quitação',
+    cancelText: 'Cancelar'
+  });
+  if (!ok) return;
+
+  try {
+    await db.update('sales', saleId, { fiadoSettled: true, settledAt: Date.now() });
+    const idx = state.data.sales.findIndex(s => s.id === saleId);
+    if (idx >= 0) state.data.sales[idx] = { ...state.data.sales[idx], fiadoSettled: true, settledAt: Date.now() };
+    ui.toast(`Fiado de ${sale.customer?.name || 'avulso'} marcado como quitado.`, 'success');
+    paint();
+  } catch (err) {
+    ui.toast(err.message || 'Erro ao quitar fiado.', 'danger');
   }
 }
 
