@@ -1020,3 +1020,58 @@ kbd {
   object-fit: cover;
   display: block;
 }
+
+/* ─── Tabela responsiva — card-style no mobile ──────────────── */
+@media (max-width: 640px) {
+  .table-toolbar {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .table-toolbar select { flex: 1 1 calc(50% - 4px); }
+
+  .table-scroll { overflow-x: unset; }
+  table.data-table thead { display: none; }
+  table.data-table,
+  table.data-table tbody,
+  table.data-table tbody tr,
+  table.data-table tbody td { display: block; width: 100%; }
+  table.data-table tbody tr {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--line);
+    position: relative;
+  }
+  table.data-table tbody tr:hover { box-shadow: none; }
+  table.data-table tbody td {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 3px 0;
+    border: none;
+    min-height: 22px;
+  }
+  table.data-table tbody td:empty,
+  table.data-table tbody td:not([data-label]):not(:last-child) { display: none; }
+  table.data-table tbody td[data-label]::before {
+    content: attr(data-label);
+    font-size: .68rem;
+    color: var(--text-3);
+    text-transform: uppercase;
+    letter-spacing: .07em;
+    flex-shrink: 0;
+    margin-right: 10px;
+  }
+  /* Primeira célula (produto/item): sem label, vai full-width */
+  table.data-table tbody td:first-child {
+    justify-content: flex-start;
+    margin-bottom: 6px;
+  }
+  table.data-table tbody td:first-child::before { display: none; }
+  /* Célula de ações: alinha à direita sem label */
+  table.data-table tbody td:last-child {
+    justify-content: flex-end;
+    padding-top: 6px;
+  }
+  table.data-table tbody td:last-child::before { display: none; }
+  /* Imagem menor na lista mobile */
+  .prod-img-sm { width: 36px !important; height: 36px !important; }
+}

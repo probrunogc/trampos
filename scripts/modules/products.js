@@ -161,7 +161,30 @@ async function processProductImage(file, onStatus) {
   return cropped;
 }
 
-/* ── Buscar fotos — Open Food Facts ────────────────────────── */
+/* ── Buscar fotos — Mercado Livre (primário) + OFP (fallback) ── */
+
+async function fetchMLImages(barcode, name) {
+  const urls = [];
+  const queries = [barcode, name].filter(Boolean);
+  for (const q of queries) {
+    try {
+      const res = await fetch(
+        `https://api.mercadolibre.com/sites/MLB/search?${new URLSearchParams({ q, limit: '5' })}`
+      );
+      if (!res.ok) continue;
+      const data = await res.json();
+      for (const item of data.results || []) {
+        if (!item.thumbnail) continue;
+        // Upgrade: -I (90px) → -F (~400px)
+        const url = item.thumbnail.replace(/-[A-Z](?=\.jpg$)/, '-F');
+        if (!urls.includes(url)) urls.push(url);
+      }
+      if (urls.length >= 5) break;
+    } catch { /* ignora */ }
+  }
+  return urls;
+}
+
 async function fetchOFFImage(barcode) {
   try {
     const res = await fetch(`https://world.openfoodfacts.org/api/v0/product/${barcode}.json`);
@@ -170,6 +193,18 @@ async function fetchOFFImage(barcode) {
     if (data.status !== 1 || !data.product) return null;
     return data.product.image_front_url || data.product.image_url || null;
   } catch { return null; }
+}
+
+// Retorna { url, source, alts: [] } ou null
+async function searchProductImage(barcode, name) {
+  const mlUrls = await fetchMLImages(barcode, name);
+  if (mlUrls.length) return { url: mlUrls[0], source: 'ML', alts: mlUrls };
+
+  if (barcode) {
+    const offUrl = await fetchOFFImage(barcode);
+    if (offUrl) return { url: offUrl, source: 'OFP', alts: [offUrl] };
+  }
+  return null;
 }
 
 async function saveProductPhoto(p, imgUrl, onStatus = () => {}) {
@@ -198,8 +233,9 @@ async function openPhotoSearch() {
     return;
   }
 
+  // results[id] = { url, alts[], altIdx, source, savedUrl, status }
   const results = {};
-  candidates.forEach(p => { results[p.id] = { url: null, savedUrl: null, status: 'idle' }; });
+  candidates.forEach(p => { results[p.id] = { url: null, alts: [], altIdx: 0, source: null, savedUrl: null, status: 'idle' }; });
 
   const listEl = el('div', { class: 'pf-list' });
 
@@ -207,12 +243,17 @@ async function openPhotoSearch() {
     listEl.innerHTML = candidates.map(p => {
       const r = results[p.id];
       let thumb, act;
+      const srcBadge = r.source ? `<span class="pf-src">${r.source}</span>` : '';
+      const hasNext = r.alts.length > 1;
+
       if (r.status === 'loading' || r.status === 'saving') {
         thumb = `<div class="pf-thumb pf-loading"><div class="pf-spin"></div></div>`;
         act = `<span class="text-mute small">${r.status === 'saving' ? 'Salvando…' : 'Buscando…'}</span>`;
       } else if (r.status === 'found') {
-        thumb = `<img class="pf-thumb" src="${fmt.escape(r.url)}" crossorigin="anonymous">`;
-        act = `<button class="btn btn-primary btn-sm" data-save="${p.id}">Salvar</button>`;
+        thumb = `<img class="pf-thumb" src="${fmt.escape(r.url)}" crossorigin="anonymous">${srcBadge}`;
+        act = `
+          ${hasNext ? `<button class="btn btn-ghost btn-sm pf-next" data-next="${p.id}" title="Ver próxima foto (${r.altIdx + 1}/${r.alts.length})">›</button>` : ''}
+          <button class="btn btn-primary btn-sm" data-save="${p.id}">Salvar</button>`;
       } else if (r.status === 'saved') {
         thumb = `<img class="pf-thumb" src="${fmt.escape(r.savedUrl || r.url)}">`;
         act = `<span class="badge badge-success">✓ Salvo</span>`;
@@ -227,7 +268,7 @@ async function openPhotoSearch() {
         act = `<button class="btn btn-ghost btn-sm" data-fetch="${p.id}">Buscar</button>`;
       }
       return `<div class="pf-row">
-        ${thumb}
+        <div class="pf-thumb-wrap">${thumb}</div>
         <div class="pf-info">
           <div class="pf-name">${fmt.escape(p.name)}</div>
           <div class="pf-bc">${fmt.escape(p.barcode)}</div>
@@ -241,8 +282,21 @@ async function openPhotoSearch() {
         const r = results[btn.dataset.fetch];
         const cand = candidates.find(x => x.id === btn.dataset.fetch);
         r.status = 'loading'; re();
-        const url = await fetchOFFImage(cand.barcode.trim());
-        r.status = url ? 'found' : 'miss'; r.url = url; re();
+        const found = await searchProductImage(cand.barcode?.trim(), cand.name);
+        if (found) {
+          r.status = 'found'; r.url = found.url; r.alts = found.alts;
+          r.altIdx = 0; r.source = found.source;
+        } else { r.status = 'miss'; }
+        re();
+      };
+    });
+
+    listEl.querySelectorAll('[data-next]').forEach(btn => {
+      btn.onclick = () => {
+        const r = results[btn.dataset.next];
+        r.altIdx = (r.altIdx + 1) % r.alts.length;
+        r.url = r.alts[r.altIdx];
+        re();
       };
     });
 
@@ -268,9 +322,13 @@ async function openPhotoSearch() {
     for (const p of candidates) {
       if (results[p.id].status !== 'idle') continue;
       results[p.id].status = 'loading'; re();
-      const url = await fetchOFFImage(p.barcode.trim());
-      results[p.id].status = url ? 'found' : 'miss';
-      results[p.id].url = url; re();
+      const found = await searchProductImage(p.barcode?.trim(), p.name);
+      if (found) {
+        results[p.id].status = 'found'; results[p.id].url = found.url;
+        results[p.id].alts = found.alts; results[p.id].altIdx = 0;
+        results[p.id].source = found.source;
+      } else { results[p.id].status = 'miss'; }
+      re();
     }
     allBtn.textContent = '✓ Concluído';
   };
@@ -892,11 +950,11 @@ async function openForm(id = null) {
         const span = offBtn.querySelector('span');
         offBtn.disabled = true; span.textContent = 'Buscando…';
         try {
-          const url = await fetchOFFImage(p.barcode.trim());
-          if (!url) { ui.toast('Nenhuma foto encontrada no Open Food Facts.', 'warning'); return; }
-          images.push({ url, file: null, blobUrl: null, processing: false, status: '' });
+          const found = await searchProductImage(p.barcode?.trim(), p.name);
+          if (!found) { ui.toast('Nenhuma foto encontrada (ML + OFP).', 'warning'); return; }
+          images.push({ url: found.url, file: null, blobUrl: null, processing: false, status: '' });
           renderImages();
-          ui.toast('Foto encontrada! Clique em "Ajustar" para processar.', 'success');
+          ui.toast(`Foto encontrada via ${found.source === 'ML' ? 'Mercado Livre' : 'Open Food Facts'}! Clique em "Ajustar" para processar.`, 'success');
         } finally {
           if (offBtn.isConnected) { offBtn.disabled = false; span.textContent = 'Buscar online'; }
         }

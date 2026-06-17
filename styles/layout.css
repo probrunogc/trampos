@@ -595,4 +595,10 @@
   .topbar { padding: var(--sp-3) var(--sp-4); }
   .topbar-date { display: none; }
   .page-content { padding: var(--sp-4) var(--sp-3); }
+
+  /* PDV: garante rolagem completa em portrait */
+  .page-content:has(.pdv-layout) { overflow: auto; display: block; }
+  .pdv-layout { height: auto; }
+  .pdv-cart { min-height: 0; }
+  .pdv-cart-items { max-height: 40vh; }
 }
