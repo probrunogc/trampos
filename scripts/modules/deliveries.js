@@ -272,6 +272,7 @@ export function printDeliverySlip(s) {
 
   const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const cur = v => 'R$ ' + (Number(v) || 0).toFixed(2).replace('.', ',');
+  const logoSrc = window.location.origin + '/assets/logo.png';
 
   const html = `<!DOCTYPE html><html lang="pt-BR"><head>
 <meta charset="UTF-8"><title>Nota de Entrega ${s.code}</title>
@@ -279,6 +280,8 @@ export function printDeliverySlip(s) {
 @page{size:80mm auto;margin:3mm 4mm}
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'Courier New',monospace;font-size:10pt;line-height:1.4;color:#000;width:72mm}
+.logo-wrap{text-align:center;padding:3pt 0 4pt}
+.logo-wrap img{width:20mm;height:20mm;margin:0 auto;object-fit:contain}
 h1{font-size:12pt;font-weight:900;text-align:center;text-transform:uppercase;letter-spacing:.08em;margin-bottom:2pt}
 .code{text-align:center;font-size:9pt;margin-bottom:5pt}
 hr{border:0;border-top:1px dashed #000;margin:5pt 0}
@@ -293,6 +296,7 @@ hr{border:0;border-top:1px dashed #000;margin:5pt 0}
 .pay{font-size:9pt;opacity:.7;margin-top:2pt}
 .foot{text-align:center;font-size:8pt;margin-top:8pt;opacity:.6}
 </style></head><body>
+<div class="logo-wrap"><img src="${logoSrc}" alt="Empório das Bebidas"></div>
 <h1>Nota de Entrega</h1>
 <div class="code">${esc(s.code)} &bull; ${dt}</div>
 <hr>
@@ -530,17 +534,7 @@ function buildCupomBody(sale, logoSrc, qrSrc) {
       <div class="block">
         <div class="lbl">Cliente</div>
         <div class="rb">${fmt.escape(sale.customer.name)}</div>
-        ${sale.customer.phone ? `<div>${fmt.phone(sale.customer.phone)}</div>` : ''}
       </div>` : '<div class="block"><div class="lbl">Consumidor final</div></div>'}
-
-    ${isDeliv && addrLine ? `
-      <div class="addr-box">
-        <div class="lbl rb">Endereco de entrega</div>
-        <div class="rb">${fmt.escape(addrLine)}</div>
-        ${addrSub ? `<div>${fmt.escape(addrSub)}</div>` : ''}
-        ${a.cep ? `<div>CEP ${fmt.cep(a.cep)}</div>` : ''}
-        ${a.reference ? `<div><em>Ref.: ${fmt.escape(a.reference)}</em></div>` : ''}
-      </div>` : ''}
 
     <hr>
     <div class="rb" style="font-size:9pt;margin-bottom:3pt">ITENS</div>
