@@ -27,6 +27,7 @@ let state = {
   cart: [],       // { productId, name, unitPrice, qty, stock }
   customer: null, // { id, name, ... }
   paymentMethod: 'dinheiro',
+  received: 0,
   discount: 0,
   deliveryFee: 0,
   needsDelivery: false,
@@ -35,11 +36,11 @@ let state = {
 
 const CATEGORIES = ['Cerveja', 'Refrigerante', 'Água', 'Energético', 'Destilado', 'Vinho', 'Suco', 'Dose', 'Cigarro', 'Outros'];
 const PAYMENTS = [
-  { id: 'dinheiro',   label: 'Dinheiro' },
-  { id: 'pix',        label: 'PIX' },
-  { id: 'debito',     label: 'Débito' },
-  { id: 'credito',    label: 'Crédito' },
-  { id: 'fiado',      label: 'Fiado' }
+  { id: 'dinheiro', label: 'Dinheiro', icon: '💵' },
+  { id: 'pix',      label: 'PIX',      icon: '📱' },
+  { id: 'debito',   label: 'Débito',   icon: '💳' },
+  { id: 'credito',  label: 'Crédito',  icon: '💳' },
+  { id: 'fiado',    label: 'Fiado',    icon: '📋' },
 ];
 
 export async function render(root) {
@@ -54,6 +55,7 @@ export async function render(root) {
   state.needsDelivery = false;
   state.note = '';
   state.paymentMethod = 'dinheiro';
+  state.received = 0;
 
   root.innerHTML = `
     <div class="pdv-layout">
@@ -141,11 +143,25 @@ export async function render(root) {
         <div class="pdv-cart-items" id="pdv-items"></div>
         <div class="pdv-cart-foot">
           <div class="pdv-totals" id="pdv-totals"></div>
-          <div class="field" style="margin-bottom: var(--sp-3)">
-            <span class="field-label">Forma de pagamento</span>
-            <select id="pdv-payment" class="input">
-              ${PAYMENTS.map(p => `<option value="${p.id}">${p.label}</option>`).join('')}
-            </select>
+          <div class="pdv-payment-section">
+            <div class="pdv-payment-label">Pagamento</div>
+            <div class="pdv-pay-grid" id="pdv-pay-grid">
+              ${PAYMENTS.map(p => `
+                <button type="button" class="pdv-pay-btn${p.id === 'dinheiro' ? ' active' : ''}" data-pay="${p.id}">
+                  <span class="pdv-pay-icon">${p.icon}</span>
+                  <span class="pdv-pay-label">${p.label}</span>
+                </button>`).join('')}
+            </div>
+            <div id="pdv-troco-wrap" class="pdv-troco-section" style="display:none">
+              <div class="pdv-troco-row">
+                <span>Recebido</span>
+                <input type="number" id="pdv-received" min="0" step="0.01" placeholder="0,00" class="pdv-troco-input" />
+              </div>
+              <div class="pdv-troco-row pdv-troco-change">
+                <span>Troco</span>
+                <strong id="pdv-troco-val">R$ 0,00</strong>
+              </div>
+            </div>
           </div>
           <label class="switch" style="margin-bottom: var(--sp-3)">
             <input type="checkbox" id="pdv-delivery" />
@@ -224,8 +240,23 @@ export async function render(root) {
   // Customer
   document.getElementById('pdv-customer').onclick = openCustomerPicker;
 
-  // Payment
-  document.getElementById('pdv-payment').onchange = (e) => state.paymentMethod = e.target.value;
+  // Payment buttons
+  document.getElementById('pdv-pay-grid').querySelectorAll('[data-pay]').forEach(btn => {
+    btn.onclick = () => {
+      state.paymentMethod = btn.dataset.pay;
+      state.received = 0;
+      document.getElementById('pdv-pay-grid').querySelectorAll('.pdv-pay-btn')
+        .forEach(b => b.classList.toggle('active', b.dataset.pay === state.paymentMethod));
+      const recvInput = document.getElementById('pdv-received');
+      if (recvInput) recvInput.value = '';
+      paintTroco();
+    };
+  });
+  document.getElementById('pdv-received').oninput = e => {
+    state.received = parseFloat(e.target.value) || 0;
+    paintTroco();
+  };
+  paintTroco();
 
   // Quick-add atalhos
   document.getElementById('pdv-quick-cigarro').onclick  = () => openQuickAdd('Cigarro', '🚬 Cigarro — Retalho rápido');
@@ -947,6 +978,26 @@ function paintTotals() {
   if (disc) disc.onchange = (e) => { state.discount = parseFloat(e.target.value) || 0; paintTotals(); };
   const fi = document.getElementById('pdv-fee');
   if (fi) fi.onchange = (e) => { state.deliveryFee = parseFloat(e.target.value) || 0; paintTotals(); };
+  paintTroco();
+}
+
+function paintTroco() {
+  const wrap = document.getElementById('pdv-troco-wrap');
+  if (!wrap) return;
+  const isDinheiro = state.paymentMethod === 'dinheiro';
+  wrap.style.display = isDinheiro ? '' : 'none';
+  if (!isDinheiro) return;
+  const subtotal = state.cart.reduce((s, i) => s + i.qty * i.unitPrice, 0);
+  const discount = Math.max(0, state.discount || 0);
+  const fee = state.needsDelivery ? (state.deliveryFee || 0) : 0;
+  const total = Math.max(0, subtotal - discount + fee);
+  const recv = state.received || 0;
+  const troco = recv >= total && recv > 0 ? recv - total : 0;
+  const trocoEl = document.getElementById('pdv-troco-val');
+  if (trocoEl) {
+    trocoEl.textContent = fmt.currency(troco);
+    trocoEl.className = troco > 0 ? 'text-gold' : '';
+  }
 }
 
 async function openCustomerPicker() {
@@ -1039,34 +1090,41 @@ function updateCustomerUI() {
 }
 
 function confirmRichSale({ subtotal, discount, fee, total }) {
-    const body = el('div');
-    body.innerHTML = `
-      <p style="color: var(--text-2); margin-bottom: var(--sp-4); line-height:1.5">
-        Confirma a finalização desta venda?
-      </p>
-      <div style="background: rgba(0,0,0,0.3); padding: var(--sp-4); border-radius: var(--r-md);">
-        <div style="display:flex;justify-content:space-between;padding:4px 0"><span>Itens:</span><strong>${state.cart.reduce((s,i)=>s+i.qty,0)}</strong></div>
-        <div style="display:flex;justify-content:space-between;padding:4px 0"><span>Subtotal:</span><strong>${fmt.currency(subtotal)}</strong></div>
-        ${discount ? `<div style="display:flex;justify-content:space-between;padding:4px 0"><span>Desconto:</span><strong>− ${fmt.currency(discount)}</strong></div>` : ''}
-        ${fee ? `<div style="display:flex;justify-content:space-between;padding:4px 0"><span>Taxa entrega:</span><strong>+ ${fmt.currency(fee)}</strong></div>` : ''}
-        <div style="display:flex;justify-content:space-between;padding:10px 0;border-top:1px dashed var(--line);margin-top:6px;font-family:var(--font-brand);font-size:1.2rem">
-          <span class="text-gold">TOTAL</span><span class="gold-text bold">${fmt.currency(total)}</span>
-        </div>
-        <div style="margin-top:var(--sp-3); font-size: .85rem; color: var(--text-3); line-height:1.5">
-          Pagamento: <strong>${PAYMENTS.find(p => p.id === state.paymentMethod).label}</strong><br>
-          Cliente: <strong>${state.customer ? fmt.escape(state.customer.name) : 'Avulso'}</strong>
-          ${state.needsDelivery ? '<br>Será gerada <strong class="text-gold">nota de entrega</strong>.' : ''}
-        </div>
+  const payLabel = PAYMENTS.find(p => p.id === state.paymentMethod)?.label || state.paymentMethod;
+  const recv = state.paymentMethod === 'dinheiro' ? (state.received || 0) : 0;
+  const troco = recv >= total && recv > 0 ? recv - total : 0;
+
+  const body = el('div');
+  body.innerHTML = `
+    <p style="color: var(--text-2); margin-bottom: var(--sp-4); line-height:1.5">
+      Confirma a finalização desta venda?
+    </p>
+    <div style="background: rgba(0,0,0,0.3); padding: var(--sp-4); border-radius: var(--r-md);">
+      <div style="display:flex;justify-content:space-between;padding:4px 0"><span>Itens:</span><strong>${state.cart.reduce((s,i)=>s+i.qty,0)}</strong></div>
+      <div style="display:flex;justify-content:space-between;padding:4px 0"><span>Subtotal:</span><strong>${fmt.currency(subtotal)}</strong></div>
+      ${discount ? `<div style="display:flex;justify-content:space-between;padding:4px 0"><span>Desconto:</span><strong style="color:var(--gold-300)">− ${fmt.currency(discount)}</strong></div>` : ''}
+      ${fee ? `<div style="display:flex;justify-content:space-between;padding:4px 0"><span>Taxa entrega:</span><strong>+ ${fmt.currency(fee)}</strong></div>` : ''}
+      <div style="display:flex;justify-content:space-between;padding:10px 0;border-top:1px dashed var(--line);margin-top:6px;font-family:var(--font-brand);font-size:1.2rem">
+        <span class="text-gold">TOTAL</span><span class="gold-text bold">${fmt.currency(total)}</span>
       </div>
-    `;
-    const cancel = el('button', { class: 'btn btn-ghost', type: 'button',
-      onClick: () => ui.closeModal(false) }, 'Cancelar');
-    const ok = el('button', { class: 'btn btn-primary', type: 'button',
-      onClick: () => ui.closeModal(true) }, 'Confirmar venda');
-    // Resolve a partir do resultado do modal — assim Escape/clicar fora
-    // cancela em vez de deixar a venda travada esperando um clique.
-    return ui.modal({ title: 'Finalizar venda', body, footer: [cancel, ok] })
-      .then(r => r === true);
+      ${recv > 0 ? `
+      <div style="border-top:1px dashed var(--line);margin-top:6px;padding-top:8px">
+        <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:.9rem"><span>Recebido:</span><strong>${fmt.currency(recv)}</strong></div>
+        <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:.9rem"><span>Troco:</span><strong class="text-gold">${fmt.currency(troco)}</strong></div>
+      </div>` : ''}
+      <div style="margin-top:var(--sp-3); font-size: .85rem; color: var(--text-3); line-height:1.7">
+        Pagamento: <strong>${fmt.escape(payLabel)}</strong><br>
+        Cliente: <strong>${state.customer ? fmt.escape(state.customer.name) : 'Avulso'}</strong>
+        ${state.needsDelivery ? '<br>Será gerada <strong class="text-gold">nota de entrega</strong>.' : ''}
+      </div>
+    </div>
+  `;
+  const cancel = el('button', { class: 'btn btn-ghost', type: 'button',
+    onClick: () => ui.closeModal(false) }, 'Cancelar');
+  const ok = el('button', { class: 'btn btn-primary', type: 'button',
+    onClick: () => ui.closeModal(true) }, 'Confirmar venda');
+  return ui.modal({ title: 'Finalizar venda', body, footer: [cancel, ok] })
+    .then(r => r === true);
 }
 
 async function finishSale() {
@@ -1106,6 +1164,8 @@ async function finishSale() {
       deliveryFee: fee,
       total,
       paymentMethod: state.paymentMethod,
+      received: state.paymentMethod === 'dinheiro' ? (state.received || 0) : null,
+      troco: state.paymentMethod === 'dinheiro' ? Math.max(0, (state.received || 0) - total) : null,
       customer: state.customer ? {
         id: state.customer.id,
         name: state.customer.name,
@@ -1160,9 +1220,14 @@ async function finishSale() {
     state.deliveryFee = 0;
     state.needsDelivery = false;
     state.note = '';
-    document.getElementById('pdv-delivery').checked = false;
-    document.getElementById('pdv-payment').value = 'dinheiro';
     state.paymentMethod = 'dinheiro';
+    state.received = 0;
+    document.getElementById('pdv-delivery').checked = false;
+    document.getElementById('pdv-pay-grid').querySelectorAll('.pdv-pay-btn')
+      .forEach(b => b.classList.toggle('active', b.dataset.pay === 'dinheiro'));
+    const recvInput = document.getElementById('pdv-received');
+    if (recvInput) recvInput.value = '';
+    paintTroco();
     // Recarregar produtos para refletir estoque
     state.products = (await db.list('products', { orderBy: 'name' })).filter(p => p.active !== false);
     updateCustomerUI();
