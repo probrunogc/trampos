@@ -604,8 +604,10 @@ export const db = {
       // Todas as leituras antes de qualquer escrita (requisito Firestore)
       const snaps = await Promise.all(refs.map(r => transaction.get(r)));
       snaps.forEach((snap, i) => {
+        // Produto excluído no meio da sessão — pula em vez de quebrar a venda inteira
+        if (!snap.exists()) return;
         const { qty } = items[i];
-        const cur = snap.exists() ? (snap.data().stock || 0) : 0;
+        const cur = snap.data().stock || 0;
         transaction.update(refs[i], {
           stock: reverse ? cur + qty : Math.max(0, cur - qty),
           updatedAt: Date.now()

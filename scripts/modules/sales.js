@@ -987,8 +987,16 @@ async function finishSale() {
 
     // Baixar estoque via Firestore transaction — garante atomicidade mesmo com
     // múltiplos caixas vendendo o mesmo item simultaneamente.
+    // A venda já foi gravada (operação crítica); se a baixa de estoque falhar,
+    // não trava o caixa — apenas avisa para ajuste manual depois.
     const stockItems = state.cart.map(i => ({ productId: i.productId, qty: i.qty }));
-    if (stockItems.length) await db.runStockTransaction(stockItems);
+    if (stockItems.length) {
+      try {
+        await db.runStockTransaction(stockItems);
+      } catch (stockErr) {
+        ui.toast('Venda registrada, mas houve falha ao baixar o estoque. Confira o estoque depois.', 'warning', { duration: 6000 });
+      }
+    }
 
     ui.toast(`Venda ${code} registrada!`, 'success', { title: 'Sucesso' });
 

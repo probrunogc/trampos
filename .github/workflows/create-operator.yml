@@ -10,7 +10,7 @@ on:
         description: 'E-mail do operador'
         required: true
       pin:
-        description: 'PIN de 4 dígitos'
+        description: 'PIN de 6 dígitos'
         required: true
       role:
         description: 'Cargo'

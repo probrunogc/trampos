@@ -19,8 +19,8 @@ if (!name || !email || !pin) {
   console.error('Missing OP_NAME, OP_EMAIL or OP_PIN');
   process.exit(1);
 }
-if (!/^\d{4}$/.test(pin)) {
-  console.error('PIN must be exactly 4 digits');
+if (!/^\d{6}$/.test(pin)) {
+  console.error('PIN must be exactly 6 digits');
   process.exit(1);
 }
 
