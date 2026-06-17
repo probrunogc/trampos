@@ -105,28 +105,50 @@ function renderDeliveryForm(c) {
 }
 
 function renderPaymentsForm(c) {
+  // Cada forma de pagamento tem uma taxa (%). O Relatório usa essas taxas para
+  // calcular o faturamento líquido e o lucro — quanto entra de fato após a maquininha.
+  const METHODS = [
+    { id: 'dinheiro', label: 'Dinheiro', emoji: '💵', def: 0 },
+    { id: 'pix',      label: 'PIX',      emoji: '⚡', def: 0 },
+    { id: 'debito',   label: 'Débito',   emoji: '💳', def: 1.99 },
+    { id: 'credito',  label: 'Crédito',  emoji: '💳', def: 3.49 },
+  ];
+  const fees = c.fees || {};
+  // Compatibilidade com campos antigos feeDebito / feeCredito
+  const feeValue = (id) => {
+    if (fees[id] != null) return fees[id];
+    if (id === 'debito'  && c.feeDebito  != null) return c.feeDebito;
+    if (id === 'credito' && c.feeCredito != null) return c.feeCredito;
+    return METHODS.find(m => m.id === id).def;
+  };
+
   return `
     <div class="card">
-      <div class="card-title">Taxas de cartão</div>
+      <div class="card-title">Taxas por forma de pagamento</div>
       <p class="text-mute small" style="margin-bottom: var(--sp-4); line-height: 1.5">
-        Informe as taxas cobradas pela maquininha. O Relatório usa elas pra calcular
-        o <strong>faturamento líquido</strong> — quanto entra de fato após as taxas.
+        Informe a taxa (%) cobrada em cada forma de pagamento. O <strong>Relatório</strong>
+        usa esses valores para calcular o <strong>faturamento líquido</strong> e o
+        <strong>lucro</strong> — quanto entra de fato após as taxas da maquininha / PIX.
       </p>
       <form id="payments-form">
-        <div class="field-row">
-          <label class="field">
-            <span class="field-label">Taxa no débito (%)</span>
-            <input name="feeDebito" type="number" min="0" step="0.01" value="${c.feeDebito ?? 1.99}" />
-          </label>
-          <label class="field">
-            <span class="field-label">Taxa no crédito (%)</span>
-            <input name="feeCredito" type="number" min="0" step="0.01" value="${c.feeCredito ?? 3.49}" />
-          </label>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:var(--sp-3)">
+          ${METHODS.map(m => `
+            <label class="field" style="background:var(--bg-surface,rgba(255,255,255,.03));
+                   border:1px solid var(--line);border-radius:var(--r-md);padding:12px 14px">
+              <span class="field-label" style="display:flex;align-items:center;gap:6px">
+                <span style="font-size:1.1rem">${m.emoji}</span> ${m.label} <span style="color:var(--text-3)">(%)</span>
+              </span>
+              <input name="fee_${m.id}" type="number" min="0" step="0.01"
+                     value="${feeValue(m.id)}"
+                     style="font-size:1.05rem;font-weight:600" />
+            </label>
+          `).join('')}
         </div>
-        <span class="field-hint" style="display:block;margin-bottom:var(--sp-3)">
-          Dinheiro, PIX e fiado não têm taxa.
+        <span class="field-hint" style="display:block;margin:var(--sp-3) 0">
+          Deixe <strong>0</strong> para formas sem taxa. Ex.: dinheiro e PIX normalmente são 0%.
+          Fiado nunca tem taxa (valor cheio a receber).
         </span>
-        <button class="btn btn-primary" type="submit">Salvar</button>
+        <button class="btn btn-primary" type="submit">Salvar taxas</button>
       </form>
     </div>
   `;
@@ -259,11 +281,20 @@ function wire(tab, content, c) {
     content.querySelector('#payments-form').onsubmit = async (e) => {
       e.preventDefault();
       const fd = Object.fromEntries(new FormData(e.target));
+      const fees = {
+        dinheiro: parseFloat(fd.fee_dinheiro) || 0,
+        pix:      parseFloat(fd.fee_pix)      || 0,
+        debito:   parseFloat(fd.fee_debito)   || 0,
+        credito:  parseFloat(fd.fee_credito)  || 0,
+      };
       const payload = {
-        feeDebito: parseFloat(fd.feeDebito) || 0,
-        feeCredito: parseFloat(fd.feeCredito) || 0
+        fees,
+        // mantém campos legados sincronizados para retrocompatibilidade
+        feeDebito:  fees.debito,
+        feeCredito: fees.credito,
       };
       await db.createWithId('settings', 'company', { ...c, ...payload });
+      Object.assign(c, payload);
       ui.toast('Taxas atualizadas.', 'success');
     };
   }

@@ -639,7 +639,7 @@ function openQuickAdd(category, title) {
       if (existing) {
         existing.qty += qty;
       } else {
-        state.cart.push({ productId: p.id, name: p.name, unitPrice: p.price, qty, stock: p.stock });
+        state.cart.push({ productId: p.id, name: p.name, unitPrice: p.price, costPrice: p.costPrice || 0, qty, stock: p.stock });
       }
       added++;
     }
@@ -708,6 +708,7 @@ function addToCart(productId) {
       productId: p.id,
       name: p.name,
       unitPrice: p.price,
+      costPrice: p.costPrice || 0,
       qty: 1,
       stock: p.stock
     });
@@ -945,6 +946,7 @@ async function finishSale() {
         name: i.name,
         qty: i.qty,
         unitPrice: i.unitPrice,
+        unitCost: i.costPrice || 0,
         subtotal: i.qty * i.unitPrice
       })),
       subtotal,

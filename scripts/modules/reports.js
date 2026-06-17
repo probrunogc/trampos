@@ -65,6 +65,13 @@ async function load() {
   ]);
   const fees = { ...DEFAULT_FEES };
   if (settings) {
+    // Modelo novo: settings.fees = { dinheiro, pix, debito, credito }
+    if (settings.fees && typeof settings.fees === 'object') {
+      for (const k of Object.keys(fees)) {
+        if (settings.fees[k] != null) fees[k] = Number(settings.fees[k]);
+      }
+    }
+    // Compatibilidade com campos antigos
     if (settings.feeDebito != null) fees.debito = Number(settings.feeDebito);
     if (settings.feeCredito != null) fees.credito = Number(settings.feeCredito);
   }
@@ -129,7 +136,9 @@ function paint() {
         prodAgg[key] = { name: it.name, art: p.art, image: p.image, category: p.category, qty: 0, revenue: 0 };
       }
       prodAgg[key].qty += qty; prodAgg[key].revenue += rev;
-      custoProdutos += qty * (costMap[it.productId] || 0);
+      // Prefere o custo congelado no momento da venda; cai para o custo atual do produto
+      const unitCost = it.unitCost != null ? Number(it.unitCost) : (costMap[it.productId] || 0);
+      custoProdutos += qty * unitCost;
       if (doseIds.has(it.productId)) { doseQty += qty; doseRevenue += rev; }
     });
 
@@ -138,7 +147,10 @@ function paint() {
   });
 
   const liquido = bruto - taxasCartao;
-  const lucro = bruto - custoProdutos - taxasCartao - taxasEntrega;
+  // Lucro bruto = faturamento − custo das mercadorias (sem considerar taxas)
+  const lucroBruto = bruto - custoProdutos;
+  // Lucro líquido = lucro bruto − taxas de cartão/PIX − taxas de entrega repassadas
+  const lucroLiquido = lucroBruto - taxasCartao - taxasEntrega;
   const ticket = bruto / list.length;
   const fiadoTotal = fiadoOpen.reduce((a, s) => a + (Number(s.total) || 0), 0);
 
@@ -151,10 +163,12 @@ function paint() {
   box.innerHTML = `
     <section class="rep-kpis">
       ${kpi('money', 'Faturamento Bruto', fmt.currency(bruto), `${list.length} vendas`)}
-      ${kpi('trendUp', 'Faturamento Líquido', fmt.currency(liquido), `− ${fmt.currency(taxasCartao)} em taxas de cartão`)}
-      ${kpi('box', 'Lucro Estimado', fmt.currency(lucro), `margem ${bruto ? (lucro / bruto * 100).toFixed(1) : 0}%`)}
+      ${kpi('trendUp', 'Faturamento Líquido', fmt.currency(liquido), `− ${fmt.currency(taxasCartao)} em taxas`)}
+      ${kpi('box', 'Lucro Bruto', fmt.currency(lucroBruto), `− ${fmt.currency(custoProdutos)} de custo · margem ${bruto ? (lucroBruto / bruto * 100).toFixed(1) : 0}%`)}
+      ${kpi('trendUp', 'Lucro Líquido', fmt.currency(lucroLiquido), `após taxas e entregas · margem ${bruto ? (lucroLiquido / bruto * 100).toFixed(1) : 0}%`)}
       ${kpi('cart', 'Ticket Médio', fmt.currency(ticket), `${list.length} pedidos`)}
       ${kpi('alert', 'Descontos', fmt.currency(descontos), 'concedidos no período')}
+      ${kpi('money', 'Taxas de Cartão/PIX', fmt.currency(taxasCartao), 'descontadas das maquininhas')}
       ${kpi('delivery', 'Taxas de Entrega', fmt.currency(taxasEntrega), `${entregaCount} entregas`)}
     </section>
 

@@ -161,11 +161,23 @@
   display: grid;
   grid-template-columns: 1fr 380px;
   gap: var(--sp-4);
-  height: calc(100vh - 130px);
-  min-height: 540px;
+  height: 100%;
+  min-height: 0;
 }
+/* PDV ocupa exatamente a altura disponível — sem overflow do botão Finalizar.
+   Quando o módulo de vendas está na tela, a área de conteúdo vira um flex
+   container que não rola: o scroll acontece dentro da grade e do carrinho. */
+.page-content:has(.pdv-layout) {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.pdv-products,
+.pdv-cart { min-height: 0; }
 @media (max-width: 1100px) {
-  .pdv-layout { grid-template-columns: 1fr; height: auto; }
+  .pdv-layout { grid-template-columns: 1fr; height: auto; min-height: 0; }
+  .page-content:has(.pdv-layout) { display: block; overflow: auto; }
+  .pdv-cart { min-height: 420px; }
 }
 
 .pdv-products {
@@ -941,12 +953,13 @@
 /* =========================================================
    KIOSK MODE — PDV overrides (bigger, bolder)
    ========================================================= */
-.kiosk-mode .pdv-layout {
-  height: calc(100dvh - 64px - 24px);
-}
+/* Kiosk: a grade preenche 100% da área (flex acima cuida da altura).
+   Reduz o respiro lateral para caber mais produtos no canvas do quiosque. */
+.kiosk-mode .pdv-layout { height: 100%; }
+.kiosk-mode .page-content:has(.pdv-layout) { padding: var(--sp-3) var(--sp-4); }
 .kiosk-mode .pdv-cart {
-  min-width: 440px;
-  max-width: 440px;
+  min-width: 420px;
+  max-width: 420px;
 }
 
 /* Grid: fill 1366px canvas with well-proportioned touch targets */
