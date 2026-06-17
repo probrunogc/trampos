@@ -541,6 +541,82 @@
 }
 
 /* =========================================================
+   PDV — Botoes de atalho (Cigarro / Dose)
+   ========================================================= */
+@keyframes pdv-pulse-gold {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(184,134,11,.75), 0 2px 10px rgba(0,0,0,.3); }
+  50%       { box-shadow: 0 0 0 9px rgba(184,134,11,0), 0 2px 10px rgba(0,0,0,.3); }
+}
+@keyframes pdv-pulse-purple {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(139,80,180,.75), 0 2px 10px rgba(0,0,0,.3); }
+  50%       { box-shadow: 0 0 0 9px rgba(139,80,180,0), 0 2px 10px rgba(0,0,0,.3); }
+}
+.pdv-quick-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 12px 8px;
+  border-radius: 10px;
+  border: 2px solid;
+  background: none;
+  cursor: pointer;
+  color: inherit;
+  transition: transform .12s, background .15s;
+}
+.pdv-quick-btn:active { transform: scale(.93); }
+.pdv-quick-btn--cigarro {
+  border-color: #b8860b;
+  background: linear-gradient(135deg, rgba(184,134,11,.18), rgba(184,134,11,.06));
+  animation: pdv-pulse-gold 2.4s ease-in-out infinite;
+}
+.pdv-quick-btn--dose {
+  border-color: #8b50b4;
+  background: linear-gradient(135deg, rgba(139,80,180,.18), rgba(139,80,180,.06));
+  animation: pdv-pulse-purple 2.4s ease-in-out infinite;
+}
+.pdv-quick-icon {
+  width: 28px;
+  height: 28px;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,.4));
+}
+.pdv-quick-label { font-weight: 700; font-size: .88rem; }
+.pdv-quick-sub   { font-size: .7rem; color: var(--text-2); }
+
+/* =========================================================
+   PDV — Brand-card grid (modal Cigarro / Dose)
+   ========================================================= */
+.brand-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 8px;
+}
+.brand-card {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 12px 10px;
+  border-radius: 10px;
+  background: rgba(255,255,255,.04);
+  border: 1.5px solid transparent;
+  cursor: pointer;
+  transition: border-color .18s, background .18s;
+  user-select: none;
+}
+.brand-card:hover { background: rgba(255,255,255,.07); }
+.brand-card--active {
+  border-color: var(--gold-500);
+  background: rgba(212,175,55,.08);
+}
+.brand-card-name {
+  font-weight: 700;
+  font-size: .86rem;
+  color: var(--cream);
+  line-height: 1.25;
+}
+.brand-card-counter { justify-content: flex-start; }
+
+/* =========================================================
    PDV — Quick-add modal (Cigarro / Dose) e Controle de Estoque
    ========================================================= */
 .qa-body { display: flex; flex-direction: column; gap: 8px; }

@@ -43,6 +43,27 @@ const PAYMENTS = [
   { id: 'fiado',    label: 'Fiado',    icon: '📋' },
 ];
 
+const CIGARRO_BRANDS = [
+  { id: 'lucky-strike',     name: 'Lucky Strike',     price: 10.00 },
+  { id: 'duhil-cereja',     name: 'Duhil Cereja',     price:  8.00 },
+  { id: 'duhil-melancia',   name: 'Duhil Melancia',   price:  8.00 },
+  { id: 'duhil-normal',     name: 'Duhil Normal',     price:  8.00 },
+  { id: 'rottman-normal',   name: 'Rottman Normal',   price:  8.00 },
+  { id: 'rottman-cereja',   name: 'Rottman Cereja',   price:  8.00 },
+  { id: 'rottman-melancia', name: 'Rottman Melancia', price:  8.00 },
+  { id: 'black',            name: 'Black',            price: 12.00 },
+  { id: '0800',             name: '0800',             price:  7.00 },
+  { id: '0800-menta',       name: '0800 Menta',       price:  7.00 },
+];
+
+const DOSE_BRANDS = [
+  { id: 'skarloff', name: 'Skarloff',          price: 5.00 },
+  { id: 'sjb',      name: 'São João da Barra', price: 5.00 },
+  { id: '51',       name: '51',                price: 6.00 },
+  { id: '51-ouro',  name: '51 Ouro',           price: 8.00 },
+  { id: 'polaka',   name: 'Polaka',            price: 5.00 },
+];
+
 export async function render(root) {
   clearNode(root);
 
@@ -73,31 +94,24 @@ export async function render(root) {
         </div>
         <div id="pdv-check-result" style="display:none;padding:var(--sp-3) var(--sp-4);border-bottom:1px solid var(--line)"></div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:10px 12px 0">
-          <button id="pdv-quick-cigarro" type="button"
-                  style="display:flex;flex-direction:column;align-items:center;gap:4px;
-                         padding:12px 8px;border-radius:10px;border:2px solid #b8860b;
-                         background:linear-gradient(135deg,rgba(184,134,11,.18),rgba(184,134,11,.06));
-                         cursor:pointer;color:inherit;transition:transform .12s,box-shadow .12s,background .15s"
-                  onmousedown="this.style.transform='scale(.93)'"
-                  onmouseup="this.style.transform=''"
-                  ontouchstart="this.style.transform='scale(.93)'"
-                  ontouchend="this.style.transform=''">
-            <span style="font-size:1.8rem;line-height:1;filter:drop-shadow(0 2px 4px rgba(0,0,0,.4))">🚬</span>
-            <span style="font-weight:700;font-size:.88rem">Cigarro</span>
-            <span style="font-size:.7rem;color:var(--text-2)">Retalho rápido</span>
+          <button id="pdv-quick-cigarro" type="button" class="pdv-quick-btn pdv-quick-btn--cigarro">
+            <svg class="pdv-quick-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="1" y="10.5" width="15" height="3" rx="1.5"/>
+              <rect x="16" y="10.5" width="4.5" height="3" rx="1" fill="currentColor" opacity=".55" stroke="none"/>
+              <line x1="20.5" y1="12" x2="23" y2="12"/>
+              <path d="M19 9c0-.9 1.5-.9 1.5-2.2"/>
+            </svg>
+            <span class="pdv-quick-label">Cigarro</span>
+            <span class="pdv-quick-sub">Retalho rapido</span>
           </button>
-          <button id="pdv-quick-dose" type="button"
-                  style="display:flex;flex-direction:column;align-items:center;gap:4px;
-                         padding:12px 8px;border-radius:10px;border:2px solid #7b3fa0;
-                         background:linear-gradient(135deg,rgba(123,63,160,.18),rgba(123,63,160,.06));
-                         cursor:pointer;color:inherit;transition:transform .12s,box-shadow .12s,background .15s"
-                  onmousedown="this.style.transform='scale(.93)'"
-                  onmouseup="this.style.transform=''"
-                  ontouchstart="this.style.transform='scale(.93)'"
-                  ontouchend="this.style.transform=''">
-            <span style="font-size:1.8rem;line-height:1;filter:drop-shadow(0 2px 4px rgba(0,0,0,.4))">🥃</span>
-            <span style="font-weight:700;font-size:.88rem">Dose</span>
-            <span style="font-size:.7rem;color:var(--text-2)">Venda rápida</span>
+          <button id="pdv-quick-dose" type="button" class="pdv-quick-btn pdv-quick-btn--dose">
+            <svg class="pdv-quick-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M7 4h10l-1.8 12.5H8.8L7 4z"/>
+              <line x1="9.5" y1="16.5" x2="14.5" y2="16.5"/>
+              <line x1="11" y1="20" x2="13" y2="20"/>
+            </svg>
+            <span class="pdv-quick-label">Dose</span>
+            <span class="pdv-quick-sub">Venda rapida</span>
           </button>
         </div>
         <div class="pdv-category-bar" id="pdv-cats"></div>
@@ -235,8 +249,8 @@ export async function render(root) {
   paintTroco();
 
   // Quick-add atalhos
-  document.getElementById('pdv-quick-cigarro').onclick  = () => openQuickAdd('Cigarro', '🚬 Cigarro — Retalho rápido', { openLabel: '📦 Abrir carteira' });
-  document.getElementById('pdv-quick-dose').onclick     = () => openQuickAdd('Dose',    '🥃 Dose — Venda rápida',        { openLabel: '🍾 Abrir garrafa', openCategory: 'Destilado' });
+  document.getElementById('pdv-quick-cigarro').onclick  = () => openBrandModal(CIGARRO_BRANDS, 'Cigarro — Retalho', { openLabel: 'Abrir carteira' });
+  document.getElementById('pdv-quick-dose').onclick     = () => openBrandModal(DOSE_BRANDS,    'Dose — Venda',       { openLabel: 'Abrir garrafa' });
 
   // Delivery toggle
   document.getElementById('pdv-delivery').onchange = (e) => {
@@ -607,6 +621,156 @@ function showCheckResult(product, code) {
 function paintAll() { paintProducts(); paintCart(); paintTotals(); }
 
 /* ─── Quick-add modal (Cigarro / Dose) — com animação ────────── */
+/* ─── Brand-card modal (Cigarro / Dose) ─────────────────────── */
+function openBrandModal(brands, title, opts = {}) {
+  const prices = {};
+  const qtys   = {};
+  const armed  = {};
+  brands.forEach(b => { prices[b.id] = b.price; qtys[b.id] = 0; });
+
+  const body = el('div');
+  body.className = 'qa-body';
+
+  const totalBar = el('div');
+  totalBar.className = 'qa-total hidden';
+
+  const updateTotalBar = () => {
+    const totalQty = Object.values(qtys).reduce((s, v) => s + v, 0);
+    const totalVal = brands.reduce((s, b) => s + (qtys[b.id] || 0) * (prices[b.id] ?? b.price), 0);
+    if (totalQty > 0) {
+      totalBar.className = 'qa-total';
+      totalBar.innerHTML = `<span><strong>${totalQty}</strong> item(s) selecionado(s)</span><span class="qa-total-val">${fmt.currency(totalVal)}</span>`;
+    } else {
+      totalBar.className = 'qa-total hidden';
+      totalBar.innerHTML = '';
+    }
+  };
+
+  const updateCard = (id) => {
+    const card = body.querySelector(`[data-bid="${id}"]`);
+    if (!card) return;
+    const q = qtys[id];
+    card.classList.toggle('brand-card--active', q > 0);
+    const countEl = card.querySelector('.qa-count');
+    if (countEl) {
+      countEl.textContent = q;
+      countEl.classList.toggle('qa-count--pos', q > 0);
+      if (q > 0) {
+        countEl.classList.remove('qa-pop');
+        void countEl.offsetWidth;
+        countEl.classList.add('qa-pop');
+      }
+    }
+    const decBtn = card.querySelector('.qa-btn-dec');
+    if (decBtn) decBtn.disabled = q === 0;
+    updateTotalBar();
+  };
+
+  body.innerHTML = `<div class="brand-grid">${brands.map(b => {
+    const openBtn = opts.openLabel
+      ? `<button class="qa-open-btn" data-bid="${b.id}" type="button">${fmt.escape(opts.openLabel)}</button>`
+      : '';
+    return `
+      <div class="brand-card" data-bid="${b.id}">
+        <div class="brand-card-name">${fmt.escape(b.name)}</div>
+        <label class="qa-price-label">R$<input class="qa-price-input" type="number" step="0.50" min="0" data-bid="${b.id}" value="${b.price.toFixed(2)}"></label>
+        ${openBtn}
+        <div class="qa-counter brand-card-counter">
+          <button class="qa-btn qa-btn-dec" disabled>−</button>
+          <span class="qa-count">0</span>
+          <button class="qa-btn qa-btn-inc">+</button>
+        </div>
+      </div>`;
+  }).join('')}</div>`;
+  body.appendChild(totalBar);
+
+  body.querySelectorAll('.qa-price-input').forEach(input => {
+    input.onclick = e => e.stopPropagation();
+    input.oninput = () => {
+      prices[input.dataset.bid] = parseFloat(input.value) || 0;
+      updateTotalBar();
+    };
+  });
+
+  body.querySelectorAll('.brand-card').forEach(card => {
+    card.onclick = e => {
+      if (e.target.closest('.qa-price-input') || e.target.closest('.qa-open-btn') || e.target.closest('.qa-btn')) return;
+      const id = card.dataset.bid;
+      qtys[id]++;
+      updateCard(id);
+    };
+  });
+
+  body.querySelectorAll('.qa-btn-dec').forEach(btn => {
+    btn.onclick = e => {
+      e.stopPropagation();
+      const id = btn.closest('[data-bid]').dataset.bid;
+      if (qtys[id] > 0) { qtys[id]--; updateCard(id); }
+    };
+  });
+  body.querySelectorAll('.qa-btn-inc').forEach(btn => {
+    btn.onclick = e => {
+      e.stopPropagation();
+      const id = btn.closest('[data-bid]').dataset.bid;
+      qtys[id]++;
+      updateCard(id);
+    };
+  });
+
+  if (opts.openLabel) {
+    body.querySelectorAll('.qa-open-btn').forEach(btn => {
+      btn.onclick = async e => {
+        e.stopPropagation();
+        const id = btn.dataset.bid;
+        const brand = brands.find(b => b.id === id);
+        if (!armed[id]) {
+          armed[id] = true;
+          btn.classList.add('armed');
+          btn.textContent = 'Confirmar?';
+          armed[`_t_${id}`] = setTimeout(() => {
+            delete armed[id];
+            btn.classList.remove('armed');
+            btn.textContent = opts.openLabel;
+          }, 3000);
+        } else {
+          clearTimeout(armed[`_t_${id}`]);
+          delete armed[id];
+          btn.disabled = true;
+          btn.textContent = 'Aberto';
+          ui.toast(`${opts.openLabel} — ${brand?.name ?? ''} registrado.`, 'success');
+        }
+      };
+    });
+  }
+
+  const cancelBtn = el('button', { class: 'btn btn-ghost', type: 'button' }, 'Cancelar');
+  cancelBtn.onclick = () => ui.closeModal(null);
+
+  const addBtn = el('button', { class: 'btn btn-primary', type: 'button' }, 'Adicionar ao carrinho');
+  addBtn.onclick = () => {
+    let added = 0;
+    for (const b of brands) {
+      const qty = qtys[b.id] || 0;
+      if (qty <= 0) continue;
+      const unitPrice = prices[b.id] ?? b.price;
+      const existing = state.cart.find(i => i.productId == null && i.name === b.name);
+      if (existing) {
+        existing.qty += qty;
+      } else {
+        state.cart.push({ productId: null, name: b.name, unitPrice, costPrice: 0, qty, stock: null });
+      }
+      added++;
+    }
+    if (added === 0) { ui.toast('Selecione ao menos um item.', 'warning'); return; }
+    paintCart();
+    paintTotals();
+    ui.closeModal(true);
+    ui.toast(`${added} item(s) adicionado(s) ao carrinho`, 'success');
+  };
+
+  ui.modal({ title, body, footer: [cancelBtn, addBtn], narrow: true });
+}
+
 function openQuickAdd(category, title, opts = {}) {
   const prods = state.products.filter(p => p.category === category);
   if (prods.length === 0) {
@@ -1223,7 +1387,7 @@ async function finishSale() {
     // múltiplos caixas vendendo o mesmo item simultaneamente.
     // A venda já foi gravada (operação crítica); se a baixa de estoque falhar,
     // não trava o caixa — apenas avisa para ajuste manual depois.
-    const stockItems = state.cart.map(i => ({ productId: i.productId, qty: i.qty }));
+    const stockItems = state.cart.filter(i => i.productId).map(i => ({ productId: i.productId, qty: i.qty }));
     if (stockItems.length) {
       try {
         await db.runStockTransaction(stockItems);
