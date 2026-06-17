@@ -89,10 +89,11 @@ function paint() {
       '<span class="badge badge-mute">—</span>';
     const a = s.customer?.address || {};
     const addrLine = [a.street, a.number, a.complement].filter(Boolean).join(', ');
-    const addrSub = [a.neighborhood, a.city, a.state].filter(Boolean).join(' — ');
+    const addrSub  = [a.neighborhood, a.city, a.state].filter(Boolean).join(' — ');
+    const phone    = s.customer?.phone ? fmt.phone(s.customer.phone) : null;
 
     const canAssign = auth.isSeller() && status === 'pending';
-    const canMark = auth.isSeller() || (auth.isDeliverer() && s.delivery.delivererId === (auth.currentUser()?.uid || auth.currentUser()?.id));
+    const canMark   = auth.isSeller() || (auth.isDeliverer() && s.delivery.delivererId === (auth.currentUser()?.uid || auth.currentUser()?.id));
 
     return `
       <div class="delivery-card">
@@ -102,24 +103,39 @@ function paint() {
             ${statusBadge}
             <span class="delivery-meta">${fmt.datetime(s.createdAt)}</span>
           </div>
-          <div>
-            <strong>${fmt.escape(s.customer?.name || 'Sem cliente')}</strong>
-            <span class="text-mute small"> · ${fmt.phone(s.customer?.phone)}</span>
+
+          <div class="dc-customer">
+            <strong class="dc-name">${fmt.escape(s.customer?.name || 'Sem cliente')}</strong>
+            ${phone ? `<a class="dc-phone" href="tel:${s.customer.phone}">${phone}</a>` : ''}
           </div>
-          <div class="delivery-address">
-            ${icon('mapPin')}
-            <div>
-              ${fmt.escape(addrLine || 'Sem endereço cadastrado')}
-              ${addrSub ? `<div class="text-mute small">${fmt.escape(addrSub)}${a.reference ? ' · ' + fmt.escape(a.reference) : ''}</div>` : ''}
-            </div>
-          </div>
+
+          ${addrLine ? `
+            <div class="delivery-address">
+              ${icon('mapPin')}
+              <div>
+                <span class="dc-addr-line">${fmt.escape(addrLine)}</span>
+                ${addrSub ? `<div class="text-mute small">${fmt.escape(addrSub)}${a.reference ? ' · ' + fmt.escape(a.reference) : ''}</div>` : ''}
+              </div>
+            </div>` : `
+            <div class="delivery-address" style="color:var(--text-3);font-size:.8rem">
+              ${icon('mapPin')} Sem endereço cadastrado
+            </div>`}
+
           <div class="text-mute small" style="margin-top: var(--sp-2)">
             ${s.items?.length || 0} item${s.items?.length === 1 ? '' : 'ns'} · Total: <strong class="text-gold">${fmt.currency(s.total)}</strong>
-            ${s.delivery.delivererName ? ` · Entregador: <strong>${fmt.escape(s.delivery.delivererName)}</strong>` : ''}
+            · ${PAY_LABELS[s.paymentMethod] || s.paymentMethod || '—'}
+            ${s.delivery.delivererName ? ` · <strong>${fmt.escape(s.delivery.delivererName)}</strong>` : ''}
           </div>
         </div>
         <div class="delivery-actions">
-          <button class="btn btn-ghost btn-sm" data-print="${s.id}">${icon('print', { size: 14 })} Cupom</button>
+          <button class="btn btn-ghost btn-sm" data-copy="${s.id}" title="Copiar dados para WhatsApp">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            Copiar
+          </button>
+          <button class="btn btn-ghost btn-sm" data-slip="${s.id}" title="Imprimir nota de entrega para o motoboy">
+            ${icon('print', { size: 13 })} Nota
+          </button>
+          <button class="btn btn-ghost btn-sm" data-print="${s.id}" title="Imprimir cupom completo">${icon('print', { size: 13 })} Cupom</button>
           ${canAssign ? `<button class="btn btn-secondary btn-sm" data-assign="${s.id}">${icon('deliverers', { size: 14 })} Atribuir</button>` : ''}
           ${canMark && status === 'pending' && s.delivery.delivererId ? `<button class="btn btn-primary btn-sm" data-status="in_route" data-id="${s.id}">Em rota</button>` : ''}
           ${canMark && status === 'in_route' ? `<button class="btn btn-success btn-sm" data-status="delivered" data-id="${s.id}">${icon('check', { size: 14 })} Entregue</button>` : ''}
@@ -128,6 +144,14 @@ function paint() {
     `;
   }).join('');
 
+  root.querySelectorAll('[data-copy]').forEach(b => {
+    const s = state.sales.find(x => x.id === b.dataset.copy);
+    if (s) b.onclick = () => copyDeliveryData(s);
+  });
+  root.querySelectorAll('[data-slip]').forEach(b => {
+    const s = state.sales.find(x => x.id === b.dataset.slip);
+    if (s) b.onclick = () => printDeliverySlip(s);
+  });
   root.querySelectorAll('[data-print]').forEach(b =>
     b.onclick = () => printSaleCupom(b.dataset.print));
   root.querySelectorAll('[data-assign]').forEach(b =>
@@ -215,6 +239,87 @@ const PAY_LABELS = {
   dinheiro: 'Dinheiro', pix: 'PIX', debito: 'Cartao Debito',
   credito: 'Cartao Credito', fiado: 'Fiado'
 };
+
+/* ─── Copiar dados de entrega (WhatsApp) ─────────────────────── */
+export function copyDeliveryData(s) {
+  const a        = s.customer?.address || {};
+  const addrLine = [a.street, a.number, a.complement].filter(Boolean).join(', ');
+  const addrFull = [addrLine, a.neighborhood, a.city, a.state].filter(Boolean).join(' — ');
+  const pay      = PAY_LABELS[s.paymentMethod] || s.paymentMethod || '';
+  const lines    = [
+    `*${s.code}*`,
+    `Nome: ${s.customer?.name || 'Sem cliente'}`,
+    s.customer?.phone ? `Tel: ${fmt.phone(s.customer.phone)}` : null,
+    addrFull ? `End.: ${addrFull}` : null,
+    a.reference  ? `Ref.: ${a.reference}` : null,
+    `Total: ${fmt.currency(s.total)} (${pay})`,
+  ].filter(Boolean).join('\n');
+  navigator.clipboard?.writeText(lines).then(
+    () => ui.toast('Dados copiados — cole no WhatsApp.', 'success'),
+    () => ui.toast('Falha ao copiar.', 'danger')
+  );
+}
+
+/* ─── Nota de entrega simplificada (para o motoboy) ──────────── */
+export function printDeliverySlip(s) {
+  const a        = s.customer?.address || {};
+  const addrLine = [a.street, a.number, a.complement].filter(Boolean).join(', ');
+  const addrSub  = [a.neighborhood, a.city, a.state].filter(Boolean).join(' — ');
+  const pay      = PAY_LABELS[s.paymentMethod] || (s.paymentMethod || '').toUpperCase();
+  const dt       = s.createdAt
+    ? new Date(s.createdAt).toLocaleString('pt-BR', { timeZone: 'America/Manaus', day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' })
+    : '';
+
+  const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const cur = v => 'R$ ' + (Number(v) || 0).toFixed(2).replace('.', ',');
+
+  const html = `<!DOCTYPE html><html lang="pt-BR"><head>
+<meta charset="UTF-8"><title>Nota de Entrega ${s.code}</title>
+<style>
+@page{size:80mm auto;margin:3mm 4mm}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Courier New',monospace;font-size:10pt;line-height:1.4;color:#000;width:72mm}
+h1{font-size:12pt;font-weight:900;text-align:center;text-transform:uppercase;letter-spacing:.08em;margin-bottom:2pt}
+.code{text-align:center;font-size:9pt;margin-bottom:5pt}
+hr{border:0;border-top:1px dashed #000;margin:5pt 0}
+.lbl{font-size:7pt;text-transform:uppercase;letter-spacing:.06em;opacity:.6;margin-bottom:1pt}
+.big{font-size:15pt;font-weight:900;line-height:1.15}
+.phone{font-size:13pt;font-weight:700;letter-spacing:.05em;margin-top:2pt}
+.addr-box{border:2px solid #000;padding:5pt 6pt;margin:5pt 0;border-radius:2pt}
+.addr-main{font-size:12pt;font-weight:700;line-height:1.3}
+.addr-sub{font-size:9pt;margin-top:2pt}
+.rs{display:flex;justify-content:space-between;align-items:baseline}
+.total{font-size:15pt;font-weight:900}
+.pay{font-size:9pt;opacity:.7;margin-top:2pt}
+.foot{text-align:center;font-size:8pt;margin-top:8pt;opacity:.6}
+</style></head><body>
+<h1>Nota de Entrega</h1>
+<div class="code">${esc(s.code)} &bull; ${dt}</div>
+<hr>
+<div class="lbl">Cliente</div>
+<div class="big">${esc(s.customer?.name || 'Sem cliente')}</div>
+${s.customer?.phone ? `<div class="phone">${fmt.phone(s.customer.phone)}</div>` : ''}
+<hr>
+<div class="addr-box">
+  <div class="lbl">Endereço de entrega</div>
+  <div class="addr-main">${esc(addrLine || '—')}</div>
+  ${addrSub ? `<div class="addr-sub">${esc(addrSub)}</div>` : ''}
+  ${a.reference ? `<div class="addr-sub">Ref.: ${esc(a.reference)}</div>` : ''}
+</div>
+<hr>
+<div class="rs">
+  <span class="lbl" style="font-size:9pt">TOTAL A COBRAR</span>
+  <span class="total">${cur(s.total)}</span>
+</div>
+<div class="pay">Pagamento: ${esc(pay)}</div>
+<div class="foot">&mdash; Empório das Bebidas &mdash;</div>
+<script>window.addEventListener('load',function(){setTimeout(function(){window.print();window.addEventListener('afterprint',function(){window.close();});},200);});</script>
+</body></html>`;
+
+  const win = window.open('', '_blank', 'width=360,height=640,menubar=no,toolbar=no,location=no');
+  if (win) { win.document.write(html); win.document.close(); }
+  else ui.toast('Permita popups neste site para imprimir.', 'warning', { duration: 5000 });
+}
 
 export async function printSaleCupom(saleId) {
   const sale = await db.get('sales', saleId);

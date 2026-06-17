@@ -5,6 +5,7 @@
  */
 import { db, fmt, ui, icon, clearNode, manausNow, auth } from '../core.js';
 import { productImage } from '../product-art.js';
+import { printDeliverySlip, copyDeliveryData } from './deliveries.js';
 
 export const meta = {
   id: 'reports',
@@ -346,13 +347,25 @@ function paint() {
                 <td>${isCancelled
                   ? '<span class="badge badge-danger">Cancelada</span>'
                   : '<span class="badge badge-success badge-dot">Paga</span>'}</td>
-                <td>${isCancelled ? '' : `
-                  <button class="btn btn-ghost btn-sm rep-cancel-sale"
-                          data-id="${s.id}"
-                          style="color:var(--danger);border-color:var(--danger);opacity:.7"
-                          title="Cancelar esta venda e estornar estoque">
-                    Cancelar
-                  </button>`}
+                <td style="white-space:nowrap">
+                  ${s.customer ? `
+                    <button class="btn btn-ghost btn-sm rep-copy-delivery" data-id="${s.id}"
+                      title="Copiar dados do cliente para WhatsApp"
+                      style="padding:2px 6px">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                    </button>
+                    <button class="btn btn-ghost btn-sm rep-print-slip" data-id="${s.id}"
+                      title="Imprimir nota de entrega"
+                      style="padding:2px 6px">
+                      ${icon('print', { size: 12 })}
+                    </button>` : ''}
+                  ${isCancelled ? '' : `
+                    <button class="btn btn-ghost btn-sm rep-cancel-sale"
+                            data-id="${s.id}"
+                            style="color:var(--danger);border-color:var(--danger);opacity:.7"
+                            title="Cancelar esta venda e estornar estoque">
+                      Cancelar
+                    </button>`}
                 </td>
               </tr>`;
             }).join('')}
@@ -365,6 +378,16 @@ function paint() {
   // Wire cancel buttons on recent sales list
   box.querySelectorAll('.rep-cancel-sale').forEach(btn => {
     btn.onclick = () => cancelSale(btn.dataset.id);
+  });
+
+  // Wire copy / delivery slip buttons
+  box.querySelectorAll('.rep-copy-delivery').forEach(btn => {
+    const s = sales.find(x => x.id === btn.dataset.id);
+    if (s) btn.onclick = () => copyDeliveryData(s);
+  });
+  box.querySelectorAll('.rep-print-slip').forEach(btn => {
+    const s = sales.find(x => x.id === btn.dataset.id);
+    if (s) btn.onclick = () => printDeliverySlip(s);
   });
 
   // Wire fiado settlement buttons
