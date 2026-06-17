@@ -755,6 +755,100 @@
 .qa-open-btn.armed { border-color: var(--danger); color: var(--danger); background: rgba(220,38,38,.12); }
 .qa-open-btn:disabled { opacity: .5; cursor: not-allowed; }
 
+/* =========================================================
+   PDV — Barra de caixa (sangria / fechar)
+   ========================================================= */
+.pdv-caixa-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: var(--sp-3);
+  padding-top: var(--sp-3);
+  border-top: 1px solid var(--line);
+}
+.pdv-caixa-btn {
+  font-size: .75rem;
+  font-weight: 600;
+  padding: 5px 11px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  background: none;
+  color: var(--text-3);
+  cursor: pointer;
+  transition: color .14s, border-color .14s, background .14s;
+  white-space: nowrap;
+}
+.pdv-caixa-btn:hover { color: var(--cream); border-color: var(--gold-500); background: rgba(212,175,55,.08); }
+.pdv-caixa-info {
+  flex: 1;
+  text-align: center;
+  font-size: .72rem;
+  color: var(--text-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* =========================================================
+   PDV — Modal de fechamento de caixa
+   ========================================================= */
+.fc-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+.fc-section {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.fc-section-title {
+  font-size: .7rem;
+  font-weight: 700;
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--line);
+}
+.fc-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: .86rem;
+  color: var(--text-2);
+}
+.fc-row strong { color: var(--cream); }
+.fc-row--total {
+  margin-top: 4px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+  font-weight: 700;
+  color: var(--gold-300);
+}
+.fc-row--total strong { color: var(--gold-200); font-size: 1rem; }
+.fc-row--sangria span:last-child { color: var(--danger); }
+.fc-row--expected { font-weight: 700; color: var(--cream); }
+.fc-row--expected strong { color: var(--gold-200); font-size: .95rem; }
+.fc-row--diff { margin-top: 4px; }
+.fc-counted-input {
+  width: 120px;
+  padding: 5px 8px;
+  background: rgba(255,255,255,.07);
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  color: var(--cream);
+  font-size: .88rem;
+  text-align: right;
+  -moz-appearance: textfield;
+}
+.fc-counted-input::-webkit-inner-spin-button,
+.fc-counted-input::-webkit-outer-spin-button { -webkit-appearance: none; }
+.fc-counted-input:focus { outline: none; border-color: var(--gold-500); }
+.fc-ok  { color: #4ade80; }
+.fc-err { color: var(--danger); }
+
 /* Stock deduct modal (Abrir carteira / garrafa) */
 .sd-list { display: flex; flex-direction: column; gap: 8px; margin-top: var(--sp-3); }
 .sd-item {

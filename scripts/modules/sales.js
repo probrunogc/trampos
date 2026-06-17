@@ -77,6 +77,8 @@ export async function render(root) {
   state.note = '';
   state.paymentMethod = 'dinheiro';
   state.received = 0;
+  state.caixaId = null;
+  state.caixaFundo = 0;
 
   root.innerHTML = `
     <div class="pdv-layout">
@@ -163,6 +165,11 @@ export async function render(root) {
             <button class="btn btn-primary btn-block" id="pdv-finish" type="button" disabled>
               Finalizar venda
             </button>
+          </div>
+          <div class="pdv-caixa-bar">
+            <button id="pdv-sangria" type="button" class="pdv-caixa-btn">Sangria</button>
+            <span id="pdv-caixa-info" class="pdv-caixa-info">Verificando caixa...</span>
+            <button id="pdv-fechar-caixa" type="button" class="pdv-caixa-btn">Fechar caixa</button>
           </div>
         </div>
       </aside>
@@ -284,12 +291,243 @@ export async function render(root) {
   // Finish
   document.getElementById('pdv-finish').onclick = finishSale;
 
+  // Caixa operations
+  document.getElementById('pdv-sangria').onclick     = openSangriaModal;
+  document.getElementById('pdv-fechar-caixa').onclick = openFecharCaixaModal;
+
   // Scanner USB (C3TECH e similares — modo teclado HID)
   // O leitor injeta os dígitos muito rápido (< 50ms/char) e encerra com Enter.
   // Capturamos no document para funcionar mesmo sem o campo de busca focado.
   wireScanner();
 
   paintAll();
+
+  // Check / open caixa after page is painted
+  checkOrOpenCaixa();
+}
+
+/* ─── Caixa (abertura, sangria, fechamento) ──────────────────── */
+function _setCaixaInfo(text) {
+  const el_ = document.getElementById('pdv-caixa-info');
+  if (el_) el_.textContent = text;
+}
+
+async function checkOrOpenCaixa() {
+  try {
+    const list = await db.list('caixas', { where: { field: 'status', value: 'open' }, orderBy: 'createdAt', orderDir: 'desc', limit: 1 });
+    if (list.length > 0) {
+      const caixa = list[0];
+      state.caixaId = caixa.id;
+      state.caixaFundo = caixa.fundo || 0;
+      const d = new Date(caixa.openedAt || caixa.createdAt);
+      const hm = `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+      _setCaixaInfo(`Aberto desde ${hm}`);
+    } else {
+      state.caixaId = null;
+      _setCaixaInfo('Caixa fechado');
+      promptAbrirCaixa();
+    }
+  } catch {
+    _setCaixaInfo('Erro ao verificar caixa');
+  }
+}
+
+async function promptAbrirCaixa() {
+  const body = el('div');
+  body.innerHTML = `
+    <p style="font-size:.85rem;color:var(--text-2);margin-bottom:var(--sp-3)">
+      Nenhum caixa aberto. Informe o fundo inicial (dinheiro ja na gaveta).
+    </p>
+    <label class="field-label">Fundo de caixa (R$)</label>
+    <input type="number" id="ca-fundo" class="field-input" min="0" step="0.01" placeholder="0,00" value="0">
+  `;
+  const cancelBtn = el('button', { class: 'btn btn-ghost', type: 'button' }, 'Agora nao');
+  cancelBtn.onclick = () => { _setCaixaInfo('Caixa fechado'); ui.closeModal(null); };
+  const openBtn = el('button', { class: 'btn btn-primary', type: 'button' }, 'Abrir caixa');
+  openBtn.onclick = async () => {
+    const fundo = parseFloat(document.getElementById('ca-fundo').value) || 0;
+    const user = auth.currentUser();
+    openBtn.disabled = true;
+    try {
+      const caixa = await db.create('caixas', {
+        status: 'open',
+        openedAt: Date.now(),
+        openedBy: user ? { id: user.id || user.uid, name: user.name } : null,
+        fundo,
+        totalSangrias: 0,
+      });
+      state.caixaId = caixa.id;
+      state.caixaFundo = fundo;
+      _setCaixaInfo('Caixa aberto agora');
+      ui.closeModal(true);
+      ui.toast('Caixa aberto.', 'success');
+    } catch (err) {
+      openBtn.disabled = false;
+      ui.toast('Erro ao abrir caixa: ' + (err.message || 'Tente novamente.'), 'danger');
+    }
+  };
+  ui.modal({ title: 'Abrir caixa', body, footer: [cancelBtn, openBtn], narrow: true });
+}
+
+async function openSangriaModal() {
+  if (!state.caixaId) { ui.toast('Abra o caixa primeiro.', 'warning'); return; }
+  const body = el('div');
+  body.innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:var(--sp-3)">
+      <div>
+        <label class="field-label">Valor retirado (R$)</label>
+        <input type="number" id="sg-amount" class="field-input" min="0.01" step="0.01" placeholder="0,00" autofocus>
+      </div>
+      <div>
+        <label class="field-label">Motivo (opcional)</label>
+        <input type="text" id="sg-reason" class="field-input" placeholder="Ex: reforco do cofre">
+      </div>
+    </div>
+  `;
+  const cancelBtn = el('button', { class: 'btn btn-ghost', type: 'button' }, 'Cancelar');
+  cancelBtn.onclick = () => ui.closeModal(null);
+  const confirmBtn = el('button', { class: 'btn btn-primary', type: 'button' }, 'Registrar sangria');
+  confirmBtn.onclick = async () => {
+    const amount = parseFloat(document.getElementById('sg-amount').value) || 0;
+    if (amount <= 0) { ui.toast('Informe um valor maior que zero.', 'warning'); return; }
+    const reason = document.getElementById('sg-reason').value.trim();
+    const user = auth.currentUser();
+    confirmBtn.disabled = true;
+    try {
+      await db.create('sangrias', {
+        caixaId: state.caixaId,
+        amount,
+        reason: reason || null,
+        at: Date.now(),
+        by: user ? { id: user.id || user.uid, name: user.name } : null,
+      });
+      const caixa = await db.get('caixas', state.caixaId);
+      if (caixa) await db.update('caixas', state.caixaId, { totalSangrias: (caixa.totalSangrias || 0) + amount });
+      ui.closeModal(true);
+      ui.toast(`Sangria de ${fmt.currency(amount)} registrada.`, 'success');
+    } catch (err) {
+      confirmBtn.disabled = false;
+      ui.toast('Erro ao registrar sangria: ' + (err.message || 'Tente novamente.'), 'danger');
+    }
+  };
+  ui.modal({ title: 'Sangria de caixa', body, footer: [cancelBtn, confirmBtn], narrow: true });
+}
+
+async function openFecharCaixaModal() {
+  if (!state.caixaId) { ui.toast('Nenhum caixa aberto.', 'warning'); return; }
+
+  const body = el('div');
+  body.className = 'fc-wrap';
+  body.innerHTML = `<div style="text-align:center;padding:var(--sp-5) 0;color:var(--text-3);font-size:.88rem">Calculando totais...</div>`;
+
+  const cancelBtn = el('button', { class: 'btn btn-ghost', type: 'button' }, 'Cancelar');
+  cancelBtn.onclick = () => ui.closeModal(null);
+  const fecharBtn = el('button', { class: 'btn btn-danger', type: 'button' }, 'Fechar caixa');
+  fecharBtn.disabled = true;
+
+  ui.modal({ title: 'Fechamento de caixa', body, footer: [cancelBtn, fecharBtn] });
+
+  let sales, sangrias, caixa;
+  try {
+    [sales, sangrias, caixa] = await Promise.all([
+      db.list('sales', { where: { field: 'caixaId', value: state.caixaId } }),
+      db.list('sangrias', { where: { field: 'caixaId', value: state.caixaId } }),
+      db.get('caixas', state.caixaId),
+    ]);
+  } catch (err) {
+    body.innerHTML = `<p style="color:var(--danger);padding:var(--sp-3)">Erro ao carregar dados: ${err.message}</p>`;
+    return;
+  }
+
+  const byMethod = {};
+  for (const pm of PAYMENTS) byMethod[pm.id] = 0;
+  let totalCount = 0;
+  for (const s of sales) {
+    if (s.status === 'cancelled') continue;
+    byMethod[s.paymentMethod || 'dinheiro'] = (byMethod[s.paymentMethod || 'dinheiro'] || 0) + (s.total || 0);
+    totalCount++;
+  }
+  const grandTotal     = Object.values(byMethod).reduce((a, b) => a + b, 0);
+  const totalSangrias  = sangrias.reduce((s, sg) => s + (sg.amount || 0), 0);
+  const fundo          = caixa?.fundo || 0;
+  const dinheiroVendas = byMethod['dinheiro'] || 0;
+  const expectedCash   = fundo + dinheiroVendas - totalSangrias;
+
+  body.innerHTML = `
+    <div class="fc-body">
+      <div class="fc-section">
+        <div class="fc-section-title">Vendas (${totalCount})</div>
+        ${PAYMENTS.map(p => `
+          <div class="fc-row">
+            <span>${p.label}</span>
+            <strong>${fmt.currency(byMethod[p.id] || 0)}</strong>
+          </div>`).join('')}
+        <div class="fc-row fc-row--total">
+          <span>Total geral</span>
+          <strong>${fmt.currency(grandTotal)}</strong>
+        </div>
+      </div>
+      <div class="fc-section">
+        <div class="fc-section-title">Controle de dinheiro</div>
+        <div class="fc-row"><span>Fundo inicial</span><span>${fmt.currency(fundo)}</span></div>
+        <div class="fc-row"><span>Vendas em dinheiro</span><span>+ ${fmt.currency(dinheiroVendas)}</span></div>
+        <div class="fc-row fc-row--sangria"><span>Sangrias</span><span>- ${fmt.currency(totalSangrias)}</span></div>
+        <div class="fc-row fc-row--expected"><span>Esperado na gaveta</span><strong>${fmt.currency(expectedCash)}</strong></div>
+      </div>
+      <div class="fc-section">
+        <div class="fc-section-title">Contagem fisica</div>
+        <div class="fc-row">
+          <label for="fc-counted">Dinheiro contado (R$)</label>
+          <input type="number" id="fc-counted" class="fc-counted-input" min="0" step="0.01" placeholder="0,00">
+        </div>
+        <div class="fc-row fc-row--diff" id="fc-diff" style="display:none">
+          <span>Diferenca</span>
+          <strong id="fc-diff-val"></strong>
+        </div>
+      </div>
+    </div>
+  `;
+
+  fecharBtn.disabled = false;
+
+  document.getElementById('fc-counted').oninput = function () {
+    const counted = parseFloat(this.value);
+    const diffRow = document.getElementById('fc-diff');
+    const diffVal = document.getElementById('fc-diff-val');
+    if (isNaN(counted)) { diffRow.style.display = 'none'; return; }
+    const diff = counted - expectedCash;
+    diffRow.style.display = '';
+    diffVal.textContent = (diff >= 0 ? '+ ' : '- ') + fmt.currency(Math.abs(diff));
+    diffVal.className = diff >= 0 ? 'fc-ok' : 'fc-err';
+  };
+
+  fecharBtn.onclick = async () => {
+    const countedEl = document.getElementById('fc-counted');
+    const counted = parseFloat(countedEl?.value);
+    const diff = isNaN(counted) ? null : counted - expectedCash;
+    fecharBtn.disabled = true;
+    const user = auth.currentUser();
+    try {
+      await db.update('caixas', state.caixaId, {
+        status: 'closed',
+        closedAt: Date.now(),
+        closedBy: user ? { id: user.id || user.uid, name: user.name } : null,
+        summary: { ...byMethod, total: grandTotal, count: totalCount },
+        totalSangrias,
+        expectedCash,
+        countedCash: isNaN(counted) ? null : counted,
+        diff,
+      });
+      state.caixaId = null;
+      ui.closeModal(true);
+      ui.toast('Caixa fechado.', 'success');
+      _setCaixaInfo('Caixa fechado');
+      setTimeout(() => promptAbrirCaixa(), 600);
+    } catch (err) {
+      fecharBtn.disabled = false;
+      ui.toast('Erro ao fechar caixa: ' + (err.message || 'Tente novamente.'), 'danger');
+    }
+  };
 }
 
 /* ─── Scanner USB (HID keyboard emulation) ───────────────────── */
@@ -1347,6 +1585,7 @@ async function finishSale() {
     const sale = {
       code,
       seq,
+      caixaId: state.caixaId || null,
       items: state.cart.map(i => ({
         productId: i.productId,
         name: i.name,
