@@ -75,11 +75,12 @@ export async function render(root) {
                   style="display:flex;flex-direction:column;align-items:center;gap:4px;
                          padding:12px 8px;border-radius:10px;border:2px solid #b8860b;
                          background:linear-gradient(135deg,rgba(184,134,11,.18),rgba(184,134,11,.06));
-                         cursor:pointer;color:inherit;transition:transform .1s,background .15s"
-                  onmousedown="this.style.transform='scale(.96)'"
-                  onmouseup="this.style.transform=''"
+                         cursor:pointer;color:inherit;transition:transform .12s,box-shadow .12s,background .15s"
+                  onmousedown="this.style.transform='scale(.93)';this.style.boxShadow='none'"
+                  onmouseup="this.style.transform='';this.style.boxShadow=''"
+                  ontouchstart="this.style.transform='scale(.93)'"
                   ontouchend="this.style.transform=''">
-            <span style="font-size:1.7rem;line-height:1">🚬</span>
+            <span style="font-size:1.8rem;line-height:1;filter:drop-shadow(0 2px 4px rgba(0,0,0,.4))">🚬</span>
             <span style="font-weight:700;font-size:.88rem">Cigarro</span>
             <span style="font-size:.7rem;color:var(--text-2)">Retalho rápido</span>
           </button>
@@ -87,13 +88,38 @@ export async function render(root) {
                   style="display:flex;flex-direction:column;align-items:center;gap:4px;
                          padding:12px 8px;border-radius:10px;border:2px solid #7b3fa0;
                          background:linear-gradient(135deg,rgba(123,63,160,.18),rgba(123,63,160,.06));
-                         cursor:pointer;color:inherit;transition:transform .1s,background .15s"
-                  onmousedown="this.style.transform='scale(.96)'"
-                  onmouseup="this.style.transform=''"
+                         cursor:pointer;color:inherit;transition:transform .12s,box-shadow .12s,background .15s"
+                  onmousedown="this.style.transform='scale(.93)';this.style.boxShadow='none'"
+                  onmouseup="this.style.transform='';this.style.boxShadow=''"
+                  ontouchstart="this.style.transform='scale(.93)'"
                   ontouchend="this.style.transform=''">
-            <span style="font-size:1.7rem;line-height:1">🥃</span>
+            <span style="font-size:1.8rem;line-height:1;filter:drop-shadow(0 2px 4px rgba(0,0,0,.4))">🥃</span>
             <span style="font-weight:700;font-size:.88rem">Dose</span>
             <span style="font-size:.7rem;color:var(--text-2)">Venda rápida</span>
+          </button>
+          <button id="pdv-open-carteira" type="button"
+                  style="display:flex;align-items:center;justify-content:center;gap:6px;
+                         padding:8px 10px;border-radius:8px;border:1.5px dashed rgba(184,134,11,.45);
+                         background:rgba(184,134,11,.06);cursor:pointer;color:inherit;
+                         font-size:.78rem;transition:border-color .12s,background .12s,transform .1s"
+                  onmousedown="this.style.transform='scale(.95)'"
+                  onmouseup="this.style.transform=''"
+                  ontouchstart="this.style.transform='scale(.95)'"
+                  ontouchend="this.style.transform=''">
+            <span>📦</span>
+            <span style="font-weight:600;color:var(--text-2)">Abrir carteira</span>
+          </button>
+          <button id="pdv-open-garrafa" type="button"
+                  style="display:flex;align-items:center;justify-content:center;gap:6px;
+                         padding:8px 10px;border-radius:8px;border:1.5px dashed rgba(123,63,160,.45);
+                         background:rgba(123,63,160,.06);cursor:pointer;color:inherit;
+                         font-size:.78rem;transition:border-color .12s,background .12s,transform .1s"
+                  onmousedown="this.style.transform='scale(.95)'"
+                  onmouseup="this.style.transform=''"
+                  ontouchstart="this.style.transform='scale(.95)'"
+                  ontouchend="this.style.transform=''">
+            <span>🍾</span>
+            <span style="font-weight:600;color:var(--text-2)">Abrir garrafa</span>
           </button>
         </div>
         <div class="pdv-category-bar" id="pdv-cats"></div>
@@ -202,8 +228,10 @@ export async function render(root) {
   document.getElementById('pdv-payment').onchange = (e) => state.paymentMethod = e.target.value;
 
   // Quick-add atalhos
-  document.getElementById('pdv-quick-cigarro').onclick = () => openQuickAdd('Cigarro', '🚬 Cigarro — Retalho rápido');
-  document.getElementById('pdv-quick-dose').onclick    = () => openQuickAdd('Dose',    '🥃 Dose — Venda rápida');
+  document.getElementById('pdv-quick-cigarro').onclick  = () => openQuickAdd('Cigarro', '🚬 Cigarro — Retalho rápido');
+  document.getElementById('pdv-quick-dose').onclick     = () => openQuickAdd('Dose',    '🥃 Dose — Venda rápida');
+  document.getElementById('pdv-open-carteira').onclick  = () => openStockDeduct('Cigarro',  '📦 Abrir carteira de cigarro', '🚬');
+  document.getElementById('pdv-open-garrafa').onclick   = () => openStockDeduct('Destilado', '🍾 Abrir garrafa de destilado', '🍾');
 
   // Delivery toggle
   document.getElementById('pdv-delivery').onchange = (e) => {
@@ -573,7 +601,7 @@ function showCheckResult(product, code) {
 
 function paintAll() { paintProducts(); paintCart(); paintTotals(); }
 
-/* ─── Quick-add modal (Cigarro / Dose) ───────────────────────── */
+/* ─── Quick-add modal (Cigarro / Dose) — com animação ────────── */
 function openQuickAdd(category, title) {
   const prods = state.products.filter(p => p.category === category);
   if (prods.length === 0) {
@@ -585,54 +613,106 @@ function openQuickAdd(category, title) {
   prods.forEach(p => { qtys[p.id] = 0; });
 
   const body = el('div');
-  body.style.cssText = 'display:flex;flex-direction:column;gap:6px;';
+  body.className = 'qa-body';
 
-  const render = () => {
-    body.innerHTML = prods.map(p => {
-      const q = qtys[p.id];
-      const out = (p.stock ?? 0) <= 0;
-      return `
-        <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:9px;
-                    background:var(--surface-2,rgba(255,255,255,.05));
-                    border:1px solid ${q > 0 ? 'var(--gold-400,#d4af37)' : 'transparent'};
-                    transition:border-color .15s" data-qid="${p.id}">
-          <div style="flex:1;min-width:0">
-            <div style="font-weight:600;font-size:.88rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
-              ${fmt.escape(p.name)}
-            </div>
-            <div style="font-size:.76rem;color:var(--text-2)">
-              ${fmt.currency(p.price)}
-              ${out ? ' · <span style="color:#e74c3c">Sem estoque</span>' : ` · Estoque: ${p.stock}`}
-            </div>
-          </div>
-          <div style="display:flex;align-items:center;gap:5px;flex-shrink:0">
-            <button data-dec="${p.id}"
-                    style="width:28px;height:28px;border-radius:50%;border:1px solid var(--border,#555);
-                           background:none;cursor:pointer;color:inherit;font-size:1rem;
-                           display:flex;align-items:center;justify-content:center;
-                           opacity:${q === 0 ? '.35' : '1'}">−</button>
-            <span style="width:26px;text-align:center;font-weight:700;font-size:1rem">${q}</span>
-            <button data-inc="${p.id}"
-                    style="width:28px;height:28px;border-radius:50%;border:1px solid var(--border,#555);
-                           background:none;cursor:pointer;color:inherit;font-size:1rem;
-                           display:flex;align-items:center;justify-content:center">+</button>
-          </div>
-        </div>
-      `;
-    }).join('');
+  const totalBar = el('div');
+  totalBar.className = 'qa-total hidden';
 
-    body.querySelectorAll('[data-dec]').forEach(btn => {
+  const updateTotalBar = () => {
+    const totalQty = Object.values(qtys).reduce((s, v) => s + v, 0);
+    const totalVal = prods.reduce((s, p) => s + (qtys[p.id] || 0) * p.price, 0);
+    if (totalQty > 0) {
+      totalBar.className = 'qa-total';
+      totalBar.innerHTML = `<span><strong>${totalQty}</strong> item(s) selecionado(s)</span><span class="qa-total-val">${fmt.currency(totalVal)}</span>`;
+    } else {
+      totalBar.className = 'qa-total hidden';
+      totalBar.innerHTML = '';
+    }
+  };
+
+  const updateRow = (id) => {
+    const q = qtys[id];
+    const row = body.querySelector(`[data-qid="${id}"]`);
+    if (!row) return;
+
+    row.classList.toggle('qa-item--active', q > 0);
+
+    const countEl = row.querySelector('.qa-count');
+    if (countEl) {
+      countEl.textContent = q;
+      countEl.classList.toggle('qa-count--pos', q > 0);
+      if (q > 0) {
+        countEl.classList.remove('qa-pop');
+        void countEl.offsetWidth; // force reflow para reiniciar animação
+        countEl.classList.add('qa-pop');
+      }
+    }
+
+    const decBtn = row.querySelector('.qa-btn-dec');
+    if (decBtn) decBtn.disabled = q === 0;
+
+    const p = prods.find(x => x.id === id);
+    let subEl = row.querySelector('.qa-subtotal');
+    if (p && q > 0) {
+      if (!subEl) {
+        subEl = el('div');
+        subEl.className = 'qa-subtotal';
+        row.appendChild(subEl);
+      }
+      subEl.textContent = fmt.currency(q * p.price);
+    } else if (subEl) {
+      subEl.remove();
+    }
+
+    updateTotalBar();
+  };
+
+  const wireButtons = () => {
+    body.querySelectorAll('.qa-btn-dec').forEach(btn => {
       btn.onclick = () => {
-        const id = btn.dataset.dec;
-        if (qtys[id] > 0) { qtys[id]--; render(); }
+        const id = btn.closest('[data-qid]').dataset.qid;
+        if (qtys[id] > 0) { qtys[id]--; updateRow(id); }
       };
     });
-    body.querySelectorAll('[data-inc]').forEach(btn => {
-      btn.onclick = () => { qtys[btn.dataset.inc]++; render(); };
+    body.querySelectorAll('.qa-btn-inc').forEach(btn => {
+      btn.onclick = () => {
+        const id = btn.closest('[data-qid]').dataset.qid;
+        qtys[id]++;
+        updateRow(id);
+      };
+    });
+    // Toque na linha do produto = +1 rápido
+    body.querySelectorAll('.qa-item-info').forEach(area => {
+      area.onclick = () => {
+        const id = area.closest('[data-qid]').dataset.qid;
+        qtys[id]++;
+        updateRow(id);
+      };
     });
   };
 
-  render();
+  // Render inicial
+  body.innerHTML = prods.map(p => {
+    const out = (p.stock ?? 0) <= 0;
+    return `
+      <div class="qa-item" data-qid="${p.id}">
+        <div class="qa-item-info">
+          <div class="qa-item-name">${fmt.escape(p.name)}</div>
+          <div class="qa-item-meta">
+            <span>${fmt.currency(p.price)}</span>
+            <span class="${out ? 'stock-out' : ''}">${out ? '⚠ Sem estoque' : `Estoque: ${p.stock}`}</span>
+          </div>
+        </div>
+        <div class="qa-counter">
+          <button class="qa-btn qa-btn-dec" disabled>−</button>
+          <span class="qa-count">0</span>
+          <button class="qa-btn qa-btn-inc">+</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+  body.appendChild(totalBar);
+  wireButtons();
 
   const cancelBtn = el('button', { class: 'btn btn-ghost', type: 'button' }, 'Cancelar');
   cancelBtn.onclick = () => ui.closeModal(null);
@@ -660,6 +740,68 @@ function openQuickAdd(category, title) {
   };
 
   ui.modal({ title, body, footer: [cancelBtn, addBtn], narrow: true });
+}
+
+/* ─── Baixa manual de estoque (Abrir carteira / garrafa) ─────── */
+async function openStockDeduct(category, title, emoji) {
+  const prods = state.products.filter(p => p.category === category);
+  if (prods.length === 0) {
+    ui.toast(`Nenhum produto de ${category} cadastrado.`, 'warning');
+    return;
+  }
+
+  const body = el('div');
+  const hint = document.createElement('p');
+  hint.style.cssText = 'font-size:.83rem;color:var(--text-3);line-height:1.5;margin-bottom:0';
+  hint.innerHTML = 'Selecione o produto que está sendo aberto. <strong>1 unidade será baixada do estoque.</strong>';
+  body.appendChild(hint);
+
+  const list = el('div');
+  list.className = 'sd-list';
+  list.innerHTML = prods.map(p => {
+    const out = (p.stock ?? 0) <= 0;
+    return `
+      <button class="sd-item" data-id="${p.id}" type="button">
+        <span class="sd-item-emoji">${emoji}</span>
+        <div class="sd-info">
+          <div class="sd-name">${fmt.escape(p.name)}</div>
+          <div class="sd-stock ${out ? 'out' : ''}">
+            ${out ? '⚠ Sem estoque cadastrado' : `Estoque atual: ${p.stock}`}
+          </div>
+        </div>
+      </button>
+    `;
+  }).join('');
+  body.appendChild(list);
+
+  list.querySelectorAll('.sd-item').forEach(btn => {
+    btn.onclick = async () => {
+      const p = prods.find(x => x.id === btn.dataset.id);
+      if (!p) return;
+
+      const ok = await ui.confirm({
+        title,
+        message: `Baixar <strong>1 unidade</strong> de <strong>${fmt.escape(p.name)}</strong> do estoque?`,
+        okText: 'Confirmar abertura',
+      });
+      if (!ok) return;
+
+      try {
+        await db.runStockTransaction([{ productId: p.id, qty: 1 }]);
+        const local = state.products.find(x => x.id === p.id);
+        if (local) local.stock = Math.max(0, (local.stock || 0) - 1);
+        ui.toast(`${emoji} ${p.name} — 1 unidade baixada do estoque.`, 'success');
+        ui.closeModal(true);
+      } catch (err) {
+        ui.toast('Erro ao baixar estoque: ' + (err.message || 'Tente novamente.'), 'danger');
+      }
+    };
+  });
+
+  const cancelBtn = el('button', { class: 'btn btn-ghost', type: 'button' }, 'Fechar');
+  cancelBtn.onclick = () => ui.closeModal(null);
+
+  await ui.modal({ title, body, footer: [cancelBtn], narrow: true });
 }
 
 function paintProducts() {

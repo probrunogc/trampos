@@ -469,6 +469,128 @@
 }
 
 /* =========================================================
+   PDV — Quick-add modal (Cigarro / Dose) e Controle de Estoque
+   ========================================================= */
+.qa-body { display: flex; flex-direction: column; gap: 8px; }
+
+.qa-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: rgba(255,255,255,.04);
+  border: 1.5px solid transparent;
+  transition: border-color .18s, background .18s;
+}
+.qa-item--active {
+  border-color: var(--gold-500);
+  background: rgba(212,175,55,.08);
+}
+
+.qa-item-info {
+  flex: 1;
+  min-width: 0;
+  cursor: pointer;
+  user-select: none;
+}
+.qa-item-name { font-weight: 600; font-size: .9rem; color: var(--cream); }
+.qa-item-meta { display: flex; gap: 10px; margin-top: 3px; font-size: .75rem; color: var(--text-3); }
+.qa-item-meta .stock-out { color: var(--danger); }
+
+.qa-counter { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.qa-btn {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  border: 1.5px solid var(--line);
+  background: rgba(255,255,255,.06);
+  color: inherit;
+  font-size: 1.25rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: grid; place-items: center;
+  transition: background .12s, border-color .12s, transform .08s;
+}
+.qa-btn:hover:not(:disabled) { background: rgba(212,175,55,.18); border-color: var(--gold-500); }
+.qa-btn:active:not(:disabled) { transform: scale(.84); }
+.qa-btn:disabled { opacity: .3; cursor: not-allowed; }
+.qa-btn-inc { border-color: var(--gold-600); color: var(--gold-300); }
+.qa-btn-inc:hover:not(:disabled) { background: var(--gold-500); color: var(--navy-1000); border-color: var(--gold-400); }
+
+.qa-count {
+  min-width: 32px;
+  text-align: center;
+  font-weight: 800;
+  font-size: 1.15rem;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+  transition: color .15s;
+}
+.qa-count--pos { color: var(--gold-200); }
+
+.qa-subtotal {
+  font-size: .82rem;
+  font-weight: 700;
+  color: var(--gold-300);
+  min-width: 64px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.qa-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  background: rgba(212,175,55,.1);
+  border: 1px solid rgba(212,175,55,.35);
+  border-radius: 9px;
+  margin-top: 4px;
+  font-size: .88rem;
+  font-weight: 600;
+  color: var(--gold-300);
+}
+.qa-total.hidden { display: none; }
+.qa-total-val {
+  font-family: var(--font-brand);
+  font-size: 1.05rem;
+  color: var(--gold-200);
+  font-weight: 700;
+}
+
+@keyframes qa-pop-kf {
+  0%   { transform: scale(1); }
+  35%  { transform: scale(1.45); }
+  65%  { transform: scale(.88); }
+  100% { transform: scale(1); }
+}
+.qa-pop { animation: qa-pop-kf .26s cubic-bezier(.36,.07,.19,.97); }
+
+/* Stock deduct modal (Abrir carteira / garrafa) */
+.sd-list { display: flex; flex-direction: column; gap: 8px; margin-top: var(--sp-3); }
+.sd-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border-radius: 10px;
+  border: 1.5px solid var(--line);
+  background: rgba(255,255,255,.04);
+  cursor: pointer;
+  text-align: left;
+  color: inherit;
+  width: 100%;
+  transition: border-color .15s, background .15s, transform .08s;
+}
+.sd-item:hover { border-color: var(--gold-500); background: rgba(212,175,55,.07); }
+.sd-item:active { transform: scale(.97); }
+.sd-item-emoji { font-size: 1.8rem; line-height: 1; flex-shrink: 0; }
+.sd-info { flex: 1; min-width: 0; }
+.sd-name { font-weight: 600; font-size: .92rem; color: var(--cream); }
+.sd-stock { font-size: .76rem; color: var(--text-3); margin-top: 2px; }
+.sd-stock.out { color: var(--danger); }
+
+/* =========================================================
    ENTREGAS / NOTAS
    ========================================================= */
 .delivery-card {
