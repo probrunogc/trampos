@@ -330,7 +330,7 @@ function _setCaixaInfo(text) {
 
 async function checkOrOpenCaixa() {
   try {
-    const list = await db.list('caixas', { where: { field: 'status', value: 'open' }, orderBy: 'createdAt', orderDir: 'desc', limit: 1 });
+    const list = await db.list('caixas', { where: { field: 'status', value: 'open' }, limit: 1 });
     if (list.length > 0) {
       const caixa = list[0];
       state.caixaId = caixa.id;
