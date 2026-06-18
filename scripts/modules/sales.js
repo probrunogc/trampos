@@ -340,12 +340,21 @@ export async function render(root) {
 }
 
 /* ─── Caixa (abertura, sangria, fechamento) ──────────────────── */
-function _setCaixaInfo(text) {
+function _setCaixaInfo(text, clickable = false) {
   const el_ = document.getElementById('pdv-caixa-info');
-  if (el_) el_.textContent = text;
+  if (!el_) return;
+  el_.textContent = text;
+  el_.style.cursor = clickable ? 'pointer' : '';
+  el_.title = clickable ? 'Clique para tentar novamente' : '';
+  if (clickable) {
+    el_.onclick = () => { el_.onclick = null; el_.style.cursor = ''; el_.title = ''; checkOrOpenCaixa(); };
+  } else {
+    el_.onclick = null;
+  }
 }
 
-async function checkOrOpenCaixa() {
+async function checkOrOpenCaixa(attempt = 1) {
+  _setCaixaInfo(attempt > 1 ? `Verificando… (${attempt}/3)` : 'Verificando…');
   try {
     const list = await db.list('caixas', { where: { field: 'status', value: 'open' }, limit: 1 });
     if (list.length > 0) {
@@ -360,8 +369,13 @@ async function checkOrOpenCaixa() {
       _setCaixaInfo('Caixa fechado');
       promptAbrirCaixa();
     }
-  } catch {
-    _setCaixaInfo('Erro ao verificar caixa');
+  } catch (err) {
+    if (attempt < 3) {
+      setTimeout(() => checkOrOpenCaixa(attempt + 1), 1200 * attempt);
+    } else {
+      _setCaixaInfo('↺ Erro — toque para tentar novamente', true);
+      console.error('[caixa] checkOrOpenCaixa failed:', err?.message || err);
+    }
   }
 }
 
