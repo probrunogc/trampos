@@ -1516,6 +1516,29 @@
 [data-theme="light"] .rep-dose-bar-qty,
 [data-theme="light"] .delivery-code { color: var(--gold-700); }
 
+/* ── Kiosk product management toolbar ────────────────────── */
+.kiosk-prod-toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  padding: var(--sp-3) var(--sp-4);
+  background: rgba(212,175,55,.06);
+  border-bottom: 1px solid rgba(212,175,55,.2);
+}
+.kiosk-prod-hint {
+  font-size: .8rem;
+  color: var(--text-3);
+  margin: 0;
+}
+.kiosk-quick-btn {
+  border-color: var(--gold-600) !important;
+  color: var(--gold-200) !important;
+  font-weight: 700;
+}
+/* In kiosk, make table rows taller and actions more visible */
+.kiosk-mode .data-table tbody td { padding: 14px 12px; }
+.kiosk-mode .data-table .cell-actions { gap: 6px; }
+
 /* =========================================================
    KIOSK MODE — PDV overrides (bigger, bolder)
    ========================================================= */

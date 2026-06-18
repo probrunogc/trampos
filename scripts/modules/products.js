@@ -39,7 +39,7 @@ function cosmosCat(desc) {
   return map.find(([k]) => d.includes(k))?.[1] || null;
 }
 
-let state = { search: '', category: 'all', sort: 'az', filters: new Set(), list: [], salesCount: {} };
+let state = { search: '', category: 'all', sort: 'az', filters: new Set(), list: [], salesCount: {}, isKiosk: false };
 
 /* ── Firebase Storage ───────────────────────────────────────── */
 let _storageInstance = null;
@@ -349,6 +349,7 @@ async function openPhotoSearch() {
 
 /* ── Render ─────────────────────────────────────────────────── */
 export async function render(root) {
+  const isKiosk = !!localStorage.getItem('_km');
   clearNode(root);
   root.innerHTML = `
     <div class="page-header">
@@ -365,6 +366,13 @@ export async function render(root) {
         </button>
       </div>
     </div>
+    ${isKiosk ? `
+    <div class="kiosk-prod-toolbar">
+      <button class="btn btn-primary" id="btn-kiosk-new">
+        ${icon('plus', { size: 16 })} Novo produto
+      </button>
+      <p class="kiosk-prod-hint">Toque em <strong>Preço/Qtd</strong> para atualizar rapidamente, ou em <strong>Editar</strong> para editar tudo.</p>
+    </div>` : ''}
     <div class="table-wrap">
       <div class="table-toolbar">
         <div class="table-search">
@@ -403,6 +411,8 @@ export async function render(root) {
 
   document.getElementById('btn-new').onclick = () => openForm();
   document.getElementById('btn-new2').onclick = () => openForm();
+  if (isKiosk) document.getElementById('btn-kiosk-new')?.addEventListener('click', () => openForm());
+  state.isKiosk = isKiosk;
   document.getElementById('search-input').oninput = e => { state.search = e.target.value.toLowerCase(); paint(); };
   document.getElementById('filter-cat').onchange = e => { state.category = e.target.value; paint(); };
   document.getElementById('filter-sort').onchange = e => { state.sort = e.target.value; paint(); };
@@ -643,8 +653,17 @@ function paint() {
         </td>
         <td>
           <div class="cell-actions">
-            <button class="btn-icon-ghost" data-edit="${p.id}" title="Editar">${icon('edit',{size:16})}</button>
-            ${auth.isAdmin() ? `<button class="btn-icon-ghost" data-del="${p.id}" title="Excluir">${icon('trash',{size:16})}</button>` : ''}
+            ${state.isKiosk ? `
+              <button class="btn btn-ghost btn-sm kiosk-quick-btn" data-quick="${p.id}" title="Preço e Estoque">
+                Preço/Qtd
+              </button>
+              <button class="btn btn-ghost btn-sm" data-prod-edit="${p.id}" title="Editar tudo">
+                Editar
+              </button>
+            ` : `
+              <button class="btn-icon-ghost" data-edit="${p.id}" title="Editar">${icon('edit',{size:16})}</button>
+              ${auth.isAdmin() ? `<button class="btn-icon-ghost" data-del="${p.id}" title="Excluir">${icon('trash',{size:16})}</button>` : ''}
+            `}
           </div>
         </td>
       </tr>`;
@@ -652,6 +671,10 @@ function paint() {
 
   tbody.querySelectorAll('[data-edit]').forEach(b =>
     b.onclick = e => { e.stopPropagation(); openForm(b.dataset.edit); });
+  tbody.querySelectorAll('[data-prod-edit]').forEach(b =>
+    b.onclick = e => { e.stopPropagation(); openForm(b.dataset.prodEdit); });
+  tbody.querySelectorAll('[data-quick]').forEach(b =>
+    b.onclick = e => { e.stopPropagation(); openQuickEdit(b.dataset.quick); });
   tbody.querySelectorAll('[data-del]').forEach(b =>
     b.onclick = async e => {
       e.stopPropagation();
@@ -665,6 +688,67 @@ function paint() {
       }
     });
   tbody.querySelectorAll('tr.clickable').forEach(tr => tr.onclick = () => openForm(tr.dataset.id));
+}
+
+/* ── Edição rápida (kiosk) ──────────────────────────────────── */
+async function openQuickEdit(id) {
+  const p = state.list.find(x => x.id === id);
+  if (!p) return;
+
+  const body = el('div');
+  body.innerHTML = `
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:var(--sp-4)">
+      ${p.image ? `<img src="${p.image}" style="width:56px;height:56px;border-radius:8px;object-fit:cover;flex-shrink:0">` : ''}
+      <div>
+        <div style="font-weight:700;font-size:1.05rem">${fmt.escape(p.name)}</div>
+        <div style="font-size:.82rem;color:var(--text-3)">${fmt.escape(p.category || '')}</div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--sp-3);margin-bottom:var(--sp-3)">
+      <label>
+        <div class="field-label">Preço de venda (R$)</div>
+        <input id="qe-price" type="number" class="field-input" step="0.01" min="0"
+               value="${(p.price || 0).toFixed(2)}" style="font-size:1.3rem;font-weight:700;text-align:center">
+      </label>
+      <label>
+        <div class="field-label">Estoque atual (un)</div>
+        <input id="qe-stock" type="number" class="field-input" step="1" min="0"
+               value="${p.stock ?? 0}" style="font-size:1.3rem;font-weight:700;text-align:center">
+      </label>
+    </div>
+    <label class="switch">
+      <input type="checkbox" id="qe-active" ${p.active !== false ? 'checked' : ''}>
+      <span class="switch-knob"></span>
+      <span>Ativo no PDV</span>
+    </label>
+  `;
+
+  const cancelBtn = el('button', { class: 'btn btn-ghost', type: 'button' }, 'Cancelar');
+  cancelBtn.onclick = () => ui.closeModal(null);
+
+  const saveBtn = el('button', { class: 'btn btn-primary', type: 'button' }, 'Salvar');
+  saveBtn.onclick = async () => {
+    const price  = parseFloat(document.getElementById('qe-price').value) || 0;
+    const stock  = parseInt(document.getElementById('qe-stock').value, 10) || 0;
+    const active = document.getElementById('qe-active').checked;
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'Salvando…';
+    try {
+      await db.update('products', id, { price, stock, active });
+      const idx = state.list.findIndex(x => x.id === id);
+      if (idx >= 0) state.list[idx] = { ...state.list[idx], price, stock, active };
+      ui.closeModal(true);
+      ui.toast(`${p.name} atualizado.`, 'success');
+      paint();
+    } catch (err) {
+      ui.toast(err.message || 'Erro ao salvar.', 'danger');
+      saveBtn.disabled = false;
+      saveBtn.textContent = 'Salvar';
+    }
+  };
+
+  ui.modal({ title: 'Preço & Estoque', body, footer: [cancelBtn, saveBtn], narrow: true });
+  setTimeout(() => document.getElementById('qe-price')?.select(), 120);
 }
 
 /* ── Form ───────────────────────────────────────────────────── */
