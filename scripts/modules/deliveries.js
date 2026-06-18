@@ -232,7 +232,7 @@ const SHOP = {
   neighborhood: 'José Dutra · Presidente Figueiredo - AM',
   phone:        '(92) 99139-2485',
   instagram:    '@emporiodebebidas81',
-  igUrl:        'https://instagram.com/emporiodebebidas81',
+  igUrl:        'https://www.instagram.com/emporiodasbebidas81?igsh=NWRhenJseTkxMG4x',
 };
 
 const PAY_LABELS = {
