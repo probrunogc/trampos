@@ -252,6 +252,24 @@ function setupKioskNav() {
     location.href = './kiosk.html';
   };
 
+  // Exit fullscreen
+  $('#kiosk-fullscreen-exit').onclick = () => {
+    if (document.fullscreenElement) {
+      document.exitFullscreen().catch(() => {});
+    }
+  };
+
+  // Minimize → lock screen overlay
+  const lockEl = $('#kiosk-lock');
+  $('#kiosk-minimize').onclick = () => {
+    lockEl.classList.remove('hidden');
+    lockEl.setAttribute('aria-hidden', 'false');
+  };
+  lockEl.onclick = () => {
+    lockEl.classList.add('hidden');
+    lockEl.setAttribute('aria-hidden', 'true');
+  };
+
   const clockEl = $('#kiosk-clock');
   const tick = () => {
     const n = new Date();

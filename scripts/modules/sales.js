@@ -185,6 +185,7 @@ export async function render(root) {
             <button id="pdv-sangria" type="button" class="pdv-caixa-btn">Sangria</button>
             <span id="pdv-caixa-info" class="pdv-caixa-info">Verificando caixa...</span>
             <button id="pdv-fechar-caixa" type="button" class="pdv-caixa-btn">Fechar caixa</button>
+            <button id="pdv-shortcuts-help" type="button" class="pdv-shortcuts-help-btn" title="Atalhos do teclado">?</button>
           </div>
         </div>
       </aside>
@@ -309,6 +310,7 @@ export async function render(root) {
   // Caixa operations
   document.getElementById('pdv-sangria').onclick     = openSangriaModal;
   document.getElementById('pdv-fechar-caixa').onclick = openFecharCaixaModal;
+  document.getElementById('pdv-shortcuts-help').onclick = openShortcutsHelp;
 
   // Scanner USB (C3TECH e similares — modo teclado HID)
   // O leitor injeta os dígitos muito rápido (< 50ms/char) e encerra com Enter.
@@ -596,6 +598,28 @@ function wireScanner() {
   };
 
   document.addEventListener('keydown', window._scannerHandler);
+}
+
+function openShortcutsHelp() {
+  const body = el('div');
+  body.innerHTML = `
+    <table class="shortcuts-table">
+      <tbody>
+        <tr><td class="sk-key">F1</td><td>Cigarro — Retalho rápido</td></tr>
+        <tr><td class="sk-key">F2</td><td>Dose — Venda rápida</td></tr>
+        <tr><td class="sk-key">F3</td><td>Finalizar venda</td></tr>
+        <tr><td class="sk-key">F4</td><td>Sangria de caixa</td></tr>
+        <tr><td class="sk-key">F6</td><td>Fechar caixa</td></tr>
+        <tr><td class="sk-key">F8</td><td>Limpar carrinho</td></tr>
+      </tbody>
+    </table>
+    <p style="font-size:.78rem;color:var(--text-3);margin-top:var(--sp-3);text-align:center">
+      Atalhos funcionam quando nenhum campo de texto está selecionado.
+    </p>
+  `;
+  const ok = el('button', { class: 'btn btn-primary', type: 'button' }, 'Entendido');
+  ok.onclick = () => ui.closeModal(true);
+  ui.modal({ title: 'Atalhos do teclado', body, footer: [ok], narrow: true });
 }
 
 function wireShortcuts() {

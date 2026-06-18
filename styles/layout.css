@@ -289,6 +289,71 @@
 }
 .kiosk-logout-btn:hover { color: var(--danger); border-color: var(--danger); background: rgba(231,76,60,0.08); }
 
+/* Window-control buttons (minimize / exit-fullscreen) */
+.kiosk-wc-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--text-3);
+  cursor: pointer;
+  transition: background var(--t-fast) var(--ease), color var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease);
+}
+.kiosk-wc-btn:hover { background: var(--bg-card); color: var(--gold-200); border-color: var(--gold-400); }
+
+/* Lock-screen overlay */
+.kiosk-lock {
+  position: fixed;
+  inset: 0;
+  z-index: 8000;
+  background: rgba(6, 10, 20, 0.96);
+  backdrop-filter: blur(18px) saturate(140%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  animation: kl-fade-in 0.25s var(--ease);
+}
+.kiosk-lock.hidden { display: none; }
+@keyframes kl-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.kiosk-lock-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  user-select: none;
+  pointer-events: none;
+}
+.kiosk-lock-logo {
+  width: 80px; height: 80px;
+  border-radius: 50%;
+  object-fit: cover;
+  opacity: 0.85;
+  box-shadow: 0 0 40px rgba(212, 175, 55, 0.35);
+}
+.kiosk-lock-name {
+  font-family: var(--font-brand);
+  font-size: 1.1rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  background: var(--grad-gold-text);
+  -webkit-background-clip: text;
+          background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+.kiosk-lock-hint {
+  font-size: 0.82rem;
+  color: var(--text-3);
+  letter-spacing: 0.06em;
+}
+
 /* === SIDEBAR === */
 .sidebar {
   position: relative;

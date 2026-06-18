@@ -897,6 +897,42 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+.pdv-shortcuts-help-btn {
+  flex-shrink: 0;
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: none;
+  color: var(--text-3);
+  font-size: .75rem;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: color .14s, border-color .14s, background .14s;
+}
+.pdv-shortcuts-help-btn:hover { color: var(--gold-200); border-color: var(--gold-400); background: rgba(212,175,55,.08); }
+
+/* Tabela de atalhos dentro do modal */
+.shortcuts-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.shortcuts-table tr { border-bottom: 1px solid var(--line); }
+.shortcuts-table tr:last-child { border-bottom: none; }
+.shortcuts-table td { padding: 9px 6px; font-size: .88rem; }
+.sk-key {
+  font-family: var(--font-mono);
+  font-size: .8rem;
+  font-weight: 700;
+  color: var(--gold-300);
+  background: var(--bg-card);
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  padding: 3px 8px;
+  white-space: nowrap;
+  width: 1px;
+}
 
 /* =========================================================
    PDV — Modal de fechamento de caixa
