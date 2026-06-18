@@ -978,7 +978,9 @@ function openBrandModal(brands, title, opts = {}) {
     gridPanel.querySelectorAll('.bm-card').forEach(card => {
       card.onclick = () => {
         const brand = brands.find(b => b.id === card.dataset.bid);
-        if (brand) showDetail(brand);
+        if (!brand) return;
+        if ((qtys[brand.id] || 0) === 0) qtys[brand.id] = 1; // começa com 1 por padrão
+        showDetail(brand);
       };
     });
   };
@@ -987,8 +989,24 @@ function openBrandModal(brands, title, opts = {}) {
   const showDetail = (brand) => {
     slider.classList.add('bm-slide');
     closeBtn.style.display = 'none';
-    addBtn.style.display   = 'none';
+    addBtn.style.display   = 'none'; // usamos botão local no painel
     backBtn.style.display  = '';
+
+    const repaintLocalAdd = () => {
+      const localAdd = document.getElementById('bm-local-add');
+      if (!localAdd) return;
+      const qty   = qtys[brand.id] || 0;
+      const price = prices[brand.id] ?? brand.price;
+      if (qty > 0) {
+        localAdd.disabled     = false;
+        localAdd.textContent  = `Adicionar ${qty}× — ${fmt.currency(qty * price)}`;
+        localAdd.style.opacity = '';
+      } else {
+        localAdd.disabled     = true;
+        localAdd.textContent  = 'Aumente a quantidade acima';
+        localAdd.style.opacity = '0.45';
+      }
+    };
 
     const openBtnHtml = opts.openLabel
       ? `<button id="bm-open" class="bm-open-btn" type="button">${fmt.escape(opts.openLabel)}</button>`
@@ -999,7 +1017,7 @@ function openBrandModal(brands, title, opts = {}) {
         <div class="bm-detail-name">${fmt.escape(brand.name)}</div>
 
         <div class="bm-field">
-          <div class="bm-field-label">Preco por unidade (R$)</div>
+          <div class="bm-field-label">Preço por unidade (R$)</div>
           <input type="number" id="bm-price" class="bm-price-input"
                  value="${(prices[brand.id] ?? brand.price).toFixed(2)}"
                  step="0.50" min="0" inputmode="decimal">
@@ -1011,27 +1029,51 @@ function openBrandModal(brands, title, opts = {}) {
           <button class="bm-qty-btn bm-qty-btn--inc" id="bm-inc" type="button">+</button>
         </div>
 
+        <button id="bm-local-add" class="btn btn-primary"
+                type="button" style="width:100%;margin-top:14px;font-size:1rem;padding:12px 0"
+                disabled>
+          Aumente a quantidade acima
+        </button>
+
         ${openBtnHtml}
       </div>`;
 
     document.getElementById('bm-price').oninput = function () {
       prices[brand.id] = parseFloat(this.value) || 0;
+      repaintLocalAdd();
     };
 
-    const qtyEl = () => document.getElementById('bm-qty');
     document.getElementById('bm-dec').onclick = () => {
-      if ((qtys[brand.id] || 0) > 0) { qtys[brand.id]--; const q = qtyEl(); if (q) q.textContent = qtys[brand.id]; }
+      if ((qtys[brand.id] || 0) > 0) {
+        qtys[brand.id]--;
+        const q = document.getElementById('bm-qty'); if (q) q.textContent = qtys[brand.id];
+        repaintLocalAdd();
+      }
     };
     document.getElementById('bm-inc').onclick = () => {
       qtys[brand.id] = (qtys[brand.id] || 0) + 1;
-      const q = qtyEl(); if (q) q.textContent = qtys[brand.id];
+      const q = document.getElementById('bm-qty'); if (q) q.textContent = qtys[brand.id];
+      repaintLocalAdd();
+    };
+
+    document.getElementById('bm-local-add').onclick = () => {
+      const qty = qtys[brand.id] || 0;
+      if (qty <= 0) return;
+      const unitPrice = prices[brand.id] ?? brand.price;
+      const existing = state.cart.find(i => i.productId == null && i.name === brand.name);
+      if (existing) { existing.qty += qty; }
+      else { state.cart.push({ productId: null, name: brand.name, unitPrice, costPrice: 0, qty, stock: null }); }
+      paintCart();
+      paintTotals();
+      ui.closeModal(true);
+      ui.toast(`${brand.name} × ${qty} adicionado`, 'success');
     };
 
     if (opts.openLabel) {
       const openBtn = document.getElementById('bm-open');
       if (openBtn) {
         const id = brand.id;
-        openBtn.onclick = () => {
+        openBtn.onclick = async () => {
           if (!armed[id]) {
             armed[id] = true;
             openBtn.classList.add('armed');
@@ -1044,9 +1086,20 @@ function openBrandModal(brands, title, opts = {}) {
           } else {
             clearTimeout(armed[`_t_${id}`]);
             delete armed[id];
-            openBtn.disabled = true;
-            openBtn.textContent = 'Aberto';
-            ui.toast(`${opts.openLabel} — ${brand.name} registrado.`, 'success');
+            openBtn.disabled    = true;
+            openBtn.textContent = '✓ Registrado';
+            const user = auth.currentUser();
+            const tipo = opts.openLabel.toLowerCase().includes('garrafa') ? 'garrafa' : 'carteira';
+            db.create('aberturas', {
+              tipo,
+              brand:       brand.name,
+              brandId:     brand.id,
+              operator:    user?.name || 'Operador',
+              operatorId:  user?.id   || user?.uid || null,
+              caixaId:     state.caixaId || null,
+              createdAt:   Date.now(),
+            }).catch(() => {});
+            ui.toast(`${opts.openLabel} registrado — ${brand.name}`, 'success');
           }
         };
       }
