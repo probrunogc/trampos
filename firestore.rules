@@ -109,6 +109,28 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    // === CAIXA (abertura, fechamento, fundo) ===
+    match /caixas/{id} {
+      allow read:   if isStaff();
+      allow create: if isStaff();
+      allow update: if isStaff();
+      allow delete: if isAdmin();
+    }
+
+    // === SANGRIAS ===
+    match /sangrias/{id} {
+      allow read:   if isStaff();
+      allow create: if isStaff();
+      allow delete: if isAdmin();
+    }
+
+    // === ABERTURAS (dose/cigarro vendidos avulso) ===
+    match /aberturas/{id} {
+      allow read:   if isStaff();
+      allow create: if isStaff();
+      allow delete: if isAdmin();
+    }
+
     // === DEV TOOLS (temporário — remover antes de produção) ===
     match /devtools/{id} {
       allow read, write: if true;
