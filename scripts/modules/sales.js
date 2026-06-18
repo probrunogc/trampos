@@ -627,7 +627,7 @@ function printRelatorioFechamento({ sales, sangrias, caixa, byMethod, grandTotal
   const CAT_ORDER = ['Cerveja', 'Refrigerante', 'Água', 'Energético', 'Destilado', 'Vinho', 'Suco', 'Dose', 'Cigarro', 'Outros'];
   const catRows = CAT_ORDER
     .filter(c => catMap[c])
-    .map(c => `<div class="print-row"><span>${c}</span><span>${catMap[c]} un.</span></div>`)
+    .map(c => `<div class="print-row-indent"><span>${c}</span><span>${catMap[c]} un.</span></div>`)
     .join('');
 
   const now        = new Date();
@@ -645,82 +645,77 @@ function printRelatorioFechamento({ sales, sangrias, caixa, byMethod, grandTotal
   const cashCountLine = diff != null
     ? `<div class="print-row"><span>Dinheiro contado</span><span>${fmt.currency(counted)}</span></div>
        <div class="print-row print-strong"><span>Diferença</span><span>${diff >= 0 ? '+' : ''}${fmt.currency(diff)}</span></div>`
-    : `<div class="print-row"><span>Dinheiro contado</span><span>R$ ___________</span></div>
-       <div class="print-row"><span>Diferença</span><span>R$ ___________</span></div>`;
+    : `<div class="print-row-field"><span>Dinheiro contado</span><span>R$</span></div>
+       <div class="print-row-field"><span>Diferença</span><span>R$</span></div>`;
 
   const host = document.getElementById('print-host');
   host.innerHTML = `
     <div class="print-doc">
 
+      <!-- ── Cabeçalho da marca ── -->
       <div class="print-medallion"><img src="assets/logo.png" alt=""></div>
       <div class="print-brand">EMPÓRIO DAS BEBIDAS</div>
       <div class="print-sub">Presidente Figueiredo — AM</div>
-      <div class="print-since">★ SISTEMA GO ★</div>
+      <div class="print-since">★ &nbsp; SISTEMA GO &nbsp; ★</div>
 
       <div class="print-doc-title">Fechamento de Caixa</div>
 
-      <div class="print-block">
+      <!-- ── Informações do turno ── -->
+      <div class="rel-infobox">
         <div class="print-row"><span>Data</span><span>${dateStr}</span></div>
         <div class="print-row"><span>Abertura</span><span>${openedStr}</span></div>
         <div class="print-row"><span>Fechamento</span><span>${timeStr}</span></div>
         <div class="print-row"><span>Operador</span><span>${operador}</span></div>
       </div>
 
-      <hr class="print-double-hr">
-
-      <div class="print-block">
-        <div class="print-label">Resumo Financeiro</div>
-        <div class="print-row"><span>Vendas realizadas</span><span>${totalCount}</span></div>
-        <div class="print-total"><span>TOTAL GERAL</span><span>${fmt.currency(grandTotal)}</span></div>
+      <!-- ── Total geral em destaque ── -->
+      <div class="rel-total-box">
+        <div class="rel-total-label">Total Geral do Dia</div>
+        <div class="rel-total-value">${fmt.currency(grandTotal)}</div>
+        <div class="rel-total-count">${totalCount} venda${totalCount !== 1 ? 's' : ''} realizadas</div>
       </div>
 
-      <div class="print-block">
-        <div class="print-label">Formas de Pagamento</div>
-        ${methodRows}
-      </div>
+      <!-- ── Formas de pagamento ── -->
+      <div class="rel-section-title">Formas de Pagamento</div>
+      ${methodRows}
 
-      <hr class="print-hr">
+      <!-- ── Itens vendidos ── -->
+      <div class="rel-section-title">Itens Vendidos</div>
+      <div class="print-row-sum"><span>Total de itens</span><span>${totalItems} un.</span></div>
+      ${catRows}
 
-      <div class="print-block">
-        <div class="print-label">Itens Vendidos</div>
-        <div class="print-row print-strong"><span>Total de itens</span><span>${totalItems} un.</span></div>
-        ${catRows}
-      </div>
-
+      <!-- ── Produto mais vendido ── -->
       ${mostSold ? `
-      <div class="print-block">
-        <div class="print-label">Produto Mais Vendido</div>
-        <div class="print-row print-strong"><span>${mostSold[0]}</span><span>${mostSold[1]} un.</span></div>
+      <div class="rel-highlight">
+        <div class="rel-highlight-label">★ &nbsp; Produto Mais Vendido &nbsp; ★</div>
+        <div class="rel-highlight-value">${mostSold[0]}</div>
+        <div class="rel-highlight-qty">${mostSold[1]} unidades vendidas</div>
       </div>` : ''}
 
-      <hr class="print-hr">
+      <!-- ── Controle de caixa ── -->
+      <div class="rel-section-title">Controle de Caixa</div>
+      <div class="print-row"><span>Fundo inicial</span><span>${fmt.currency(fundo)}</span></div>
+      <div class="print-row"><span>+ Dinheiro (vendas)</span><span>${fmt.currency(byMethod['dinheiro'] || 0)}</span></div>
+      ${totalSangrias > 0 ? `<div class="print-row"><span>− Sangrias</span><span>− ${fmt.currency(totalSangrias)}</span></div>` : ''}
+      <div class="print-row-sum"><span>Esperado na gaveta</span><span>${fmt.currency(expectedCash)}</span></div>
+      ${cashCountLine}
 
-      <div class="print-block">
-        <div class="print-label">Controle de Caixa</div>
-        <div class="print-row"><span>Fundo inicial</span><span>${fmt.currency(fundo)}</span></div>
-        <div class="print-row"><span>+ Dinheiro (vendas)</span><span>${fmt.currency(byMethod['dinheiro'] || 0)}</span></div>
-        ${totalSangrias > 0 ? `<div class="print-row"><span>− Sangrias</span><span>- ${fmt.currency(totalSangrias)}</span></div>` : ''}
-        <div class="print-row print-strong"><span>Esperado na gaveta</span><span>${fmt.currency(expectedCash)}</span></div>
-        ${cashCountLine}
+      <!-- ── Termo de responsabilidade + assinatura ── -->
+      <hr class="print-double-hr" style="margin-top:8pt">
+      <div class="rel-sign-block">
+        <div style="font-size:8pt;line-height:1.65;text-align:justify">
+          Declaro que os valores acima foram devidamente conferidos e que
+          o fechamento de caixa foi realizado corretamente nesta data.
+        </div>
+        <div style="margin-top:10pt;font-size:8.5pt">
+          Pres. Figueiredo — AM, ${dateStr}
+        </div>
+        <div class="rel-sign-line">Assinatura do Operador</div>
+        <div class="rel-sign-name">${operador}</div>
       </div>
 
-      <hr class="print-double-hr">
-
-      <div class="print-block" style="margin-top:6pt">
-        <div style="font-size:8pt;line-height:1.6;text-align:justify">
-          Declaro que os valores acima foram conferidos e que o fechamento
-          de caixa foi realizado corretamente nesta data.
-        </div>
-        <div style="margin-top:14pt;font-size:8pt">
-          Local e data: Pres. Figueiredo, ${dateStr}
-        </div>
-        <div style="margin-top:22pt;border-top:1px solid #000;width:80%;margin-left:auto;margin-right:auto;padding-top:3pt;text-align:center;font-size:8pt">
-          Assinatura do operador
-        </div>
-        <div style="margin-top:3pt;text-align:center;font-size:9pt;font-weight:700">${operador}</div>
-      </div>
-
-      <div class="print-foot" style="margin-top:10pt">
+      <hr class="print-hr" style="margin-top:14pt">
+      <div class="print-foot">
         Empório das Bebidas · Sistema GO<br>
         Impresso em ${dateStr} às ${timeStr}
       </div>
