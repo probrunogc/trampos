@@ -1437,8 +1437,12 @@ function paintProducts() {
     `;
   }).join('');
 
-  grid.querySelectorAll('.pdv-product').forEach(card => {
+  grid.querySelectorAll('.pdv-product').forEach((card, i) => {
     card.onclick = () => addToCart(card.dataset.id);
+    card.animate([
+      { opacity: 0, transform: 'translateY(10px) scale(0.97)' },
+      { opacity: 1, transform: 'translateY(0) scale(1)' }
+    ], { duration: 200, delay: Math.min(i * 28, 280), easing: 'cubic-bezier(.16, 1, .3, 1)', fill: 'both' });
   });
 }
 
@@ -1491,6 +1495,15 @@ function paintCart() {
       <div class="cart-item-total">${fmt.currency(i.qty * i.unitPrice)}</div>
     </div>
   `).join('');
+
+  // Animar último item adicionado
+  const cartItems = c.querySelectorAll('.cart-item');
+  if (cartItems.length) {
+    cartItems[cartItems.length - 1].animate([
+      { opacity: 0, transform: 'translateX(14px)' },
+      { opacity: 1, transform: 'translateX(0)' }
+    ], { duration: 150, easing: 'cubic-bezier(.16, 1, .3, 1)', fill: 'both' });
+  }
 
   c.querySelectorAll('[data-inc]').forEach(b => b.onclick = () => {
     const i = state.cart[+b.dataset.inc];
@@ -1556,6 +1569,15 @@ function paintTotals() {
       <span>TOTAL</span><span class="total-value">${fmt.currency(total)}</span>
     </div>
   `;
+  const totalEl = document.querySelector('.total-value');
+  if (totalEl) {
+    totalEl.animate([
+      { transform: 'scale(1)' },
+      { transform: 'scale(1.09)' },
+      { transform: 'scale(1)' }
+    ], { duration: 220, easing: 'cubic-bezier(.34, 1.56, .64, 1)' });
+  }
+
   const disc = document.getElementById('pdv-discount');
   if (disc) disc.onchange = (e) => { state.discount = parseFloat(e.target.value) || 0; paintTotals(); };
   const fi = document.getElementById('pdv-fee');

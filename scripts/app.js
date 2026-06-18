@@ -300,10 +300,13 @@ async function renderModule(module) {
   $('#page-subtitle').textContent = module.meta.subtitle || '';
   const content = $('#page-content');
   content.style.animation = 'none';
-  // force reflow
   void content.offsetWidth;
   content.style.animation = '';
   await module.render(content);
+  content.animate([
+    { opacity: 0, transform: 'translateY(8px)' },
+    { opacity: 1, transform: 'translateY(0)' }
+  ], { duration: 180, easing: 'cubic-bezier(.16, 1, .3, 1)', fill: 'both' });
 }
 
 function initTheme() {

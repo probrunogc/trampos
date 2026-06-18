@@ -255,6 +255,7 @@
 .kiosk-tab svg { opacity: 0.65; transition: opacity var(--t-fast); }
 .kiosk-tab:hover { color: var(--gold-200); }
 .kiosk-tab:hover svg { opacity: 1; }
+.kiosk-tab:active { transform: scale(0.93); transition: transform 55ms var(--ease-out); }
 .kiosk-tab.active {
   color: var(--gold-300);
   border-bottom-color: var(--gold-400);

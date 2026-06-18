@@ -195,6 +195,10 @@ export const ui = {
       host._resolveModal = close;
       host.classList.remove('hidden');
       host.setAttribute('aria-hidden', 'false');
+      win.animate([
+        { opacity: 0, transform: 'scale(0.95) translateY(-6px)' },
+        { opacity: 1, transform: 'scale(1) translateY(0)' }
+      ], { duration: 160, easing: 'cubic-bezier(.16, 1, .3, 1)', fill: 'both' });
       document.addEventListener('keydown', onKey);
       host.addEventListener('click', onClick);
 

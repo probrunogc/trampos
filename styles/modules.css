@@ -261,14 +261,14 @@
   border-radius: var(--r-md);
   padding: var(--sp-3);
   cursor: pointer;
-  transition: border-color var(--t-fast) var(--ease), transform var(--t-fast) var(--ease), box-shadow var(--t-fast) var(--ease);
+  transition: border-color 80ms var(--ease-out), transform 70ms var(--ease-out), box-shadow 80ms var(--ease-out);
   display: flex;
   flex-direction: column;
   min-height: 110px;
 }
 .pdv-product:hover {
   border-color: var(--gold-500);
-  transform: translateY(-2px);
+  transform: translateY(-2px) scale(1.01);
   box-shadow: 0 8px 24px rgba(0,0,0,0.45);
 }
 .pdv-product-cat {
@@ -484,7 +484,7 @@
   background: rgba(212,175,55,.12);
   color: var(--gold-200, #f0d98a);
 }
-.pdv-pay-btn:active { transform: scale(.94); }
+.pdv-pay-btn:active { transform: scale(.96); transition-duration: 55ms; }
 
 /* Troco */
 .pdv-troco-section {
@@ -565,7 +565,7 @@
   color: inherit;
   transition: transform .12s, background .15s;
 }
-.pdv-quick-btn:active { transform: scale(.93); }
+.pdv-quick-btn:active { transform: scale(.96); transition-duration: 55ms; }
 .pdv-quick-btn--cigarro {
   border-color: #b8860b;
   background: linear-gradient(135deg, rgba(184,134,11,.18), rgba(184,134,11,.06));
@@ -616,10 +616,10 @@
   cursor: pointer;
   color: inherit;
   text-align: left;
-  transition: border-color .15s, background .15s, transform .08s;
+  transition: border-color 70ms var(--ease-out), background 70ms var(--ease-out), transform 60ms var(--ease-out);
   user-select: none;
 }
-.bm-card:active { transform: scale(.95); }
+.bm-card:active { transform: scale(.97); transition-duration: 50ms; }
 .bm-card:hover  { background: rgba(255,255,255,.09); }
 .bm-card--on {
   border-color: var(--gold-500);
@@ -1546,8 +1546,8 @@
   box-shadow: 0 12px 30px rgba(0,0,0,0.55);
 }
 .kiosk-mode .pdv-product:active {
-  transform: scale(0.97);
-  transition-duration: .07s;
+  transform: scale(0.96) !important;
+  transition-duration: 55ms !important;
 }
 .kiosk-mode .pdv-product-img {
   position: absolute;
