@@ -302,12 +302,50 @@
 
   <!-- PWA: registra service worker + comportamento de aplicativo -->
   <script>
+    /* ── Notificação de atualização ────────────────────────────── */
+    function showUpdateBanner() {
+      if (document.getElementById('update-banner')) return;
+      const b = document.createElement('div');
+      b.id = 'update-banner';
+      b.className = 'update-banner';
+      b.innerHTML =
+        '<span class="update-banner-icon">' +
+          '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">' +
+            '<polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/>' +
+            '<path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>' +
+          '</svg>' +
+        '</span>' +
+        '<span class="update-banner-text">Nova versão disponível</span>' +
+        '<button class="update-banner-btn" onclick="window.location.reload()">Atualizar agora</button>' +
+        '<button class="update-banner-close" onclick="this.parentElement.remove()" title="Dispensar">✕</button>';
+      document.body.appendChild(b);
+      requestAnimationFrame(() => requestAnimationFrame(() => b.classList.add('update-banner-show')));
+    }
+
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('sw.js').catch(() => {});
+        navigator.serviceWorker.register('sw.js').then(() => {
+          /* 1. SW novo assumiu controle → recarregar */
+          navigator.serviceWorker.addEventListener('controllerchange', showUpdateBanner);
+
+          /* 2. Polling version.json a cada 5 min */
+          let _lastVer = null;
+          async function checkVersion() {
+            try {
+              const res = await fetch('version.json?_=' + Date.now(), { cache: 'no-store' });
+              if (!res.ok) return;
+              const data = await res.json();
+              if (_lastVer === null) { _lastVer = data.v; return; }
+              if (data.v !== _lastVer) { _lastVer = data.v; showUpdateBanner(); }
+            } catch (_) {}
+          }
+          checkVersion();
+          setInterval(checkVersion, 5 * 60 * 1000);
+        }).catch(() => {});
       });
     }
-    // Bloqueia menu de contexto e zoom por gesto — cara de programa
+
+    /* Bloqueia menu de contexto e zoom por gesto — cara de programa */
     document.addEventListener('contextmenu', e => e.preventDefault());
     document.addEventListener('gesturestart', e => e.preventDefault());
     document.addEventListener('dblclick', e => e.preventDefault());
