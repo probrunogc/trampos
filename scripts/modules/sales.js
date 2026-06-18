@@ -1069,6 +1069,8 @@ function openBrandModal(brands, title, opts = {}) {
       ui.toast(`${brand.name} × ${qty} adicionado`, 'success');
     };
 
+    repaintLocalAdd(); // reflete qty inicial (cards abrem com qty=1)
+
     if (opts.openLabel) {
       const openBtn = document.getElementById('bm-open');
       if (openBtn) {
