@@ -599,46 +599,59 @@ async function openFecharCaixaModal() {
 
 /* ─── Relatório de Fechamento de Caixa ──────────────────────── */
 function printRelatorioFechamento({ sales, sangrias, caixa, byMethod, grandTotal, totalCount, totalSangrias, fundo, expectedCash, counted }) {
-  // Agrupa produtos
-  const prodMap = {};
+  // Índice de produtos por id (para resolver categoria)
+  const prodById = {};
+  for (const p of (state.products || [])) prodById[p.id] = p;
+
+  // Agrega por nome (produto mais vendido) e por categoria
+  const nameMap = {};
+  const catMap  = {};
+  let totalItems = 0;
+
   for (const s of sales) {
     if (s.status === 'cancelled') continue;
     for (const it of (s.items || [])) {
-      const k = it.name;
-      if (!prodMap[k]) prodMap[k] = { name: it.name, qty: 0, total: 0 };
-      prodMap[k].qty   += (it.qty || 1);
-      prodMap[k].total += (it.subtotal || (it.unitPrice || 0) * (it.qty || 1));
+      const qty = it.qty || 1;
+      // Por nome
+      if (!nameMap[it.name]) nameMap[it.name] = 0;
+      nameMap[it.name] += qty;
+      // Por categoria
+      const cat = prodById[it.productId]?.category || 'Outros';
+      catMap[cat] = (catMap[cat] || 0) + qty;
+      totalItems += qty;
     }
   }
-  const prods = Object.values(prodMap).sort((a, b) => b.qty - a.qty);
 
-  const now       = new Date();
-  const dateStr   = now.toLocaleDateString('pt-BR');
-  const timeStr   = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-  const openedAt  = caixa?.openedAt ? new Date(caixa.openedAt) : null;
-  const openedStr = openedAt ? openedAt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '—';
-  const diff      = (counted != null && !isNaN(counted)) ? (counted - expectedCash) : null;
+  const mostSold = Object.entries(nameMap).sort((a, b) => b[1] - a[1])[0];
 
-  const methodRows = PAYMENTS
-    .filter(p => (byMethod[p.id] || 0) > 0)
-    .map(p => `<div class="print-row"><span>${p.label}</span><span>${fmt.currency(byMethod[p.id])}</span></div>`)
+  const CAT_ORDER = ['Cerveja', 'Refrigerante', 'Água', 'Energético', 'Destilado', 'Vinho', 'Suco', 'Dose', 'Cigarro', 'Outros'];
+  const catRows = CAT_ORDER
+    .filter(c => catMap[c])
+    .map(c => `<div class="print-row"><span>${c}</span><span>${catMap[c]} un.</span></div>`)
     .join('');
 
-  const prodRows = prods.map(p =>
-    `<div class="print-row"><span>${p.name}</span><span>${p.qty}x</span><span>${fmt.currency(p.total)}</span></div>`
-  ).join('');
+  const now        = new Date();
+  const dateStr    = now.toLocaleDateString('pt-BR');
+  const timeStr    = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  const openedAt   = caixa?.openedAt ? new Date(caixa.openedAt) : null;
+  const openedStr  = openedAt ? openedAt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '—';
+  const operador   = caixa?.openedBy?.name || '—';
+  const diff       = (counted != null && !isNaN(counted)) ? counted - expectedCash : null;
 
-  const diffLine = diff != null ? `
-    <div class="print-row">
-      <span>Contado</span><span>${fmt.currency(counted)}</span>
-    </div>
-    <div class="print-row print-strong">
-      <span>Diferença</span><span>${diff >= 0 ? '+' : ''}${fmt.currency(diff)}</span>
-    </div>` : '';
+  const methodRows = PAYMENTS
+    .map(p => `<div class="print-row"><span>${p.label}</span><span>${fmt.currency(byMethod[p.id] || 0)}</span></div>`)
+    .join('');
+
+  const cashCountLine = diff != null
+    ? `<div class="print-row"><span>Dinheiro contado</span><span>${fmt.currency(counted)}</span></div>
+       <div class="print-row print-strong"><span>Diferença</span><span>${diff >= 0 ? '+' : ''}${fmt.currency(diff)}</span></div>`
+    : `<div class="print-row"><span>Dinheiro contado</span><span>R$ ___________</span></div>
+       <div class="print-row"><span>Diferença</span><span>R$ ___________</span></div>`;
 
   const host = document.getElementById('print-host');
   host.innerHTML = `
     <div class="print-doc">
+
       <div class="print-medallion"><img src="assets/logo.png" alt=""></div>
       <div class="print-brand">EMPÓRIO DAS BEBIDAS</div>
       <div class="print-sub">Presidente Figueiredo — AM</div>
@@ -650,13 +663,13 @@ function printRelatorioFechamento({ sales, sangrias, caixa, byMethod, grandTotal
         <div class="print-row"><span>Data</span><span>${dateStr}</span></div>
         <div class="print-row"><span>Abertura</span><span>${openedStr}</span></div>
         <div class="print-row"><span>Fechamento</span><span>${timeStr}</span></div>
-        ${caixa?.openedBy?.name ? `<div class="print-row"><span>Operador</span><span>${caixa.openedBy.name}</span></div>` : ''}
+        <div class="print-row"><span>Operador</span><span>${operador}</span></div>
       </div>
 
-      <hr class="print-hr">
+      <hr class="print-double-hr">
 
       <div class="print-block">
-        <div class="print-label">Resumo do Dia</div>
+        <div class="print-label">Resumo Financeiro</div>
         <div class="print-row"><span>Vendas realizadas</span><span>${totalCount}</span></div>
         <div class="print-total"><span>TOTAL GERAL</span><span>${fmt.currency(grandTotal)}</span></div>
       </div>
@@ -669,30 +682,49 @@ function printRelatorioFechamento({ sales, sangrias, caixa, byMethod, grandTotal
       <hr class="print-hr">
 
       <div class="print-block">
-        <div class="print-label">Controle de Caixa</div>
-        <div class="print-row"><span>Fundo inicial</span><span>${fmt.currency(fundo)}</span></div>
-        <div class="print-row"><span>+ Dinheiro vendas</span><span>${fmt.currency(byMethod['dinheiro'] || 0)}</span></div>
-        ${totalSangrias > 0 ? `<div class="print-row"><span>- Sangrias</span><span>${fmt.currency(totalSangrias)}</span></div>` : ''}
-        <div class="print-row print-strong"><span>Esperado gaveta</span><span>${fmt.currency(expectedCash)}</span></div>
-        ${diffLine}
+        <div class="print-label">Itens Vendidos</div>
+        <div class="print-row print-strong"><span>Total de itens</span><span>${totalItems} un.</span></div>
+        ${catRows}
       </div>
 
-      <hr class="print-double-hr">
+      ${mostSold ? `
+      <div class="print-block">
+        <div class="print-label">Produto Mais Vendido</div>
+        <div class="print-row print-strong"><span>${mostSold[0]}</span><span>${mostSold[1]} un.</span></div>
+      </div>` : ''}
+
+      <hr class="print-hr">
 
       <div class="print-block">
-        <div class="print-label">Produtos Vendidos</div>
-        <div class="print-row" style="font-weight:700;border-bottom:1px solid #000;padding-bottom:2pt;margin-bottom:2pt">
-          <span>Produto</span><span>Qtd</span><span>Total</span>
-        </div>
-        ${prodRows}
+        <div class="print-label">Controle de Caixa</div>
+        <div class="print-row"><span>Fundo inicial</span><span>${fmt.currency(fundo)}</span></div>
+        <div class="print-row"><span>+ Dinheiro (vendas)</span><span>${fmt.currency(byMethod['dinheiro'] || 0)}</span></div>
+        ${totalSangrias > 0 ? `<div class="print-row"><span>− Sangrias</span><span>- ${fmt.currency(totalSangrias)}</span></div>` : ''}
+        <div class="print-row print-strong"><span>Esperado na gaveta</span><span>${fmt.currency(expectedCash)}</span></div>
+        ${cashCountLine}
       </div>
 
       <hr class="print-double-hr">
 
-      <div class="print-foot">
+      <div class="print-block" style="margin-top:6pt">
+        <div style="font-size:8pt;line-height:1.6;text-align:justify">
+          Declaro que os valores acima foram conferidos e que o fechamento
+          de caixa foi realizado corretamente nesta data.
+        </div>
+        <div style="margin-top:14pt;font-size:8pt">
+          Local e data: Pres. Figueiredo, ${dateStr}
+        </div>
+        <div style="margin-top:22pt;border-top:1px solid #000;width:80%;margin-left:auto;margin-right:auto;padding-top:3pt;text-align:center;font-size:8pt">
+          Assinatura do operador
+        </div>
+        <div style="margin-top:3pt;text-align:center;font-size:9pt;font-weight:700">${operador}</div>
+      </div>
+
+      <div class="print-foot" style="margin-top:10pt">
         Empório das Bebidas · Sistema GO<br>
         Impresso em ${dateStr} às ${timeStr}
       </div>
+
     </div>
   `;
 
