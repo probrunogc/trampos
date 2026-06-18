@@ -200,10 +200,25 @@ export async function render(root) {
   state.products = products.filter(p => p.active !== false);
   state.customers = customers;
 
-  // Categorias chips
+  // Categorias chips com Swiper (scroll com momentum + snap em telas touch)
   const catBar = document.getElementById('pdv-cats');
-  catBar.innerHTML = `<div class="pdv-cat-chip active" data-cat="all">Todas</div>` +
-    CATEGORIES.map(c => `<div class="pdv-cat-chip" data-cat="${c}">${c}</div>`).join('');
+  catBar.className = 'swiper pdv-cat-swiper';
+  catBar.innerHTML = `<div class="swiper-wrapper">
+    <div class="swiper-slide pdv-cat-slide"><div class="pdv-cat-chip active" data-cat="all">Todas</div></div>
+    ${CATEGORIES.map(c => `<div class="swiper-slide pdv-cat-slide"><div class="pdv-cat-chip" data-cat="${c}">${c}</div></div>`).join('')}
+  </div>`;
+
+  if (window.Swiper) {
+    new window.Swiper('#pdv-cats', {
+      slidesPerView: 'auto',
+      freeMode: true,
+      grabCursor: true,
+      mousewheel: { forceToAxis: true },
+      resistance: true,
+      resistanceRatio: 0.7,
+    });
+  }
+
   catBar.querySelectorAll('.pdv-cat-chip').forEach(chip => {
     chip.onclick = () => {
       catBar.querySelectorAll('.pdv-cat-chip').forEach(x => x.classList.remove('active'));

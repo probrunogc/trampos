@@ -218,11 +218,20 @@
 }
 .pdv-search-bar input:focus { border-color: var(--gold-400); box-shadow: 0 0 0 3px rgba(212,175,55,0.18); }
 
-.pdv-category-bar {
-  display: flex;
-  gap: var(--sp-2);
+.pdv-category-bar,
+.pdv-cat-swiper {
   padding: var(--sp-3) var(--sp-4);
   border-bottom: 1px solid var(--line);
+}
+/* Swiper slide para cada chip */
+.pdv-cat-slide {
+  width: auto !important;
+  padding-right: 6px;
+}
+/* Fallback sem Swiper (display flex) */
+.pdv-category-bar:not(.swiper) {
+  display: flex;
+  gap: var(--sp-2);
   overflow-x: auto;
   white-space: nowrap;
 }
@@ -1605,11 +1614,20 @@
   background: rgba(200,60,60,0.85);
 }
 
-/* Chips de categoria — taller for easier touch tap */
+/* Chips de categoria — Swiper override */
+.kiosk-mode .pdv-cat-swiper {
+  border-bottom: 1px solid var(--line);
+  padding: var(--sp-3) var(--sp-4);
+}
+.kiosk-mode .pdv-cat-slide {
+  width: auto !important;
+  padding-right: 6px;
+}
 .kiosk-mode .pdv-cat-chip {
-  font-size: 0.86rem;
-  padding: 9px 18px;
+  font-size: 0.9rem;
+  padding: 10px 20px;
   font-weight: 700;
+  white-space: nowrap;
 }
 .kiosk-mode .pdv-cat-chip.active {
   box-shadow: 0 6px 18px rgba(212,175,55,0.4);
@@ -1617,6 +1635,46 @@
 .kiosk-mode .pdv-search-bar input {
   font-size: 1rem;
   padding: 14px 14px 14px 44px;
+}
+
+/* Quick-add buttons: grandes, de caixa registradora */
+.kiosk-mode .pdv-quick-btn {
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 14px;
+  padding: 18px 20px;
+  border-radius: 14px;
+  border-width: 2px;
+  min-height: 80px;
+}
+.kiosk-mode .pdv-quick-icon {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+}
+.kiosk-mode .pdv-quick-label {
+  font-size: 1.1rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+.kiosk-mode .pdv-quick-sub {
+  font-size: 0.72rem;
+  color: var(--text-2);
+  margin-top: 2px;
+}
+
+/* Preço maior no overlay do card */
+.kiosk-mode .pdv-product-price {
+  font-size: 1.25rem;
+  font-weight: 900;
+  padding: 5px 10px 10px;
+  letter-spacing: 0.02em;
+}
+/* Nome maior no overlay */
+.kiosk-mode .pdv-product-name {
+  font-size: 0.92rem;
+  font-weight: 800;
 }
 
 /* Produtos: somente leitura no kiosk — oculta botões de edição/exclusão/criação */
