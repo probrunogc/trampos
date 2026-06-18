@@ -475,12 +475,14 @@ async function openFecharCaixaModal() {
   body.className = 'fc-wrap';
   body.innerHTML = `<div style="text-align:center;padding:var(--sp-5) 0;color:var(--text-3);font-size:.88rem">Calculando totais...</div>`;
 
-  const cancelBtn = el('button', { class: 'btn btn-ghost', type: 'button' }, 'Cancelar');
+  const cancelBtn  = el('button', { class: 'btn btn-ghost',   type: 'button' }, 'Cancelar');
   cancelBtn.onclick = () => ui.closeModal(null);
-  const fecharBtn = el('button', { class: 'btn btn-danger', type: 'button' }, 'Fechar caixa');
+  const printBtn   = el('button', { class: 'btn btn-ghost',   type: 'button' }, '🖨 Imprimir');
+  printBtn.disabled = true;
+  const fecharBtn  = el('button', { class: 'btn btn-danger',  type: 'button' }, 'Fechar caixa');
   fecharBtn.disabled = true;
 
-  ui.modal({ title: 'Fechamento de caixa', body, footer: [cancelBtn, fecharBtn] });
+  ui.modal({ title: 'Fechamento de caixa', body, footer: [cancelBtn, printBtn, fecharBtn] });
 
   let sales, sangrias, caixa;
   try {
@@ -544,6 +546,15 @@ async function openFecharCaixaModal() {
   `;
 
   fecharBtn.disabled = false;
+  printBtn.disabled  = false;
+
+  // Captura os dados para impressão (closure)
+  const getPrintData = () => {
+    const countedEl = document.getElementById('fc-counted');
+    return { sales, sangrias, caixa, byMethod, grandTotal, totalCount, totalSangrias, fundo, expectedCash,
+             counted: parseFloat(countedEl?.value) };
+  };
+  printBtn.onclick = () => printRelatorioFechamento(getPrintData());
 
   document.getElementById('fc-counted').oninput = function () {
     const counted = parseFloat(this.value);
@@ -577,12 +588,116 @@ async function openFecharCaixaModal() {
       ui.closeModal(true);
       ui.toast('Caixa fechado.', 'success');
       _setCaixaInfo('Caixa fechado');
-      setTimeout(() => promptAbrirCaixa(), 600);
+      printRelatorioFechamento({ sales, sangrias, caixa, byMethod, grandTotal, totalCount, totalSangrias, fundo, expectedCash, counted });
+      setTimeout(() => promptAbrirCaixa(), 3200);
     } catch (err) {
       fecharBtn.disabled = false;
       ui.toast('Erro ao fechar caixa: ' + (err.message || 'Tente novamente.'), 'danger');
     }
   };
+}
+
+/* ─── Relatório de Fechamento de Caixa ──────────────────────── */
+function printRelatorioFechamento({ sales, sangrias, caixa, byMethod, grandTotal, totalCount, totalSangrias, fundo, expectedCash, counted }) {
+  // Agrupa produtos
+  const prodMap = {};
+  for (const s of sales) {
+    if (s.status === 'cancelled') continue;
+    for (const it of (s.items || [])) {
+      const k = it.name;
+      if (!prodMap[k]) prodMap[k] = { name: it.name, qty: 0, total: 0 };
+      prodMap[k].qty   += (it.qty || 1);
+      prodMap[k].total += (it.subtotal || (it.unitPrice || 0) * (it.qty || 1));
+    }
+  }
+  const prods = Object.values(prodMap).sort((a, b) => b.qty - a.qty);
+
+  const now       = new Date();
+  const dateStr   = now.toLocaleDateString('pt-BR');
+  const timeStr   = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  const openedAt  = caixa?.openedAt ? new Date(caixa.openedAt) : null;
+  const openedStr = openedAt ? openedAt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '—';
+  const diff      = (counted != null && !isNaN(counted)) ? (counted - expectedCash) : null;
+
+  const methodRows = PAYMENTS
+    .filter(p => (byMethod[p.id] || 0) > 0)
+    .map(p => `<div class="print-row"><span>${p.label}</span><span>${fmt.currency(byMethod[p.id])}</span></div>`)
+    .join('');
+
+  const prodRows = prods.map(p =>
+    `<div class="print-row"><span>${p.name}</span><span>${p.qty}x</span><span>${fmt.currency(p.total)}</span></div>`
+  ).join('');
+
+  const diffLine = diff != null ? `
+    <div class="print-row">
+      <span>Contado</span><span>${fmt.currency(counted)}</span>
+    </div>
+    <div class="print-row print-strong">
+      <span>Diferença</span><span>${diff >= 0 ? '+' : ''}${fmt.currency(diff)}</span>
+    </div>` : '';
+
+  const host = document.getElementById('print-host');
+  host.innerHTML = `
+    <div class="print-doc">
+      <div class="print-medallion"><img src="assets/logo.png" alt=""></div>
+      <div class="print-brand">EMPÓRIO DAS BEBIDAS</div>
+      <div class="print-sub">Presidente Figueiredo — AM</div>
+      <div class="print-since">★ SISTEMA GO ★</div>
+
+      <div class="print-doc-title">Fechamento de Caixa</div>
+
+      <div class="print-block">
+        <div class="print-row"><span>Data</span><span>${dateStr}</span></div>
+        <div class="print-row"><span>Abertura</span><span>${openedStr}</span></div>
+        <div class="print-row"><span>Fechamento</span><span>${timeStr}</span></div>
+        ${caixa?.openedBy?.name ? `<div class="print-row"><span>Operador</span><span>${caixa.openedBy.name}</span></div>` : ''}
+      </div>
+
+      <hr class="print-hr">
+
+      <div class="print-block">
+        <div class="print-label">Resumo do Dia</div>
+        <div class="print-row"><span>Vendas realizadas</span><span>${totalCount}</span></div>
+        <div class="print-total"><span>TOTAL GERAL</span><span>${fmt.currency(grandTotal)}</span></div>
+      </div>
+
+      <div class="print-block">
+        <div class="print-label">Formas de Pagamento</div>
+        ${methodRows}
+      </div>
+
+      <hr class="print-hr">
+
+      <div class="print-block">
+        <div class="print-label">Controle de Caixa</div>
+        <div class="print-row"><span>Fundo inicial</span><span>${fmt.currency(fundo)}</span></div>
+        <div class="print-row"><span>+ Dinheiro vendas</span><span>${fmt.currency(byMethod['dinheiro'] || 0)}</span></div>
+        ${totalSangrias > 0 ? `<div class="print-row"><span>- Sangrias</span><span>${fmt.currency(totalSangrias)}</span></div>` : ''}
+        <div class="print-row print-strong"><span>Esperado gaveta</span><span>${fmt.currency(expectedCash)}</span></div>
+        ${diffLine}
+      </div>
+
+      <hr class="print-double-hr">
+
+      <div class="print-block">
+        <div class="print-label">Produtos Vendidos</div>
+        <div class="print-row" style="font-weight:700;border-bottom:1px solid #000;padding-bottom:2pt;margin-bottom:2pt">
+          <span>Produto</span><span>Qtd</span><span>Total</span>
+        </div>
+        ${prodRows}
+      </div>
+
+      <hr class="print-double-hr">
+
+      <div class="print-foot">
+        Empório das Bebidas · Sistema GO<br>
+        Impresso em ${dateStr} às ${timeStr}
+      </div>
+    </div>
+  `;
+
+  window.print();
+  setTimeout(() => { host.innerHTML = ''; }, 3000);
 }
 
 /* ─── Scanner USB (HID keyboard emulation) ───────────────────── */

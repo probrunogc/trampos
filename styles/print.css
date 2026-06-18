@@ -127,6 +127,17 @@
 
   .print-page-break { page-break-after: always; }
 
+  /* Relatório de fechamento — 3 colunas nos produtos */
+  .print-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 4px;
+    font-size: 9.5pt;
+    line-height: 1.4;
+  }
+  .print-row span:first-child { flex: 1; }
+  .print-row span:last-child  { text-align: right; flex-shrink: 0; }
+
   /* Esconde botões etc. */
   .no-print { display: none !important; }
 }
