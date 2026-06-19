@@ -45,11 +45,11 @@ const PAYMENTS = [
     icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>`,
   },
   {
-    id: 'debito', label: 'Débito', fee: 1.02,
+    id: 'debito', label: 'Débito', fee: 0,
     icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/><line x1="7" y1="15" x2="11" y2="15"/></svg>`,
   },
   {
-    id: 'credito', label: 'Crédito', fee: 3.29,
+    id: 'credito', label: 'Crédito', fee: 0,
     icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/><rect x="5" y="13" width="3" height="3" rx="0.5"/></svg>`,
   },
   {
