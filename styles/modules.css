@@ -556,14 +556,15 @@
   align-items: center;
   justify-content: center;
   gap: 4px;
-  width: 60px;
-  height: 60px;
+  width: 56px;
+  height: 56px;
   border-radius: 10px;
   border: 1.5px solid;
   background: none;
   cursor: pointer;
   color: inherit;
   flex-shrink: 0;
+  overflow: hidden;
   transition: transform .12s, opacity .12s;
 }
 .pdv-quick-btn:hover  { opacity: .8; }
@@ -718,11 +719,8 @@
   color: var(--gold-300);
   letter-spacing: .02em;
 }
-.pdv-quick-icon {
-  width: 22px;
-  height: 22px;
-}
-.pdv-quick-label { font-weight: 600; font-size: .70rem; }
+.pdv-quick-icon  { width: 26px; height: 26px; }
+.pdv-quick-label { display: none; }
 .pdv-quick-sub   { display: none; }
 
 /* =========================================================
