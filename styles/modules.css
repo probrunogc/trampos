@@ -603,6 +603,152 @@
   background: linear-gradient(135deg, rgba(234,88,12,.18), rgba(234,88,12,.06));
   animation: pdv-pulse-orange 2.4s ease-in-out infinite;
 }
+
+/* ─── Copão price-card grid ───────────────────────────────────── */
+.cp-price-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.cp-price-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  padding: 22px 10px 18px;
+  border-radius: 14px;
+  border: 2px solid var(--line-strong);
+  background: rgba(255,255,255,.03);
+  cursor: pointer;
+  color: var(--text-1);
+  transition: border-color .15s, background .15s, transform .1s;
+  line-height: 1;
+}
+.cp-price-card:active { transform: scale(.95); transition-duration: 60ms; }
+.cp-price-card--active {
+  border-color: var(--gold);
+  background: rgba(212,175,55,.1);
+}
+.cp-price-val {
+  font-family: var(--font-brand);
+  font-size: 1.65rem;
+  font-weight: 900;
+  background: var(--grad-gold-text);
+  -webkit-background-clip: text;
+          background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: -.01em;
+}
+.cp-price-comma {
+  font-size: .75rem;
+  color: var(--text-3);
+  margin-top: 2px;
+}
+
+/* ─── Kit modal ──────────────────────────────────────────────── */
+.kt-rows {
+  display: flex;
+  flex-direction: column;
+}
+.kt-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: var(--sp-3) 0;
+  border-bottom: 1px solid var(--line);
+}
+.kt-row-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.kt-row-label {
+  font-size: .78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  color: var(--text-3);
+}
+.kt-select { width: 100%; }
+.kt-stepper {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background: rgba(255,255,255,.05);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 3px;
+}
+.kt-step-btn {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border: none;
+  background: rgba(255,255,255,.07);
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--text-1);
+  font-size: 1.15rem;
+  line-height: 1;
+  font-weight: 500;
+  transition: background .1s, transform .08s;
+}
+.kt-step-btn:active { background: rgba(255,255,255,.2); transform: scale(.91); }
+.kt-step-val {
+  min-width: 28px;
+  text-align: center;
+  font-weight: 800;
+  font-size: .95rem;
+}
+.kt-discount-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--sp-3) 0;
+}
+.kt-disc-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.kt-summary {
+  background: rgba(212,175,55,.06);
+  border: 1px solid rgba(212,175,55,.22);
+  border-radius: 10px;
+  padding: var(--sp-3) var(--sp-4);
+  margin-top: var(--sp-3);
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.kt-summary-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: .85rem;
+  color: var(--text-2);
+}
+.kt-summary-saving {
+  display: flex;
+  justify-content: space-between;
+  font-size: .83rem;
+}
+.kt-summary-total {
+  display: flex;
+  justify-content: space-between;
+  font-size: 1.05rem;
+  font-weight: 800;
+  padding-top: 6px;
+  margin-top: 2px;
+  border-top: 1px solid rgba(212,175,55,.22);
+}
+.kt-summary-total span:last-child {
+  font-family: var(--font-brand);
+  color: var(--gold-300);
+  letter-spacing: .02em;
+}
 .pdv-quick-icon {
   width: 28px;
   height: 28px;

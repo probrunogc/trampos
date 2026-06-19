@@ -1115,159 +1115,164 @@ function paintAll() { paintProducts(); paintCart(); paintTotals(); }
 
 /* ─── Copão modal ────────────────────────────────────────────── */
 function openCopaoModal() {
-  const energeticos = state.products.filter(p => p.category === 'Energético');
-  const destilados  = state.products.filter(p => p.category === 'Destilado');
-  const gelos       = state.products.filter(p => p.name.toLowerCase().includes('gelo'));
-
-  const mkOpts = (list) => list.map(p =>
-    `<option value="${p.id}">${fmt.escape(p.name)} — ${fmt.currency(p.price)}</option>`
-  ).join('');
+  const PRICES = [10, 20, 25, 30];
+  let selected = null;
 
   const body = el('div');
   body.innerHTML = `
-    <div style="display:flex;flex-direction:column;gap:var(--sp-3)">
-      <div>
-        <label class="field-label">Energético</label>
-        <select id="cp-energetico" class="field-input">
-          <option value="">— nenhum —</option>
-          ${mkOpts(energeticos)}
-        </select>
-      </div>
-      <div>
-        <label class="field-label">Destilado</label>
-        <select id="cp-destilado" class="field-input">
-          <option value="">— nenhum —</option>
-          ${mkOpts(destilados)}
-        </select>
-      </div>
-      <div>
-        <label class="field-label">Gelo</label>
-        <select id="cp-gelo" class="field-input">
-          <option value="">— nenhum —</option>
-          ${mkOpts(gelos)}
-        </select>
-      </div>
-      <div>
-        <label class="field-label">Preço do copão (R$) <span style="color:var(--danger)">*</span></label>
-        <input type="number" id="cp-price" class="field-input" step="0.50" min="0" placeholder="0,00" inputmode="decimal" autofocus>
+    <div style="padding:var(--sp-1) 0 var(--sp-2)">
+      <div style="text-align:center;font-size:.75rem;letter-spacing:.12em;text-transform:uppercase;color:var(--text-3);margin-bottom:var(--sp-4)">Toque para selecionar o valor</div>
+      <div class="cp-price-grid">
+        ${PRICES.map(p => `
+          <button class="cp-price-card" data-price="${p}" type="button">
+            <span class="cp-price-val">R$&nbsp;${p}</span>
+            <span class="cp-price-comma">,00</span>
+          </button>`).join('')}
       </div>
     </div>
   `;
 
   const cancelBtn = el('button', { class: 'btn btn-ghost', type: 'button' }, 'Cancelar');
   cancelBtn.onclick = () => ui.closeModal(null);
-  const addBtn = el('button', { class: 'btn btn-primary', type: 'button' }, 'Adicionar ao carrinho');
-  addBtn.onclick = () => {
-    const price = parseFloat(body.querySelector('#cp-price').value) || 0;
-    if (price <= 0) { ui.toast('Informe o preço do copão.', 'warning'); return; }
+  const addBtn = el('button', { class: 'btn btn-primary', type: 'button', disabled: '' }, 'Selecione um valor');
 
-    const getSel = (id, list) => {
-      const val = body.querySelector(`#${id}`)?.value;
-      return val ? list.find(p => p.id === val) : null;
+  body.querySelectorAll('.cp-price-card').forEach(card => {
+    card.onclick = () => {
+      body.querySelectorAll('.cp-price-card').forEach(c => c.classList.remove('cp-price-card--active'));
+      card.classList.add('cp-price-card--active');
+      selected = parseFloat(card.dataset.price);
+      addBtn.disabled = false;
+      addBtn.textContent = `Adicionar — R$ ${selected.toFixed(2).replace('.', ',')}`;
     };
-    const eng  = getSel('cp-energetico', energeticos);
-    const dest = getSel('cp-destilado',  destilados);
-    const gelo = getSel('cp-gelo',       gelos);
-    const parts = [eng?.name, dest?.name, gelo?.name].filter(Boolean);
-    const name  = parts.length ? `Copão — ${parts.join(' + ')}` : 'Copão';
+  });
 
-    state.cart.push({ productId: null, name, unitPrice: price, costPrice: 0, qty: 1, stock: null, category: 'Copão' });
+  addBtn.onclick = () => {
+    if (!selected) return;
+    state.cart.push({ productId: null, name: 'Copão', unitPrice: selected, costPrice: 0, qty: 1, stock: null, category: 'Copão' });
     paintCart();
     paintTotals();
     ui.closeModal(true);
-    ui.toast('Copão adicionado ao carrinho.', 'success');
+    ui.toast(`Copão R$ ${selected.toFixed(2).replace('.', ',')} adicionado.`, 'success');
   };
 
-  ui.modal({ title: 'Montar Copão', body, footer: [cancelBtn, addBtn], narrow: true });
+  ui.modal({ title: 'Copão', body, footer: [cancelBtn, addBtn], narrow: true });
 }
 
 /* ─── Kit modal ──────────────────────────────────────────────── */
 function openKitModal() {
-  const energeticos = state.products.filter(p => p.category === 'Energético');
-  const destilados  = state.products.filter(p => p.category === 'Destilado');
-  const gelos       = state.products.filter(p => p.name.toLowerCase().includes('gelo'));
+  // energéticos 2L; fallback para todos se não houver
+  let energeticos = state.products.filter(p => p.category === 'Energético' && /2\s?l(itro)?s?/i.test(p.name));
+  if (!energeticos.length) energeticos = state.products.filter(p => p.category === 'Energético');
+  const destilados = state.products.filter(p => p.category === 'Destilado');
+  const gelos      = state.products.filter(p => p.name.toLowerCase().includes('gelo'));
 
-  const mkOpts = (list) => list.map(p =>
-    `<option value="${p.id}" data-price="${p.price}">${fmt.escape(p.name)} — ${fmt.currency(p.price)}</option>`
+  // closure state — evita leitura constante do DOM
+  const qtys = { energetico: 1, destilado: 1, gelo: 6 };
+  const sels = {
+    energetico: energeticos[0]?.id || '',
+    destilado:  destilados[0]?.id  || '',
+    gelo:       gelos[0]?.id       || '',
+  };
+
+  const mkOpts = (list, selId) => list.map(p =>
+    `<option value="${p.id}" data-price="${p.price}"${p.id === selId ? ' selected' : ''}>${fmt.escape(p.name)} — ${fmt.currency(p.price)}</option>`
   ).join('');
 
   const body = el('div');
+  body.className = 'kt-body';
+
+  const rows = [
+    { key: 'energetico', label: 'Energético', list: energeticos },
+    { key: 'destilado',  label: 'Destilado',  list: destilados  },
+    { key: 'gelo',       label: 'Gelo',        list: gelos       },
+  ];
+
   body.innerHTML = `
-    <div style="display:flex;flex-direction:column;gap:var(--sp-3)">
-      <div style="display:grid;grid-template-columns:1fr 72px;gap:8px;align-items:end">
-        <div>
-          <label class="field-label">Energético</label>
-          <select id="kt-energetico" class="field-input">
+    <div class="kt-rows">
+      ${rows.map(({ key, label, list }) => `
+        <div class="kt-row">
+          <div class="kt-row-top">
+            <span class="kt-row-label">${label}</span>
+            <div class="kt-stepper">
+              <button class="kt-step-btn" data-key="${key}" data-dir="-1" type="button">−</button>
+              <span class="kt-step-val" id="kt-qty-${key}">${qtys[key]}</span>
+              <button class="kt-step-btn" data-key="${key}" data-dir="1" type="button">+</button>
+            </div>
+          </div>
+          <select id="kt-${key}" class="field-input kt-select">
             <option value="">— nenhum —</option>
-            ${mkOpts(energeticos)}
+            ${mkOpts(list, sels[key])}
           </select>
-        </div>
-        <div>
-          <label class="field-label">Qtd</label>
-          <input type="number" id="kt-energetico-qty" class="field-input" value="1" min="0" step="1" style="text-align:center">
-        </div>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 72px;gap:8px;align-items:end">
-        <div>
-          <label class="field-label">Destilado</label>
-          <select id="kt-destilado" class="field-input">
-            <option value="">— nenhum —</option>
-            ${mkOpts(destilados)}
-          </select>
-        </div>
-        <div>
-          <label class="field-label">Qtd</label>
-          <input type="number" id="kt-destilado-qty" class="field-input" value="1" min="0" step="1" style="text-align:center">
+        </div>`).join('')}
+
+      <div class="kt-discount-row">
+        <span class="kt-row-label">Desconto do kit</span>
+        <div class="kt-disc-input-wrap">
+          <input type="number" id="kt-discount" class="field-input" value="0" min="0" max="100" step="5" style="width:60px;text-align:center;padding:6px 8px">
+          <span style="font-size:.85rem;color:var(--text-2)">%</span>
         </div>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 72px;gap:8px;align-items:end">
-        <div>
-          <label class="field-label">Gelo</label>
-          <select id="kt-gelo" class="field-input">
-            <option value="">— nenhum —</option>
-            ${mkOpts(gelos)}
-          </select>
-        </div>
-        <div>
-          <label class="field-label">Qtd</label>
-          <input type="number" id="kt-gelo-qty" class="field-input" value="1" min="0" step="1" style="text-align:center">
-        </div>
+    </div>
+
+    <div class="kt-summary">
+      <div class="kt-summary-row">
+        <span>Valor cheio</span>
+        <span id="kt-subtotal">R$ 0,00</span>
       </div>
-      <div>
-        <label class="field-label">Desconto do kit (%)</label>
-        <input type="number" id="kt-discount" class="field-input" value="0" min="0" max="100" step="1" placeholder="0">
+      <div class="kt-summary-saving" id="kt-saving-row" style="display:none">
+        <span id="kt-saving-label">Desconto</span>
+        <span id="kt-saving-val" style="color:var(--success)">− R$ 0,00</span>
       </div>
-      <div style="background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:8px;padding:var(--sp-3);font-size:.88rem">
-        <div style="display:flex;justify-content:space-between;color:var(--text-2)"><span>Valor sem desconto</span><span id="kt-subtotal">R$ 0,00</span></div>
-        <div style="display:flex;justify-content:space-between;font-weight:700;margin-top:4px"><span>Preço do kit</span><span id="kt-final" style="color:var(--gold-300)">R$ 0,00</span></div>
+      <div class="kt-summary-total">
+        <span>Preço do kit</span>
+        <span id="kt-final">R$ 0,00</span>
       </div>
     </div>
   `;
 
-  const getCompVal = (selectId, list, qtyId) => {
-    const val = body.querySelector(`#${selectId}`)?.value;
-    const qty = parseInt(body.querySelector(`#${qtyId}`)?.value) || 0;
-    if (!val || !qty) return 0;
-    return (list.find(p => p.id === val)?.price || 0) * qty;
+  const getCompVal = (key, list) => {
+    const qty = qtys[key] || 0;
+    if (!sels[key] || !qty) return 0;
+    return (list.find(p => p.id === sels[key])?.price || 0) * qty;
   };
 
   const repaint = () => {
     const subtotal =
-      getCompVal('kt-energetico', energeticos, 'kt-energetico-qty') +
-      getCompVal('kt-destilado',  destilados,  'kt-destilado-qty') +
-      getCompVal('kt-gelo',       gelos,       'kt-gelo-qty');
-    const disc  = parseFloat(body.querySelector('#kt-discount')?.value) || 0;
-    const final = subtotal * (1 - disc / 100);
-    const subEl = body.querySelector('#kt-subtotal');
-    const finEl = body.querySelector('#kt-final');
-    if (subEl) subEl.textContent = fmt.currency(subtotal);
-    if (finEl) finEl.textContent = fmt.currency(final);
+      getCompVal('energetico', energeticos) +
+      getCompVal('destilado',  destilados)  +
+      getCompVal('gelo',       gelos);
+    const disc   = parseFloat(body.querySelector('#kt-discount')?.value) || 0;
+    const saving = subtotal * disc / 100;
+    const final  = subtotal - saving;
+    body.querySelector('#kt-subtotal').textContent   = fmt.currency(subtotal);
+    body.querySelector('#kt-final').textContent      = fmt.currency(final);
+    const savRow = body.querySelector('#kt-saving-row');
+    savRow.style.display = disc > 0 ? '' : 'none';
+    if (disc > 0) {
+      body.querySelector('#kt-saving-label').textContent = `Desconto ${disc}%`;
+      body.querySelector('#kt-saving-val').textContent   = `− ${fmt.currency(saving)}`;
+    }
   };
 
-  ['kt-energetico','kt-energetico-qty','kt-destilado','kt-destilado-qty',
-   'kt-gelo','kt-gelo-qty','kt-discount'].forEach(id => {
-    body.querySelector(`#${id}`)?.addEventListener('input', repaint);
+  // Stepper buttons
+  body.querySelectorAll('.kt-step-btn').forEach(btn => {
+    btn.onclick = () => {
+      const key = btn.dataset.key;
+      qtys[key] = Math.max(0, (qtys[key] || 0) + parseInt(btn.dataset.dir));
+      body.querySelector(`#kt-qty-${key}`).textContent = qtys[key];
+      repaint();
+    };
   });
+
+  // Select changes
+  rows.forEach(({ key }) => {
+    body.querySelector(`#kt-${key}`)?.addEventListener('change', e => {
+      sels[key] = e.target.value;
+      repaint();
+    });
+  });
+
+  body.querySelector('#kt-discount')?.addEventListener('input', repaint);
   repaint();
 
   const cancelBtn = el('button', { class: 'btn btn-ghost', type: 'button' }, 'Cancelar');
@@ -1276,19 +1281,13 @@ function openKitModal() {
   addBtn.onclick = () => {
     const disc = parseFloat(body.querySelector('#kt-discount').value) || 0;
 
-    const getComp = (selectId, list, qtyId) => {
-      const val = body.querySelector(`#${selectId}`)?.value;
-      const qty = parseInt(body.querySelector(`#${qtyId}`)?.value) || 0;
-      if (!val || !qty) return null;
-      const prod = list.find(p => p.id === val);
+    const comps = rows.map(({ key, list }) => {
+      const qty = qtys[key] || 0;
+      if (!sels[key] || !qty) return null;
+      const prod = list.find(p => p.id === sels[key]);
       return prod ? { prod, qty } : null;
-    };
+    }).filter(Boolean);
 
-    const comps = [
-      getComp('kt-energetico', energeticos, 'kt-energetico-qty'),
-      getComp('kt-destilado',  destilados,  'kt-destilado-qty'),
-      getComp('kt-gelo',       gelos,       'kt-gelo-qty'),
-    ].filter(Boolean);
     if (!comps.length) { ui.toast('Selecione ao menos um componente.', 'warning'); return; }
 
     const subtotal = comps.reduce((s, c) => s + c.prod.price * c.qty, 0);
