@@ -1818,6 +1818,34 @@ function paintProducts() {
   }).join('');
 
   grid.querySelectorAll('.pdv-product').forEach((card, i) => {
+    const cat = card.dataset.category;
+    const imgDiv = card.querySelector('.pdv-product-img');
+    if (imgDiv) {
+      if (cat === 'Cigarro') {
+        const positions = ['18%', '35%', '55%', '72%'];
+        const delays   = ['0s', '0.9s', '1.8s', '0.45s'];
+        positions.forEach((x, s) => {
+          const el = document.createElement('span');
+          el.className = 'pdv-smoke';
+          el.style.setProperty('--x', x);
+          el.style.setProperty('--d', delays[s]);
+          imgDiv.appendChild(el);
+        });
+      } else if (cat === 'Cerveja') {
+        const frost = document.createElement('div');
+        frost.className = 'pdv-frost';
+        imgDiv.appendChild(frost);
+        const flakePos = [['12%','0s'],['48%','1.1s'],['78%','2.0s']];
+        flakePos.forEach(([x, d]) => {
+          const el = document.createElement('span');
+          el.className = 'pdv-flake';
+          el.textContent = '❄';
+          el.style.setProperty('--x', x);
+          el.style.setProperty('--d', d);
+          imgDiv.appendChild(el);
+        });
+      }
+    }
     card.onclick = () => addToCart(card.dataset.id);
     card.animate([
       { opacity: 0, transform: 'translateY(10px) scale(0.97)' },
