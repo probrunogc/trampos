@@ -756,7 +756,8 @@ async function openForm(id = null) {
   const isEdit = !!id;
   const p = isEdit ? state.list.find(x => x.id === id) : {};
 
-  const existingImgs = Array.isArray(p?.images) ? p.images.filter(Boolean) : (p?.image ? [p.image] : []);
+  const _imgs = Array.isArray(p?.images) ? p.images.filter(Boolean) : [];
+  const existingImgs = _imgs.length > 0 ? _imgs : (p?.image ? [p.image] : []);
   let images = existingImgs.map(url => ({ url, file: null, blobUrl: null, processing: false, status: '' }));
 
   const form = el('form', { autocomplete: 'off' });
