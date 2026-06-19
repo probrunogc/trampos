@@ -452,12 +452,15 @@ async function openSangriaModal() {
       </div>
     </div>
   `;
+  body.querySelectorAll('input').forEach(inp =>
+    inp.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); confirmBtn.click(); } })
+  );
   const cancelBtn = el('button', { class: 'btn btn-ghost', type: 'button' }, 'Cancelar');
   cancelBtn.onclick = () => ui.closeModal(null);
   const confirmBtn = el('button', { class: 'btn btn-primary', type: 'button' }, 'Continuar');
   confirmBtn.onclick = async () => {
-    const amount = parseFloat(document.getElementById('sg-amount').value) || 0;
-    const reason = document.getElementById('sg-reason').value.trim();
+    const amount = parseFloat(body.querySelector('#sg-amount').value) || 0;
+    const reason = body.querySelector('#sg-reason').value.trim();
     if (amount <= 0) { ui.toast('Informe um valor maior que zero.', 'warning'); return; }
     if (!reason)     { ui.toast('O motivo e obrigatorio para sangria.', 'warning'); return; }
 
@@ -1155,7 +1158,22 @@ function openCopaoModal() {
     ui.toast(`Copão R$ ${selected.toFixed(2).replace('.', ',')} adicionado.`, 'success');
   };
 
-  ui.modal({ title: 'Copão', body, footer: [cancelBtn, addBtn], narrow: true });
+  const cpAc = new AbortController();
+  document.addEventListener('keydown', (e) => {
+    const cards = [...body.querySelectorAll('.cp-price-card')];
+    const idx   = cards.indexOf(document.activeElement);
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+      e.preventDefault(); cards[(idx + 1) % cards.length]?.focus();
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+      e.preventDefault(); cards[(idx - 1 + cards.length) % cards.length]?.focus();
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (idx >= 0) { cards[idx].click(); }
+      else if (selected !== null && !addBtn.disabled) { addBtn.click(); }
+    }
+  }, { signal: cpAc.signal });
+  ui.modal({ title: 'Copão', body, footer: [cancelBtn, addBtn], narrow: true })
+    .then(() => cpAc.abort());
 }
 
 /* ─── Kit modal ──────────────────────────────────────────────── */
@@ -1304,7 +1322,13 @@ function openKitModal() {
     ui.toast('Kit adicionado ao carrinho.', 'success');
   };
 
-  ui.modal({ title: 'Montar Kit', body, footer: [cancelBtn, addBtn], narrow: true });
+  const ktAc = new AbortController();
+  document.addEventListener('keydown', (e) => {
+    if (['INPUT','SELECT','TEXTAREA'].includes(document.activeElement?.tagName)) return;
+    if (e.key === 'Enter') { e.preventDefault(); addBtn.click(); }
+  }, { signal: ktAc.signal });
+  ui.modal({ title: 'Montar Kit', body, footer: [cancelBtn, addBtn], narrow: true })
+    .then(() => ktAc.abort());
 }
 
 /* ─── Quick-add modal (Cigarro / Dose) — com animação ────────── */
@@ -1314,6 +1338,7 @@ function openBrandModal(brands, title, opts = {}) {
   const qtys   = {};
   const armed  = {};
   brands.forEach(b => { prices[b.id] = b.price; qtys[b.id] = 0; });
+  let panel = 'grid';
 
   // ── body: slider with two panels ──────────────────────────
   const wrap = el('div');
@@ -1391,6 +1416,7 @@ function openBrandModal(brands, title, opts = {}) {
 
   // ── detail panel ───────────────────────────────────────────
   const showDetail = (brand) => {
+    panel = 'detail';
     slider.classList.add('bm-slide');
     closeBtn.style.display = 'none';
     addBtn.style.display   = 'none'; // usamos botão local no painel
@@ -1513,13 +1539,45 @@ function openBrandModal(brands, title, opts = {}) {
   };
 
   backBtn.onclick = () => {
+    panel = 'grid';
     slider.classList.remove('bm-slide');
     renderGrid();
   };
 
+  // ── keyboard nav ───────────────────────────────────────────
+  const bmAc = new AbortController();
+  document.addEventListener('keydown', (e) => {
+    const onInput = ['INPUT','SELECT','TEXTAREA'].includes(document.activeElement?.tagName);
+    if (panel === 'grid') {
+      if (onInput) return;
+      const cards = [...gridPanel.querySelectorAll('.bm-card')];
+      if (!cards.length) return;
+      const idx = cards.indexOf(document.activeElement);
+      if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+        e.preventDefault(); cards[(idx + 1) % cards.length].focus();
+      } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+        e.preventDefault(); cards[(idx - 1 + cards.length) % cards.length].focus();
+      }
+    } else {
+      if (onInput) return;
+      if (e.key === 'ArrowUp' || e.key === 'ArrowRight') {
+        e.preventDefault(); document.getElementById('bm-inc')?.click();
+      } else if (e.key === 'ArrowDown' || e.key === 'ArrowLeft') {
+        e.preventDefault(); document.getElementById('bm-dec')?.click();
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        const la = document.getElementById('bm-local-add');
+        if (la && !la.disabled) la.click();
+      } else if (e.key === 'Backspace') {
+        e.preventDefault(); backBtn.click();
+      }
+    }
+  }, { signal: bmAc.signal });
+
   // ── initial render ─────────────────────────────────────────
   renderGrid();
-  ui.modal({ title, body: wrap, footer: [closeBtn, backBtn, addBtn], narrow: true });
+  ui.modal({ title, body: wrap, footer: [closeBtn, backBtn, addBtn], narrow: true })
+    .then(() => bmAc.abort());
 }
 
 function openQuickAdd(category, title, opts = {}) {
@@ -2164,8 +2222,12 @@ function confirmRichSale({ subtotal, discount, fee, payFeeRate, paymentFee, tota
     onClick: () => ui.closeModal(false) }, 'Cancelar');
   const ok = el('button', { class: 'btn btn-primary', type: 'button',
     onClick: () => ui.closeModal(true) }, 'Confirmar venda');
+  const csAc = new AbortController();
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); ok.click(); }
+  }, { signal: csAc.signal });
   return ui.modal({ title: 'Finalizar venda', body, footer: [cancel, ok] })
-    .then(r => r === true);
+    .then(r => { csAc.abort(); return r === true; });
 }
 
 async function finishSale() {
