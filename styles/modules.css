@@ -1336,10 +1336,12 @@
   aspect-ratio: 3 / 4;
   height: auto;
   margin-bottom: var(--sp-2);
+  overflow: hidden;
 }
 .pdv-product-img img {
-  object-fit: contain;
-  padding: 4%;
+  object-fit: cover;
+  padding: 0;
+  transform: scale(1.5);
 }
 
 /* =========================================================
