@@ -1366,64 +1366,47 @@
 .pdv-smoke:nth-child(odd)  { --drift:  10px; width: 18px; height: 18px; }
 .pdv-smoke:nth-child(even) { --drift:  -8px; width: 28px; height: 28px; }
 
-/* ── Gelo ── Cerveja ────────────────────────────────────── */
+/* ── Névoa fria ── Cerveja ──────────────────────────────── */
+/* Camada 1: névoa azul densa nas bordas, respira lentamente */
 .pdv-frost {
   position: absolute;
   inset: 0;
   pointer-events: none;
   z-index: 2;
-  /* Gelo pesado nas bordas e cantos, centro limpo */
-  background:
-    radial-gradient(ellipse 85% 48% at 50% -2%,   rgba(228,248,255,.88) 0%, transparent 68%),
-    radial-gradient(ellipse 85% 48% at 50% 102%,  rgba(215,244,255,.82) 0%, transparent 68%),
-    radial-gradient(ellipse 40% 110% at -2% 50%,  rgba(222,246,255,.78) 0%, transparent 68%),
-    radial-gradient(ellipse 40% 110% at 102% 50%, rgba(222,246,255,.78) 0%, transparent 68%),
-    radial-gradient(ellipse 45% 45% at   0%   0%, rgba(238,252,255,.92) 0%, transparent 62%),
-    radial-gradient(ellipse 45% 45% at 100%   0%, rgba(238,252,255,.92) 0%, transparent 62%),
-    radial-gradient(ellipse 45% 45% at   0% 100%, rgba(238,252,255,.92) 0%, transparent 62%),
-    radial-gradient(ellipse 45% 45% at 100% 100%, rgba(238,252,255,.92) 0%, transparent 62%);
-  animation: pdv-frost-pulse 3.8s ease-in-out infinite alternate;
+  background: radial-gradient(ellipse 88% 88% at 50% 50%,
+    transparent 30%,
+    rgba(100,185,248,.18) 54%,
+    rgba(65,155,235,.40) 74%,
+    rgba(45,130,220,.58) 100%);
+  animation: pdv-mist 3.4s ease-in-out infinite alternate;
 }
-/* Textura de cristais de gelo nas bordas */
+/* Camada 2: névoa branca mais suave, fase oposta */
 .pdv-frost::before {
   content: '';
   position: absolute;
   inset: 0;
-  background-image:
-    repeating-linear-gradient( 22deg, transparent, transparent 3px, rgba(195,238,255,.10) 3px, rgba(195,238,255,.10) 4px),
-    repeating-linear-gradient(-22deg, transparent, transparent 3px, rgba(195,238,255,.10) 3px, rgba(195,238,255,.10) 4px),
-    repeating-linear-gradient( 68deg, transparent, transparent 5px, rgba(205,242,255,.07) 5px, rgba(205,242,255,.07) 6px),
-    repeating-linear-gradient(-68deg, transparent, transparent 5px, rgba(205,242,255,.07) 5px, rgba(205,242,255,.07) 6px);
-  mask-image: radial-gradient(ellipse 70% 70% at 50% 50%, transparent 28%, black 68%);
-  -webkit-mask-image: radial-gradient(ellipse 70% 70% at 50% 50%, transparent 28%, black 68%);
+  background: radial-gradient(ellipse 96% 96% at 50% 50%,
+    transparent 38%,
+    rgba(185,228,255,.16) 62%,
+    rgba(210,242,255,.34) 82%,
+    rgba(228,248,255,.48) 100%);
+  animation: pdv-mist 4.8s ease-in-out 1.6s infinite alternate-reverse;
 }
-/* Reflexo de luz passando pelo gelo */
+/* Camada 3: névoa interna mais fina, cria profundidade */
 .pdv-frost::after {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(
-    118deg,
-    transparent 0%, transparent 32%,
-    rgba(225,250,255,.60) 44%,
-    rgba(248,254,255,.88) 50%,
-    rgba(225,250,255,.60) 56%,
-    transparent 68%, transparent 100%
-  );
-  background-size: 200% 200%;
-  animation: pdv-frost-shimmer 5.5s ease-in-out infinite;
-  mask-image: radial-gradient(ellipse 73% 73% at 50% 50%, transparent 22%, black 62%);
-  -webkit-mask-image: radial-gradient(ellipse 73% 73% at 50% 50%, transparent 22%, black 62%);
+  background: radial-gradient(ellipse 78% 78% at 50% 50%,
+    transparent 44%,
+    rgba(140,210,255,.12) 66%,
+    rgba(100,185,252,.28) 85%,
+    rgba(70,158,242,.44) 100%);
+  animation: pdv-mist 5.8s ease-in-out 3.0s infinite alternate;
 }
-@keyframes pdv-frost-pulse {
-  from { opacity: .70; }
-  to   { opacity: 1;   }
-}
-@keyframes pdv-frost-shimmer {
-  0%   { background-position: 200% 200%; opacity: .45; }
-  45%  { opacity: 1; }
-  55%  { opacity: 1; }
-  100% { background-position: -100% -100%; opacity: .45; }
+@keyframes pdv-mist {
+  from { opacity: .30; transform: scale(1);    }
+  to   { opacity: 1;   transform: scale(1.04); }
 }
 
 /* =========================================================
