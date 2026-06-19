@@ -1372,54 +1372,59 @@
   inset: 0;
   pointer-events: none;
   z-index: 2;
+  /* Gelo pesado nas bordas e cantos, centro limpo */
   background:
-    linear-gradient(to bottom, rgba(185,235,255,.42) 0%, transparent 30%),
-    linear-gradient(to top,    rgba(165,225,255,.32) 0%, transparent 25%),
-    linear-gradient(to right,  rgba(175,230,255,.26) 0%, transparent 22%),
-    linear-gradient(to left,   rgba(175,230,255,.26) 0%, transparent 22%);
-  animation: pdv-frost-pulse 3.5s ease-in-out infinite alternate;
+    radial-gradient(ellipse 85% 48% at 50% -2%,   rgba(228,248,255,.88) 0%, transparent 68%),
+    radial-gradient(ellipse 85% 48% at 50% 102%,  rgba(215,244,255,.82) 0%, transparent 68%),
+    radial-gradient(ellipse 40% 110% at -2% 50%,  rgba(222,246,255,.78) 0%, transparent 68%),
+    radial-gradient(ellipse 40% 110% at 102% 50%, rgba(222,246,255,.78) 0%, transparent 68%),
+    radial-gradient(ellipse 45% 45% at   0%   0%, rgba(238,252,255,.92) 0%, transparent 62%),
+    radial-gradient(ellipse 45% 45% at 100%   0%, rgba(238,252,255,.92) 0%, transparent 62%),
+    radial-gradient(ellipse 45% 45% at   0% 100%, rgba(238,252,255,.92) 0%, transparent 62%),
+    radial-gradient(ellipse 45% 45% at 100% 100%, rgba(238,252,255,.92) 0%, transparent 62%);
+  animation: pdv-frost-pulse 3.8s ease-in-out infinite alternate;
 }
+/* Textura de cristais de gelo nas bordas */
 .pdv-frost::before {
   content: '';
   position: absolute;
   inset: 0;
-  background:
-    repeating-linear-gradient( 45deg, transparent, transparent 7px, rgba(200,242,255,.07) 7px, rgba(200,242,255,.07) 8px),
-    repeating-linear-gradient(-45deg, transparent, transparent 7px, rgba(200,242,255,.07) 7px, rgba(200,242,255,.07) 8px);
+  background-image:
+    repeating-linear-gradient( 22deg, transparent, transparent 3px, rgba(195,238,255,.10) 3px, rgba(195,238,255,.10) 4px),
+    repeating-linear-gradient(-22deg, transparent, transparent 3px, rgba(195,238,255,.10) 3px, rgba(195,238,255,.10) 4px),
+    repeating-linear-gradient( 68deg, transparent, transparent 5px, rgba(205,242,255,.07) 5px, rgba(205,242,255,.07) 6px),
+    repeating-linear-gradient(-68deg, transparent, transparent 5px, rgba(205,242,255,.07) 5px, rgba(205,242,255,.07) 6px);
+  mask-image: radial-gradient(ellipse 70% 70% at 50% 50%, transparent 28%, black 68%);
+  -webkit-mask-image: radial-gradient(ellipse 70% 70% at 50% 50%, transparent 28%, black 68%);
 }
+/* Reflexo de luz passando pelo gelo */
 .pdv-frost::after {
   content: '';
   position: absolute;
   inset: 0;
-  background: radial-gradient(ellipse at 50% 50%, rgba(155,218,255,.14) 0%, transparent 68%);
-  animation: pdv-frost-pulse 2.8s ease-in-out infinite alternate-reverse;
+  background: linear-gradient(
+    118deg,
+    transparent 0%, transparent 32%,
+    rgba(225,250,255,.60) 44%,
+    rgba(248,254,255,.88) 50%,
+    rgba(225,250,255,.60) 56%,
+    transparent 68%, transparent 100%
+  );
+  background-size: 200% 200%;
+  animation: pdv-frost-shimmer 5.5s ease-in-out infinite;
+  mask-image: radial-gradient(ellipse 73% 73% at 50% 50%, transparent 22%, black 62%);
+  -webkit-mask-image: radial-gradient(ellipse 73% 73% at 50% 50%, transparent 22%, black 62%);
 }
 @keyframes pdv-frost-pulse {
-  from { opacity: .65; }
+  from { opacity: .70; }
   to   { opacity: 1;   }
 }
-
-/* flocos caindo */
-@keyframes pdv-flake {
-  0%   { opacity: 0; transform: translateY(-8%) rotate(0deg); }
-  10%  { opacity: 1; }
-  88%  { opacity: .85; }
-  100% { opacity: 0; transform: translateY(108%) rotate(270deg); }
+@keyframes pdv-frost-shimmer {
+  0%   { background-position: 200% 200%; opacity: .45; }
+  45%  { opacity: 1; }
+  55%  { opacity: 1; }
+  100% { background-position: -100% -100%; opacity: .45; }
 }
-.pdv-flake {
-  position: absolute;
-  top: 0;
-  left: var(--x, 40%);
-  font-size: 20px;
-  line-height: 1;
-  color: rgba(135, 222, 255, .95);
-  text-shadow: 0 0 14px rgba(70, 185, 255, .9);
-  pointer-events: none;
-  z-index: 4;
-  animation: pdv-flake 3.4s ease-in-out var(--d, 0s) infinite;
-}
-.pdv-flake:nth-child(2) { font-size: 13px; }
-.pdv-flake:nth-child(3) { font-size: 26px; }
 
 /* =========================================================
    RELATÓRIOS
