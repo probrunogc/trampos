@@ -1316,7 +1316,7 @@
 .prod-img {
   display: grid;
   place-items: center;
-  background: linear-gradient(180deg, #fbfaf6 0%, #e9e7df 100%);
+  background: #ffffff;
   border-radius: var(--r-md);
   overflow: hidden;
   flex-shrink: 0;
