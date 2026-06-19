@@ -59,16 +59,16 @@ const PAYMENTS = [
 ];
 
 const CIGARRO_BRANDS = [
-  { id: 'lucky-strike',     name: 'Lucky Strike',     price: 10.00 },
-  { id: 'duhil-cereja',     name: 'Duhil Cereja',     price:  8.00 },
-  { id: 'duhil-melancia',   name: 'Duhil Melancia',   price:  8.00 },
-  { id: 'duhil-normal',     name: 'Duhil Normal',     price:  8.00 },
-  { id: 'rottman-normal',   name: 'Rottman Normal',   price:  8.00 },
-  { id: 'rottman-cereja',   name: 'Rottman Cereja',   price:  8.00 },
-  { id: 'rottman-melancia', name: 'Rottman Melancia', price:  8.00 },
-  { id: 'black',            name: 'Black',            price: 12.00 },
-  { id: '0800',             name: '0800',             price:  7.00 },
-  { id: '0800-menta',       name: '0800 Menta',       price:  7.00 },
+  { id: 'lucky-strike',      name: 'Lucky Strike',      price: 10.00 },
+  { id: 'dunhill-cereja',    name: 'Dunhill Cereja',    price:  8.00 },
+  { id: 'dunhill-melancia',  name: 'Dunhill Melancia',  price:  8.00 },
+  { id: 'dunhill-normal',    name: 'Dunhill Normal',    price:  8.00 },
+  { id: 'rothmans-normal',   name: 'Rothmans Normal',   price:  8.00 },
+  { id: 'rothmans-cereja',   name: 'Rothmans Cereja',   price:  8.00 },
+  { id: 'rothmans-melancia', name: 'Rothmans Melancia', price:  8.00 },
+  { id: 'black',             name: 'Black',             price: 12.00 },
+  { id: '0800',              name: '0800',              price:  7.00 },
+  { id: '0800-menta',        name: '0800 Menta',        price:  7.00 },
 ];
 
 const DOSE_BRANDS = [
