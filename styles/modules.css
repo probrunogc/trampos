@@ -1338,8 +1338,8 @@
   margin-bottom: var(--sp-2);
 }
 .pdv-product-img img {
-  object-fit: contain;
-  padding: 4%;
+  object-fit: cover;
+  padding: 0;
 }
 
 /* =========================================================
