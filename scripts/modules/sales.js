@@ -110,7 +110,7 @@ export async function render(root) {
           </button>
         </div>
         <div id="pdv-check-result" style="display:none;padding:var(--sp-3) var(--sp-4);border-bottom:1px solid var(--line)"></div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:10px 12px 0">
+        <div style="display:flex;flex-wrap:wrap;gap:6px;padding:10px 12px 0">
           <button id="pdv-quick-cigarro" type="button" class="pdv-quick-btn pdv-quick-btn--cigarro">
             <svg class="pdv-quick-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
               <rect x="1" y="10.5" width="15" height="3" rx="1.5"/>
