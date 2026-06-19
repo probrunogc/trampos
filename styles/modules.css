@@ -1341,7 +1341,7 @@
 .pdv-product-img img {
   object-fit: cover;
   padding: 0;
-  transform: scale(1.15);
+  transform: scale(1.05);
 }
 
 /* =========================================================
