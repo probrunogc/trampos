@@ -1835,15 +1835,6 @@ function paintProducts() {
         const frost = document.createElement('div');
         frost.className = 'pdv-frost';
         imgDiv.appendChild(frost);
-        const flakePos = [['12%','0s'],['48%','1.1s'],['78%','2.0s']];
-        flakePos.forEach(([x, d]) => {
-          const el = document.createElement('span');
-          el.className = 'pdv-flake';
-          el.textContent = '❄';
-          el.style.setProperty('--x', x);
-          el.style.setProperty('--d', d);
-          imgDiv.appendChild(el);
-        });
       }
     }
     card.onclick = () => addToCart(card.dataset.id);
