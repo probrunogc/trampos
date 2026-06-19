@@ -87,6 +87,8 @@ export async function render(root) {
   state.cart = [];
   state.customer = null;
   state.discount = 0;
+  state.discountRaw = 0;
+  state.discountType = 'R$';
   state.deliveryFee = 0;
   state.needsDelivery = false;
   state.note = '';
@@ -2014,7 +2016,10 @@ function paintCart() {
 
 function _calcTotals() {
   const subtotal = state.cart.reduce((s, i) => s + i.qty * i.unitPrice, 0);
-  const discount = Math.max(0, state.discount || 0);
+  const raw = Math.max(0, state.discountRaw || 0);
+  const discount = Math.min(subtotal, state.discountType === '%'
+    ? parseFloat((subtotal * raw / 100).toFixed(2))
+    : raw);
   const deliveryFee = state.needsDelivery ? (state.deliveryFee || 0) : 0;
   const payMethod = PAYMENTS.find(p => p.id === state.paymentMethod);
   const payFeeRate = payMethod?.fee || 0;
@@ -2034,9 +2039,12 @@ function paintTotals() {
     </div>
     <div class="pdv-total-row">
       <span>Desconto</span>
-      <span>
-        <input type="number" min="0" step="0.01" value="${discount}"
-          id="pdv-discount" style="${inputStyle}" />
+      <span style="display:flex;align-items:center;gap:5px">
+        <button id="pdv-disc-toggle" type="button" class="disc-type-btn">${state.discountType === '%' ? '%' : 'R$'}</button>
+        <input type="number" min="0" step="${state.discountType === '%' ? '1' : '0.01'}"
+               max="${state.discountType === '%' ? '100' : ''}"
+               value="${state.discountRaw || 0}"
+               id="pdv-discount" style="${inputStyle}" />
       </span>
     </div>
     ${state.needsDelivery ? `
@@ -2065,8 +2073,15 @@ function paintTotals() {
     ], { duration: 220, easing: 'cubic-bezier(.34, 1.56, .64, 1)' });
   }
 
+  const discToggle = document.getElementById('pdv-disc-toggle');
+  if (discToggle) discToggle.onclick = () => {
+    state.discountType = state.discountType === 'R$' ? '%' : 'R$';
+    state.discountRaw = 0;
+    paintTotals();
+    setTimeout(() => document.getElementById('pdv-discount')?.focus(), 30);
+  };
   const disc = document.getElementById('pdv-discount');
-  if (disc) disc.onchange = (e) => { state.discount = parseFloat(e.target.value) || 0; paintTotals(); };
+  if (disc) disc.oninput = (e) => { state.discountRaw = parseFloat(e.target.value) || 0; paintTotals(); };
   const fi = document.getElementById('pdv-fee');
   if (fi) fi.onchange = (e) => { state.deliveryFee = parseFloat(e.target.value) || 0; paintTotals(); };
   paintTroco();
@@ -2350,6 +2365,8 @@ async function finishSale() {
     state.cart = [];
     state.customer = null;
     state.discount = 0;
+    state.discountRaw = 0;
+    state.discountType = 'R$';
     state.deliveryFee = 0;
     state.needsDelivery = false;
     state.note = '';
