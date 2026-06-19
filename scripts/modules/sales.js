@@ -506,7 +506,12 @@ async function openFecharCaixaModal() {
   const fecharBtn  = el('button', { class: 'btn btn-danger',  type: 'button' }, 'Fechar caixa');
   fecharBtn.disabled = true;
 
-  ui.modal({ title: 'Fechamento de caixa', body, footer: [cancelBtn, printBtn, fecharBtn] });
+  const fcAc = new AbortController();
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !fecharBtn.disabled) { e.preventDefault(); fecharBtn.click(); }
+  }, { signal: fcAc.signal });
+  ui.modal({ title: 'Fechamento de caixa', body, footer: [cancelBtn, printBtn, fecharBtn] })
+    .then(() => fcAc.abort());
 
   let sales, sangrias, caixa;
   try {
@@ -580,6 +585,9 @@ async function openFecharCaixaModal() {
   };
   printBtn.onclick = () => printRelatorioFechamento(getPrintData());
 
+  document.getElementById('fc-counted').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !fecharBtn.disabled) { e.preventDefault(); fecharBtn.click(); }
+  });
   document.getElementById('fc-counted').oninput = function () {
     const counted = parseFloat(this.value);
     const diffRow = document.getElementById('fc-diff');
@@ -814,6 +822,8 @@ function openShortcutsHelp() {
 function wireShortcuts() {
   if (window._pdvShortcutHandler) document.removeEventListener('keydown', window._pdvShortcutHandler);
 
+  const selectPayment = (id) => document.querySelector(`[data-pay="${id}"]`)?.click();
+
   window._pdvShortcutHandler = (e) => {
     // Não ativa se houver modal aberto ou foco em campo de texto
     const mh = document.getElementById('modal-host');
@@ -821,12 +831,31 @@ function wireShortcuts() {
     const tag = document.activeElement?.tagName?.toLowerCase();
     if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
 
+    // Impede browser back no Backspace
+    if (e.key === 'Backspace') { e.preventDefault(); return; }
+
     if (e.key === 'F1') { e.preventDefault(); document.getElementById('pdv-quick-cigarro')?.click(); }
     if (e.key === 'F2') { e.preventDefault(); document.getElementById('pdv-quick-dose')?.click(); }
     if (e.key === 'F3') { e.preventDefault(); document.getElementById('pdv-finish')?.click(); }
     if (e.key === 'F4') { e.preventDefault(); document.getElementById('pdv-sangria')?.click(); }
     if (e.key === 'F6') { e.preventDefault(); document.getElementById('pdv-fechar-caixa')?.click(); }
     if (e.key === 'F8') { e.preventDefault(); document.getElementById('pdv-clear')?.click(); }
+
+    // Teclas numéricas para método de pagamento
+    if (e.key === '1') { e.preventDefault(); selectPayment('dinheiro'); }
+    if (e.key === '2') { e.preventDefault(); selectPayment('pix'); }
+    if (e.key === '3') { e.preventDefault(); selectPayment('debito'); }
+    if (e.key === '4') { e.preventDefault(); selectPayment('credito'); }
+
+    // Setas navegam entre botões de pagamento
+    const payBtns = [...(document.getElementById('pdv-pay-grid')?.querySelectorAll('.pdv-pay-btn') || [])];
+    if (payBtns.length && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
+      const pi = payBtns.indexOf(document.activeElement);
+      if (pi >= 0) {
+        e.preventDefault();
+        payBtns[(pi + (e.key === 'ArrowRight' ? 1 : -1) + payBtns.length) % payBtns.length].focus();
+      }
+    }
   };
 
   document.addEventListener('keydown', window._pdvShortcutHandler);
