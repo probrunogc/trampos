@@ -265,57 +265,46 @@
 }
 .pdv-product {
   position: relative;
-  background: linear-gradient(160deg, rgba(30,54,97,0.6), rgba(15,31,58,0.85));
-  border: 1px solid var(--line);
+  background: transparent;
+  border: none;
   border-radius: var(--r-md);
-  padding: var(--sp-3);
+  padding: 0;
   cursor: pointer;
-  transition: border-color 80ms var(--ease-out), transform 70ms var(--ease-out), box-shadow 80ms var(--ease-out);
+  overflow: hidden;
+  transition: transform 70ms var(--ease-out), box-shadow 80ms var(--ease-out);
   display: flex;
   flex-direction: column;
-  min-height: 110px;
 }
 .pdv-product:hover {
-  border-color: var(--gold-500);
   transform: translateY(-2px) scale(1.01);
   box-shadow: 0 8px 24px rgba(0,0,0,0.45);
 }
-.pdv-product-cat {
-  font-size: 0.66rem;
-  font-weight: 600;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--gold-300);
-  margin-bottom: 4px;
-}
+.pdv-product-cat  { display: none; }
+.pdv-product-price { display: none; }
+.pdv-product-stock { display: none; }
 .pdv-product-name {
-  font-weight: 700;
-  font-size: 0.92rem;
-  color: var(--cream);
-  flex: 1;
-  margin-bottom: var(--sp-2);
-  line-height: 1.25;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  margin: 0;
+  padding: 22px 10px 9px;
+  background: linear-gradient(transparent, rgba(0,0,0,0.68));
+  color: rgba(255,255,255,0.93);
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-align: center;
+  line-height: 1.3;
+  z-index: 5;
+  opacity: 0;
+  transition: opacity 160ms ease;
 }
-.pdv-product-price {
-  font-family: var(--font-brand);
-  font-weight: 700;
-  font-size: 1.05rem;
-  letter-spacing: 0.02em;
-  background: var(--grad-gold-text);
-  -webkit-background-clip: text;
-          background-clip: text;
-  color: transparent;
-  -webkit-text-fill-color: transparent;
+.pdv-product:hover .pdv-product-name,
+.pdv-product:active .pdv-product-name {
+  opacity: 1;
 }
-.pdv-product-stock {
-  font-size: 0.72rem;
-  color: var(--text-3);
-  margin-top: 2px;
-}
-.pdv-product-stock.low { color: var(--warning); }
-.pdv-product-stock.zero { color: var(--danger); }
 .pdv-product.out { opacity: 0.5; cursor: not-allowed; }
-.pdv-product.out:hover { transform: none; border-color: var(--line); }
+.pdv-product.out:hover { transform: none; }
 
 /* Carrinho */
 .pdv-cart {
@@ -1336,7 +1325,7 @@
   width: 100%;
   aspect-ratio: 3 / 4;
   height: auto;
-  margin-bottom: var(--sp-2);
+  margin-bottom: 0;
   overflow: hidden;
 }
 .pdv-product-img img {
@@ -1717,7 +1706,7 @@
 [data-theme="light"] .rep-dose-bar-track { background: var(--bg-inset); }
 
 [data-theme="light"] .pdv-product {
-  background: linear-gradient(160deg, rgba(255,255,255,0.92), rgba(248,244,236,0.95));
+  background: transparent;
 }
 
 [data-theme="light"] table.data-table tbody tr {
