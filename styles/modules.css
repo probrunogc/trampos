@@ -1332,6 +1332,7 @@
 .prod-cell { display: flex; align-items: center; gap: var(--sp-3); }
 
 .pdv-product-img {
+  position: relative;
   width: 100%;
   aspect-ratio: 3 / 4;
   height: auto;
@@ -1342,6 +1343,63 @@
   object-fit: cover;
   padding: 0;
   transform: scale(1.05);
+}
+
+/* Smoke animation — Cigarro */
+@keyframes pdv-smoke {
+  0%   { opacity: 0; transform: translateY(0) scale(0.5); filter: blur(3px); }
+  25%  { opacity: 0.55; }
+  100% { opacity: 0; transform: translateY(-55px) scale(2.5); filter: blur(14px); }
+}
+.pdv-product[data-category="Cigarro"]:hover .pdv-product-img::before,
+.pdv-product[data-category="Cigarro"]:hover .pdv-product-img::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(215, 210, 205, 0.5);
+  pointer-events: none;
+  z-index: 3;
+}
+.pdv-product[data-category="Cigarro"]:hover .pdv-product-img::before {
+  width: 18px; height: 18px;
+  bottom: 18%; left: 28%;
+  animation: pdv-smoke 2.4s ease-out infinite;
+}
+.pdv-product[data-category="Cigarro"]:hover .pdv-product-img::after {
+  width: 14px; height: 14px;
+  bottom: 18%; left: 58%;
+  animation: pdv-smoke 2.4s ease-out 1.2s infinite;
+}
+
+/* Snowflake animation — Cerveja */
+@keyframes pdv-snowflake {
+  0%   { opacity: 0; transform: translateY(0) rotate(0deg) scale(0.6); }
+  15%  { opacity: 1; }
+  85%  { opacity: 0.8; }
+  100% { opacity: 0; transform: translateY(44px) rotate(180deg) scale(0.9); }
+}
+.pdv-product[data-category="Cerveja"]:hover .pdv-product-img::before,
+.pdv-product[data-category="Cerveja"]:hover .pdv-product-img::after {
+  position: absolute;
+  pointer-events: none;
+  z-index: 3;
+  line-height: 1;
+}
+.pdv-product[data-category="Cerveja"]:hover .pdv-product-img::before {
+  content: '❄';
+  font-size: 22px;
+  color: rgba(130, 215, 255, 0.95);
+  text-shadow: 0 0 10px rgba(80, 180, 255, 0.8);
+  top: 10%; left: 12%;
+  animation: pdv-snowflake 2.1s ease-in-out infinite;
+}
+.pdv-product[data-category="Cerveja"]:hover .pdv-product-img::after {
+  content: '❄';
+  font-size: 16px;
+  color: rgba(170, 235, 255, 0.85);
+  text-shadow: 0 0 8px rgba(80, 180, 255, 0.7);
+  top: 8%; right: 12%;
+  animation: pdv-snowflake 2.7s ease-in-out 1.0s infinite;
 }
 
 /* =========================================================

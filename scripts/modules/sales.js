@@ -1805,7 +1805,7 @@ function paintProducts() {
     const out = (p.stock || 0) <= 0;
     const low = !out && p.minStock != null && p.stock <= p.minStock;
     return `
-      <div class="pdv-product ${out ? 'out' : ''}" data-id="${p.id}">
+      <div class="pdv-product ${out ? 'out' : ''}" data-id="${p.id}" data-category="${p.category || ''}">
         ${productImage(p, { cls: 'pdv-product-img' })}
         <div class="pdv-product-cat">${fmt.escape(p.category || '')}</div>
         <div class="pdv-product-name">${fmt.escape(p.name)}</div>
