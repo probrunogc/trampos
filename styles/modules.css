@@ -257,7 +257,7 @@
 .pdv-grid {
   flex: 1;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(145px, 1fr));
   gap: var(--sp-3);
   padding: var(--sp-4);
   overflow-y: auto;
@@ -1333,7 +1333,8 @@
 
 .pdv-product-img {
   width: 100%;
-  height: 92px;
+  aspect-ratio: 3 / 4;
+  height: auto;
   margin-bottom: var(--sp-2);
 }
 
@@ -1554,7 +1555,6 @@
 @media (max-width: 600px) {
   .rep-dose-bar-name { width: 96px; }
   .rep-pay-val { min-width: 78px; }
-  .pdv-product-img { height: 80px; }
 }
 
 /* =========================================================
@@ -1722,8 +1722,8 @@
 
 /* Grid: fill 1366px canvas with well-proportioned touch targets */
 .kiosk-mode .pdv-grid {
-  grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
-  grid-auto-rows: 180px;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  grid-auto-rows: 240px;
   gap: var(--sp-3);
   padding: var(--sp-3) var(--sp-4);
 }
@@ -1733,7 +1733,7 @@
   padding: 0;
   overflow: hidden;
   position: relative;
-  height: 180px;
+  height: 240px;
   border-radius: 14px;
   transition: transform .14s ease, border-color .14s ease, box-shadow .14s ease;
 }
