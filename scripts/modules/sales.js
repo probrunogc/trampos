@@ -287,8 +287,8 @@ export async function render(root) {
   paintTroco();
 
   // Quick-add atalhos
-  document.getElementById('pdv-quick-cigarro').onclick  = () => openBrandModal(CIGARRO_BRANDS, 'Cigarro — Retalho', { openLabel: 'Abrir carteira' });
-  document.getElementById('pdv-quick-dose').onclick     = () => openBrandModal(DOSE_BRANDS,    'Dose — Venda',       { openLabel: 'Abrir garrafa' });
+  document.getElementById('pdv-quick-cigarro').onclick  = () => openBrandModal(CIGARRO_BRANDS, 'Cigarro — Retalho', { openLabel: 'Abrir carteira', category: 'Cigarro' });
+  document.getElementById('pdv-quick-dose').onclick     = () => openBrandModal(DOSE_BRANDS,    'Dose — Venda',       { openLabel: 'Abrir garrafa', category: 'Dose'    });
 
   // Delivery toggle
   document.getElementById('pdv-delivery').onchange = (e) => {
@@ -599,10 +599,6 @@ async function openFecharCaixaModal() {
 
 /* ─── Relatório de Fechamento de Caixa ──────────────────────── */
 function printRelatorioFechamento({ sales, sangrias, caixa, byMethod, grandTotal, totalCount, totalSangrias, fundo, expectedCash, counted }) {
-  // Índice de produtos por id (para resolver categoria)
-  const prodById = {};
-  for (const p of (state.products || [])) prodById[p.id] = p;
-
   // Agrega por nome (produto mais vendido) e por categoria
   const nameMap = {};
   const catMap  = {};
@@ -612,11 +608,9 @@ function printRelatorioFechamento({ sales, sangrias, caixa, byMethod, grandTotal
     if (s.status === 'cancelled') continue;
     for (const it of (s.items || [])) {
       const qty = it.qty || 1;
-      // Por nome
       if (!nameMap[it.name]) nameMap[it.name] = 0;
       nameMap[it.name] += qty;
-      // Por categoria
-      const cat = prodById[it.productId]?.category || 'Outros';
+      const cat = it.category || 'Outros';
       catMap[cat] = (catMap[cat] || 0) + qty;
       totalItems += qty;
     }
@@ -1136,7 +1130,7 @@ function openBrandModal(brands, title, opts = {}) {
       const unitPrice = prices[b.id] ?? b.price;
       const existing = state.cart.find(i => i.productId == null && i.name === b.name);
       if (existing) { existing.qty += qty; }
-      else { state.cart.push({ productId: null, name: b.name, unitPrice, costPrice: 0, qty, stock: null }); }
+      else { state.cart.push({ productId: null, name: b.name, unitPrice, costPrice: 0, qty, stock: null, category: opts.category || 'Outros' }); }
       added++;
     }
     if (added === 0) { ui.toast('Selecione ao menos um item.', 'warning'); return false; }
@@ -1257,7 +1251,7 @@ function openBrandModal(brands, title, opts = {}) {
       const unitPrice = prices[brand.id] ?? brand.price;
       const existing = state.cart.find(i => i.productId == null && i.name === brand.name);
       if (existing) { existing.qty += qty; }
-      else { state.cart.push({ productId: null, name: brand.name, unitPrice, costPrice: 0, qty, stock: null }); }
+      else { state.cart.push({ productId: null, name: brand.name, unitPrice, costPrice: 0, qty, stock: null, category: opts.category || 'Outros' }); }
       paintCart();
       paintTotals();
       ui.closeModal(true);
@@ -1497,7 +1491,7 @@ function openQuickAdd(category, title, opts = {}) {
       if (existing) {
         existing.qty += qty;
       } else {
-        state.cart.push({ productId: p.id, name: p.name, unitPrice, costPrice: p.costPrice || 0, qty, stock: p.stock });
+        state.cart.push({ productId: p.id, name: p.name, unitPrice, costPrice: p.costPrice || 0, qty, stock: p.stock, category: p.category || 'Outros' });
       }
       added++;
     }
@@ -1634,7 +1628,8 @@ function addToCart(productId) {
       unitPrice: p.price,
       costPrice: p.costPrice || 0,
       qty: 1,
-      stock: p.stock
+      stock: p.stock,
+      category: p.category || 'Outros'
     });
   }
   paintCart();
@@ -1964,6 +1959,7 @@ async function finishSale() {
       items: state.cart.map(i => ({
         productId: i.productId,
         name: i.name,
+        category: i.category || 'Outros',
         qty: i.qty,
         unitPrice: i.unitPrice,
         unitCost: i.costPrice || 0,
