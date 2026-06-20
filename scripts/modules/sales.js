@@ -326,6 +326,7 @@ export async function render(root) {
     });
     if (ok) {
       state.cart = [];
+      state.payments = [];
       paintAll();
     }
   };
@@ -814,8 +815,6 @@ function openShortcutsHelp() {
 function wireShortcuts() {
   if (window._pdvShortcutHandler) document.removeEventListener('keydown', window._pdvShortcutHandler);
 
-  const selectPayment = (id) => document.querySelector(`[data-pay="${id}"]`)?.click();
-
   window._pdvShortcutHandler = (e) => {
     // Não ativa se houver modal aberto ou foco em campo de texto
     const mh = document.getElementById('modal-host');
@@ -1141,7 +1140,7 @@ function showCheckResult(product, code) {
     </div>`;
 }
 
-function paintAll() { paintProducts(); paintCart(); paintTotals(); paintPayments(); }
+function paintAll() { paintProducts(); paintCart(); paintTotals(); }
 
 /* ─── Copão modal ────────────────────────────────────────────── */
 function openCopaoModal() {
@@ -2017,16 +2016,15 @@ function _calcTotals() {
     ? parseFloat((subtotal * raw / 100).toFixed(2))
     : raw);
   const deliveryFee = state.needsDelivery ? (state.deliveryFee || 0) : 0;
-  const payMethod = PAYMENTS.find(p => p.id === state.paymentMethod);
-  const payFeeRate = payMethod?.fee || 0;
+  const payFeeRate = 0;
   const base = Math.max(0, subtotal - discount + deliveryFee);
-  const paymentFee = Math.round(base * payFeeRate) / 100;
-  const total = Math.max(0, base + paymentFee);
-  return { subtotal, discount, deliveryFee, payFeeRate, paymentFee, payMethod, base, total };
+  const paymentFee = 0;
+  const total = Math.max(0, base);
+  return { subtotal, discount, deliveryFee, payFeeRate, paymentFee, base, total };
 }
 
 function paintTotals() {
-  const { subtotal, discount, deliveryFee, payFeeRate, paymentFee, payMethod, total } = _calcTotals();
+  const { subtotal, discount, deliveryFee, total } = _calcTotals();
   const inputStyle = 'width:80px;padding:3px 6px;border:1px solid var(--line);background:transparent;border-radius:4px;color:var(--cream);text-align:right';
 
   document.getElementById('pdv-totals').innerHTML = `
@@ -2050,11 +2048,6 @@ function paintTotals() {
           <input type="number" min="0" step="0.01" value="${deliveryFee}"
             id="pdv-fee" style="${inputStyle}" />
         </span>
-      </div>` : ''}
-    ${payFeeRate > 0 ? `
-      <div class="pdv-total-row" style="font-size:.82rem;color:var(--text-2)">
-        <span>Taxa ${payMethod.label} (${payFeeRate}%)</span>
-        <span>+ ${fmt.currency(paymentFee)}</span>
       </div>` : ''}
     <div class="pdv-total-row grand">
       <span>TOTAL</span><span class="total-value">${fmt.currency(total)}</span>
