@@ -92,7 +92,7 @@ export async function render(root) {
   state.deliveryFee = 0;
   state.needsDelivery = false;
   state.note = '';
-  state.paymentMethod = 'dinheiro';
+  state.payments = [];
   state.received = 0;
   state.caixaId = null;
   state.caixaFundo = 0;
@@ -175,21 +175,12 @@ export async function render(root) {
             <div class="pdv-payment-label">Pagamento</div>
             <div class="pdv-pay-grid" id="pdv-pay-grid">
               ${PAYMENTS.map(p => `
-                <button type="button" class="pdv-pay-btn${p.id === 'dinheiro' ? ' active' : ''}" data-pay="${p.id}">
+                <button type="button" class="pdv-pay-btn" data-pay="${p.id}">
                   <span class="pdv-pay-icon">${p.icon}</span>
                   <span class="pdv-pay-label">${p.label}</span>
                 </button>`).join('')}
             </div>
-            <div id="pdv-troco-wrap" class="pdv-troco-section" style="display:none">
-              <div class="pdv-troco-row">
-                <span>Recebido</span>
-                <input type="number" id="pdv-received" min="0" step="0.01" placeholder="0,00" class="pdv-troco-input" />
-              </div>
-              <div class="pdv-troco-row pdv-troco-change">
-                <span>Troco</span>
-                <strong id="pdv-troco-val">R$ 0,00</strong>
-              </div>
-            </div>
+            <div id="pdv-splits"></div>
           </div>
           <label class="switch" style="margin-bottom: var(--sp-3)">
             <input type="checkbox" id="pdv-delivery" />
@@ -205,6 +196,7 @@ export async function render(root) {
           <div class="pdv-caixa-bar">
             <button id="pdv-sangria" type="button" class="pdv-caixa-btn">Sangria</button>
             <span id="pdv-caixa-info" class="pdv-caixa-info">Verificando caixa...</span>
+            <button id="pdv-estoque" type="button" class="pdv-caixa-btn">Estoque</button>
             <button id="pdv-fechar-caixa" type="button" class="pdv-caixa-btn">Fechar caixa</button>
             <button id="pdv-shortcuts-help" type="button" class="pdv-shortcuts-help-btn" title="Atalhos do teclado">?</button>
           </div>
@@ -289,23 +281,19 @@ export async function render(root) {
   // Customer
   document.getElementById('pdv-customer').onclick = openCustomerPicker;
 
-  // Payment buttons
+  // Payment buttons — clicking ADDS a split entry with remaining amount
   document.getElementById('pdv-pay-grid').querySelectorAll('[data-pay]').forEach(btn => {
     btn.onclick = () => {
-      state.paymentMethod = btn.dataset.pay;
-      state.received = 0;
-      document.getElementById('pdv-pay-grid').querySelectorAll('.pdv-pay-btn')
-        .forEach(b => b.classList.toggle('active', b.dataset.pay === state.paymentMethod));
-      const recvInput = document.getElementById('pdv-received');
-      if (recvInput) recvInput.value = '';
-      paintTotals();
+      const method = btn.dataset.pay;
+      const { total } = _calcTotals();
+      const paid = state.payments.reduce((s, p) => s + (p.amount || 0), 0);
+      const remaining = parseFloat(Math.max(0, total - paid).toFixed(2));
+      if (remaining <= 0) { ui.toast('Total já coberto pelos pagamentos', 'warning'); return; }
+      state.payments.push({ method, amount: remaining });
+      paintPayments();
     };
   });
-  document.getElementById('pdv-received').oninput = e => {
-    state.received = parseFloat(e.target.value) || 0;
-    paintTroco();
-  };
-  paintTroco();
+  paintPayments();
 
   // Quick-add atalhos
   document.getElementById('pdv-quick-cigarro').onclick  = () => openBrandModal(CIGARRO_BRANDS, 'Cigarro — Retalho', { openLabel: 'Abrir carteira', category: 'Cigarro' });
@@ -338,6 +326,7 @@ export async function render(root) {
     });
     if (ok) {
       state.cart = [];
+      state.payments = [];
       paintAll();
     }
   };
@@ -347,6 +336,7 @@ export async function render(root) {
 
   // Caixa operations
   document.getElementById('pdv-sangria').onclick     = openSangriaModal;
+  document.getElementById('pdv-estoque').onclick     = openStockModal;
   document.getElementById('pdv-fechar-caixa').onclick = openFecharCaixaModal;
   document.getElementById('pdv-shortcuts-help').onclick = openShortcutsHelp;
 
@@ -808,6 +798,7 @@ function openShortcutsHelp() {
         <tr><td class="sk-key">F2</td><td>Dose — Venda rápida</td></tr>
         <tr><td class="sk-key">F3</td><td>Finalizar venda</td></tr>
         <tr><td class="sk-key">F4</td><td>Sangria de caixa</td></tr>
+        <tr><td class="sk-key">F5</td><td>Editar estoque</td></tr>
         <tr><td class="sk-key">F6</td><td>Fechar caixa</td></tr>
         <tr><td class="sk-key">F8</td><td>Limpar carrinho</td></tr>
       </tbody>
@@ -824,8 +815,6 @@ function openShortcutsHelp() {
 function wireShortcuts() {
   if (window._pdvShortcutHandler) document.removeEventListener('keydown', window._pdvShortcutHandler);
 
-  const selectPayment = (id) => document.querySelector(`[data-pay="${id}"]`)?.click();
-
   window._pdvShortcutHandler = (e) => {
     // Não ativa se houver modal aberto ou foco em campo de texto
     const mh = document.getElementById('modal-host');
@@ -840,14 +829,20 @@ function wireShortcuts() {
     if (e.key === 'F2') { e.preventDefault(); document.getElementById('pdv-quick-dose')?.click(); }
     if (e.key === 'F3') { e.preventDefault(); document.getElementById('pdv-finish')?.click(); }
     if (e.key === 'F4') { e.preventDefault(); document.getElementById('pdv-sangria')?.click(); }
+    if (e.key === 'F5') { e.preventDefault(); document.getElementById('pdv-estoque')?.click(); }
     if (e.key === 'F6') { e.preventDefault(); document.getElementById('pdv-fechar-caixa')?.click(); }
     if (e.key === 'F8') { e.preventDefault(); document.getElementById('pdv-clear')?.click(); }
 
-    // Teclas numéricas para método de pagamento
-    if (e.key === '1') { e.preventDefault(); selectPayment('dinheiro'); }
-    if (e.key === '2') { e.preventDefault(); selectPayment('pix'); }
-    if (e.key === '3') { e.preventDefault(); selectPayment('debito'); }
-    if (e.key === '4') { e.preventDefault(); selectPayment('credito'); }
+    // Teclas numéricas: seleciona método único (substitui pagamentos existentes)
+    const setPaymentKey = (id) => {
+      const { total } = _calcTotals();
+      state.payments = [{ method: id, amount: parseFloat(total.toFixed(2)) }];
+      paintPayments();
+    };
+    if (e.key === '1') { e.preventDefault(); setPaymentKey('dinheiro'); }
+    if (e.key === '2') { e.preventDefault(); setPaymentKey('pix'); }
+    if (e.key === '3') { e.preventDefault(); setPaymentKey('debito'); }
+    if (e.key === '4') { e.preventDefault(); setPaymentKey('credito'); }
 
     // Setas navegam entre botões de pagamento
     const payBtns = [...(document.getElementById('pdv-pay-grid')?.querySelectorAll('.pdv-pay-btn') || [])];
@@ -2011,7 +2006,7 @@ function paintCart() {
     paintCart(); paintTotals();
   });
 
-  document.getElementById('pdv-finish').disabled = false;
+  // disabled state is managed by paintPayments()
 }
 
 function _calcTotals() {
@@ -2021,16 +2016,15 @@ function _calcTotals() {
     ? parseFloat((subtotal * raw / 100).toFixed(2))
     : raw);
   const deliveryFee = state.needsDelivery ? (state.deliveryFee || 0) : 0;
-  const payMethod = PAYMENTS.find(p => p.id === state.paymentMethod);
-  const payFeeRate = payMethod?.fee || 0;
+  const payFeeRate = 0;
   const base = Math.max(0, subtotal - discount + deliveryFee);
-  const paymentFee = Math.round(base * payFeeRate) / 100;
-  const total = Math.max(0, base + paymentFee);
-  return { subtotal, discount, deliveryFee, payFeeRate, paymentFee, payMethod, base, total };
+  const paymentFee = 0;
+  const total = Math.max(0, base);
+  return { subtotal, discount, deliveryFee, payFeeRate, paymentFee, base, total };
 }
 
 function paintTotals() {
-  const { subtotal, discount, deliveryFee, payFeeRate, paymentFee, payMethod, total } = _calcTotals();
+  const { subtotal, discount, deliveryFee, total } = _calcTotals();
   const inputStyle = 'width:80px;padding:3px 6px;border:1px solid var(--line);background:transparent;border-radius:4px;color:var(--cream);text-align:right';
 
   document.getElementById('pdv-totals').innerHTML = `
@@ -2054,11 +2048,6 @@ function paintTotals() {
           <input type="number" min="0" step="0.01" value="${deliveryFee}"
             id="pdv-fee" style="${inputStyle}" />
         </span>
-      </div>` : ''}
-    ${payFeeRate > 0 ? `
-      <div class="pdv-total-row" style="font-size:.82rem;color:var(--text-2)">
-        <span>Taxa ${payMethod.label} (${payFeeRate}%)</span>
-        <span>+ ${fmt.currency(paymentFee)}</span>
       </div>` : ''}
     <div class="pdv-total-row grand">
       <span>TOTAL</span><span class="total-value">${fmt.currency(total)}</span>
@@ -2084,23 +2073,231 @@ function paintTotals() {
   if (disc) disc.oninput = (e) => { state.discountRaw = parseFloat(e.target.value) || 0; paintTotals(); };
   const fi = document.getElementById('pdv-fee');
   if (fi) fi.onchange = (e) => { state.deliveryFee = parseFloat(e.target.value) || 0; paintTotals(); };
-  paintTroco();
+  paintPayments();
 }
 
-function paintTroco() {
-  const wrap = document.getElementById('pdv-troco-wrap');
-  if (!wrap) return;
-  const isDinheiro = state.paymentMethod === 'dinheiro';
-  wrap.style.display = isDinheiro ? '' : 'none';
-  if (!isDinheiro) return;
+function paintPayments() {
+  const container = document.getElementById('pdv-splits');
+  if (!container) return;
+
   const { total } = _calcTotals();
-  const recv = state.received || 0;
-  const troco = recv >= total && recv > 0 ? recv - total : 0;
-  const trocoEl = document.getElementById('pdv-troco-val');
-  if (trocoEl) {
-    trocoEl.textContent = fmt.currency(troco);
-    trocoEl.className = troco > 0 ? 'text-gold' : '';
+  const paid = state.payments.reduce((s, p) => s + (p.amount || 0), 0);
+  const remaining = parseFloat(Math.max(0, total - paid).toFixed(2));
+
+  const usedMethods = new Set(state.payments.map(p => p.method));
+  document.getElementById('pdv-pay-grid')?.querySelectorAll('.pdv-pay-btn').forEach(btn => {
+    btn.classList.toggle('active', usedMethods.has(btn.dataset.pay));
+  });
+
+  if (state.payments.length === 0) {
+    container.innerHTML = `<div class="pdv-splits-empty">Selecione a forma de pagamento acima</div>`;
+    const finBtn = document.getElementById('pdv-finish');
+    if (finBtn) finBtn.disabled = state.cart.length === 0 || true;
+    return;
   }
+
+  container.innerHTML = state.payments.map((p, i) => {
+    const pay = PAYMENTS.find(x => x.id === p.method);
+    const isDinheiro = p.method === 'dinheiro';
+    const recv = p.received || 0;
+    const troco = isDinheiro && recv > 0 && recv > p.amount
+      ? parseFloat((recv - p.amount).toFixed(2)) : 0;
+    return `
+      <div class="pdv-split-entry" data-idx="${i}">
+        <span class="pdv-split-icon">${pay?.icon || ''}</span>
+        <span class="pdv-split-label">${pay?.label || p.method}</span>
+        <input type="number" class="pdv-split-amt" min="0.01" step="0.01"
+          value="${(p.amount || 0).toFixed(2)}" data-idx="${i}" />
+        <button type="button" class="pdv-split-rm" data-idx="${i}" title="Remover">×</button>
+        ${isDinheiro ? `
+          <div class="pdv-split-cash-row">
+            <span>Recebido</span>
+            <input type="number" class="pdv-split-recv" min="0" step="0.01"
+              value="${recv > 0 ? recv.toFixed(2) : ''}" placeholder="${fmt.currency(p.amount)}"
+              data-idx="${i}" />
+            ${troco > 0 ? `<span class="pdv-split-troco text-gold">Troco: ${fmt.currency(troco)}</span>` : ''}
+          </div>` : ''}
+      </div>
+    `;
+  }).join('');
+
+  if (remaining > 0) {
+    container.insertAdjacentHTML('beforeend', `
+      <div class="pdv-remaining-row">
+        <span>Restam</span>
+        <strong class="text-gold">${fmt.currency(remaining)}</strong>
+      </div>
+    `);
+  }
+
+  container.querySelectorAll('.pdv-split-amt').forEach(input => {
+    input.oninput = (e) => {
+      const idx = +e.target.dataset.idx;
+      state.payments[idx].amount = parseFloat(e.target.value) || 0;
+      const p2 = state.payments.reduce((s, p) => s + (p.amount || 0), 0);
+      const rem2 = parseFloat(Math.max(0, total - p2).toFixed(2));
+      const remRow = container.querySelector('.pdv-remaining-row');
+      if (rem2 > 0) {
+        if (remRow) remRow.querySelector('strong').textContent = fmt.currency(rem2);
+        else container.insertAdjacentHTML('beforeend', `<div class="pdv-remaining-row"><span>Restam</span><strong class="text-gold">${fmt.currency(rem2)}</strong></div>`);
+      } else {
+        remRow?.remove();
+      }
+      const finBtn = document.getElementById('pdv-finish');
+      if (finBtn) finBtn.disabled = state.cart.length === 0 || rem2 > 0;
+    };
+  });
+
+  container.querySelectorAll('.pdv-split-recv').forEach(input => {
+    input.oninput = (e) => {
+      const idx = +e.target.dataset.idx;
+      state.payments[idx].received = parseFloat(e.target.value) || 0;
+      const entry = container.querySelector(`.pdv-split-entry[data-idx="${idx}"]`);
+      if (entry) {
+        const p = state.payments[idx];
+        const recv2 = p.received || 0;
+        const troco2 = recv2 > p.amount ? parseFloat((recv2 - p.amount).toFixed(2)) : 0;
+        let trocoEl = entry.querySelector('.pdv-split-troco');
+        if (troco2 > 0) {
+          if (!trocoEl) {
+            const cashRow = entry.querySelector('.pdv-split-cash-row');
+            if (cashRow) cashRow.insertAdjacentHTML('beforeend', `<span class="pdv-split-troco text-gold">Troco: ${fmt.currency(troco2)}</span>`);
+          } else {
+            trocoEl.textContent = `Troco: ${fmt.currency(troco2)}`;
+          }
+        } else {
+          trocoEl?.remove();
+        }
+      }
+    };
+  });
+
+  container.querySelectorAll('.pdv-split-rm').forEach(btn => {
+    btn.onclick = (e) => {
+      const idx = +e.currentTarget.dataset.idx;
+      state.payments.splice(idx, 1);
+      paintPayments();
+    };
+  });
+
+  const finBtn = document.getElementById('pdv-finish');
+  if (finBtn) finBtn.disabled = state.cart.length === 0 || remaining > 0;
+}
+
+async function openStockModal() {
+  const body = el('div');
+  let selectedProduct = null;
+  let saveBtn;
+
+  const showSearch = () => {
+    if (saveBtn) saveBtn.disabled = true;
+    body.innerHTML = `
+      <div class="table-search" style="margin-bottom:var(--sp-3);max-width:none">
+        ${icon('search')}
+        <input id="stk-search" type="search" placeholder="Buscar produto por nome ou código..." autofocus />
+      </div>
+      <div id="stk-results" style="max-height:340px;overflow-y:auto"></div>
+    `;
+    const results = body.querySelector('#stk-results');
+    const searchInput = body.querySelector('#stk-search');
+
+    const paintResults = (q = '') => {
+      const arr = q
+        ? state.products.filter(p =>
+            p.name?.toLowerCase().includes(q) ||
+            (p.barcode || '').includes(q) ||
+            (p.sku || '').toLowerCase().includes(q))
+        : state.products.slice(0, 40);
+      results.innerHTML = arr.length
+        ? arr.map(p => `
+            <div class="stk-row" data-id="${p.id}" style="display:flex;align-items:center;justify-content:space-between;padding:var(--sp-2) var(--sp-3);cursor:pointer;border-radius:var(--r-sm);transition:background 80ms">
+              <div>
+                <div style="font-weight:600;font-size:.9rem">${fmt.escape(p.name)}</div>
+                <div style="font-size:.76rem;color:var(--text-3)">${p.category || ''}</div>
+              </div>
+              <div style="font-size:.85rem;color:var(--text-2)">Estoque: <strong style="color:${(p.stock??0)<3?'var(--danger)':'var(--cream)'}">${p.stock ?? 0}</strong></div>
+            </div>`).join('')
+        : `<div style="text-align:center;color:var(--text-3);padding:var(--sp-4)">Nenhum produto encontrado</div>`;
+
+      results.querySelectorAll('.stk-row').forEach(row => {
+        row.onmouseenter = () => row.style.background = 'rgba(255,255,255,0.05)';
+        row.onmouseleave = () => row.style.background = '';
+        row.onclick = () => {
+          const p = state.products.find(x => x.id === row.dataset.id);
+          if (p) showEdit(p);
+        };
+      });
+    };
+
+    searchInput.oninput = (e) => paintResults(e.target.value.toLowerCase().trim());
+    paintResults();
+    setTimeout(() => searchInput.focus(), 50);
+  };
+
+  const showEdit = (product) => {
+    selectedProduct = product;
+    let newStock = product.stock ?? 0;
+    if (saveBtn) saveBtn.disabled = false;
+
+    body.innerHTML = `
+      <div style="margin-bottom:var(--sp-3)">
+        <button type="button" id="stk-back" class="btn btn-ghost btn-sm">← Voltar</button>
+      </div>
+      <div style="background:rgba(0,0,0,0.25);padding:var(--sp-3) var(--sp-4);border-radius:var(--r-md);margin-bottom:var(--sp-4)">
+        <div style="font-weight:700;font-size:1rem">${fmt.escape(product.name)}</div>
+        <div style="font-size:.8rem;color:var(--text-3)">${product.category || ''}</div>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:center;gap:var(--sp-5);margin:var(--sp-4) 0">
+        <button type="button" id="stk-dec" class="btn btn-ghost" style="font-size:1.6rem;width:52px;height:52px;padding:0;border-radius:50%">−</button>
+        <div style="text-align:center;min-width:80px">
+          <div style="font-size:2.6rem;font-weight:800;line-height:1;font-family:var(--font-brand)" id="stk-val">${newStock}</div>
+          <div style="font-size:.72rem;color:var(--text-3);margin-top:4px">unidades em estoque</div>
+        </div>
+        <button type="button" id="stk-inc" class="btn btn-ghost" style="font-size:1.6rem;width:52px;height:52px;padding:0;border-radius:50%">+</button>
+      </div>
+      <div style="display:flex;justify-content:center;margin-top:var(--sp-2)">
+        <input type="number" id="stk-input" min="0" step="1" value="${newStock}"
+          style="width:100px;text-align:center;font-size:1.1rem;padding:6px 10px;border:1px solid var(--line);background:transparent;border-radius:var(--r-sm);color:var(--cream)" />
+      </div>
+    `;
+
+    const valEl = body.querySelector('#stk-val');
+    const input = body.querySelector('#stk-input');
+
+    body.querySelector('#stk-back').onclick = showSearch;
+    body.querySelector('#stk-inc').onclick = () => { newStock++; valEl.textContent = newStock; input.value = newStock; };
+    body.querySelector('#stk-dec').onclick = () => { if (newStock > 0) { newStock--; valEl.textContent = newStock; input.value = newStock; } };
+    input.oninput = (e) => { newStock = Math.max(0, parseInt(e.target.value) || 0); valEl.textContent = newStock; };
+    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); saveBtn?.click(); } });
+    setTimeout(() => input.select(), 50);
+  };
+
+  showSearch();
+
+  const closeBtn = el('button', { class: 'btn btn-ghost', type: 'button' }, 'Fechar');
+  closeBtn.onclick = () => ui.closeModal(false);
+  saveBtn = el('button', { class: 'btn btn-primary', type: 'button' }, 'Salvar estoque');
+  saveBtn.disabled = true;
+  saveBtn.onclick = async () => {
+    if (!selectedProduct) return;
+    const inputEl = body.querySelector('#stk-input');
+    const newStockVal = Math.max(0, parseInt(inputEl?.value ?? selectedProduct.stock) || 0);
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'Salvando...';
+    try {
+      await db.update('products', selectedProduct.id, { stock: newStockVal });
+      const idx = state.products.findIndex(p => p.id === selectedProduct.id);
+      if (idx >= 0) state.products[idx].stock = newStockVal;
+      ui.toast(`Estoque de "${selectedProduct.name}" atualizado: ${newStockVal} un.`, 'success');
+      ui.closeModal(true);
+    } catch (err) {
+      ui.toast('Erro ao salvar: ' + err.message, 'danger');
+      saveBtn.disabled = false;
+      saveBtn.textContent = 'Salvar estoque';
+    }
+  };
+
+  await ui.modal({ title: 'Editar estoque', body, footer: [closeBtn, saveBtn], wide: true });
 }
 
 async function openCustomerPicker() {
@@ -2232,9 +2429,13 @@ function updateCustomerUI() {
 }
 
 function confirmRichSale({ subtotal, discount, fee, payFeeRate, paymentFee, total }) {
-  const payLabel = PAYMENTS.find(p => p.id === state.paymentMethod)?.label || state.paymentMethod;
-  const recv = state.paymentMethod === 'dinheiro' ? (state.received || 0) : 0;
-  const troco = recv >= total && recv > 0 ? recv - total : 0;
+  const paymentsLabel = state.payments.length === 1
+    ? (PAYMENTS.find(p => p.id === state.payments[0].method)?.label || state.payments[0].method)
+    : 'Múltiplos';
+  const cashEntries = state.payments.filter(p => p.method === 'dinheiro');
+  const totalCashAmt = cashEntries.reduce((s, p) => s + p.amount, 0);
+  const totalCashRecv = cashEntries.reduce((s, p) => s + (p.received || p.amount), 0);
+  const totalTroco = Math.max(0, parseFloat((totalCashRecv - totalCashAmt).toFixed(2)));
 
   const body = el('div');
   body.innerHTML = `
@@ -2246,17 +2447,19 @@ function confirmRichSale({ subtotal, discount, fee, payFeeRate, paymentFee, tota
       <div style="display:flex;justify-content:space-between;padding:4px 0"><span>Subtotal:</span><strong>${fmt.currency(subtotal)}</strong></div>
       ${discount ? `<div style="display:flex;justify-content:space-between;padding:4px 0"><span>Desconto:</span><strong style="color:var(--gold-300)">− ${fmt.currency(discount)}</strong></div>` : ''}
       ${fee ? `<div style="display:flex;justify-content:space-between;padding:4px 0"><span>Taxa entrega:</span><strong>+ ${fmt.currency(fee)}</strong></div>` : ''}
-      ${paymentFee > 0 ? `<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:.85rem;color:var(--text-2)"><span>Taxa ${payLabel} (${payFeeRate}%):</span><strong>+ ${fmt.currency(paymentFee)}</strong></div>` : ''}
+      ${paymentFee > 0 ? `<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:.85rem;color:var(--text-2)"><span>Taxa pagamento (${payFeeRate}%):</span><strong>+ ${fmt.currency(paymentFee)}</strong></div>` : ''}
       <div style="display:flex;justify-content:space-between;padding:10px 0;border-top:1px dashed var(--line);margin-top:6px;font-family:var(--font-brand);font-size:1.2rem">
         <span class="text-gold">TOTAL</span><span class="gold-text bold">${fmt.currency(total)}</span>
       </div>
-      ${recv > 0 ? `
       <div style="border-top:1px dashed var(--line);margin-top:6px;padding-top:8px">
-        <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:.9rem"><span>Recebido:</span><strong>${fmt.currency(recv)}</strong></div>
-        <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:.9rem"><span>Troco:</span><strong class="text-gold">${fmt.currency(troco)}</strong></div>
-      </div>` : ''}
+        ${state.payments.map(p => {
+          const pay = PAYMENTS.find(x => x.id === p.method);
+          return `<div style="display:flex;justify-content:space-between;padding:2px 0;font-size:.88rem"><span>${pay?.label || p.method}:</span><strong>${fmt.currency(p.amount)}</strong></div>`;
+        }).join('')}
+        ${totalTroco > 0 ? `<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:.88rem;margin-top:4px;border-top:1px dashed rgba(255,255,255,0.1)"><span>Troco (dinheiro):</span><strong class="text-gold">${fmt.currency(totalTroco)}</strong></div>` : ''}
+      </div>
       <div style="margin-top:var(--sp-3); font-size: .85rem; color: var(--text-3); line-height:1.7">
-        Pagamento: <strong>${fmt.escape(payLabel)}</strong><br>
+        Pagamento: <strong>${fmt.escape(paymentsLabel)}</strong><br>
         Cliente: <strong>${state.customer ? fmt.escape(state.customer.name) : 'Avulso'}</strong>
         ${state.needsDelivery ? '<br>Será gerada <strong class="text-gold">nota de entrega</strong>.' : ''}
       </div>
@@ -2292,6 +2495,11 @@ async function finishSale() {
     const code = fmt.saleCode(seq);
     const user = auth.currentUser();
 
+    const cashEntries = state.payments.filter(p => p.method === 'dinheiro');
+    const totalCashAmt = cashEntries.reduce((s, p) => s + p.amount, 0);
+    const totalCashRecv = cashEntries.reduce((s, p) => s + (p.received || p.amount), 0);
+    const singleMethod = state.payments.length === 1 ? state.payments[0].method : 'misto';
+
     const sale = {
       code,
       seq,
@@ -2311,9 +2519,14 @@ async function finishSale() {
       paymentFee,
       paymentFeeRate: payFeeRate,
       total,
-      paymentMethod: state.paymentMethod,
-      received: state.paymentMethod === 'dinheiro' ? (state.received || 0) : null,
-      troco: state.paymentMethod === 'dinheiro' ? Math.max(0, (state.received || 0) - total) : null,
+      payments: state.payments.map(p => ({
+        method: p.method,
+        amount: p.amount,
+        ...(p.method === 'dinheiro' ? { received: p.received || p.amount } : {})
+      })),
+      paymentMethod: singleMethod,
+      received: cashEntries.length > 0 ? totalCashRecv : null,
+      troco: cashEntries.length > 0 ? Math.max(0, totalCashRecv - totalCashAmt) : null,
       customer: state.customer ? {
         id: state.customer.id,
         name: state.customer.name,
@@ -2370,13 +2583,9 @@ async function finishSale() {
     state.deliveryFee = 0;
     state.needsDelivery = false;
     state.note = '';
-    state.paymentMethod = 'dinheiro';
+    state.payments = [];
     state.received = 0;
     document.getElementById('pdv-delivery').checked = false;
-    document.getElementById('pdv-pay-grid').querySelectorAll('.pdv-pay-btn')
-      .forEach(b => b.classList.toggle('active', b.dataset.pay === 'dinheiro'));
-    const recvInput = document.getElementById('pdv-received');
-    if (recvInput) recvInput.value = '';
     paintTotals();
     // Recarregar produtos para refletir estoque
     state.products = (await db.list('products', { orderBy: 'name' })).filter(p => p.active !== false);
