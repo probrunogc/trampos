@@ -234,9 +234,9 @@ function buildSidebar(user) {
 function setupKioskNav() {
   const nav = $('#kiosk-nav');
 
-  // Bloqueia cliques em linhas editáveis — quiosque é sempre somente leitura
+  // Bloqueia cliques em linhas de tabela — permite botões dentro da linha
   document.addEventListener('click', e => {
-    if (e.target.closest('tr.clickable')) e.stopImmediatePropagation();
+    if (e.target.closest('tr.clickable') && !e.target.closest('button, a, [role="button"]')) e.stopImmediatePropagation();
   }, true);
 
   $('#kiosk-tabs').querySelectorAll('.kiosk-tab').forEach(btn => {
