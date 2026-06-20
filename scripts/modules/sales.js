@@ -1129,7 +1129,7 @@ function showCheckResult(product, code) {
     </div>`;
 }
 
-function paintAll() { paintProducts(); paintCart(); paintTotals(); }
+function paintAll() { paintProducts(); paintCart(); paintTotals(); paintPayments(); }
 
 /* ─── Copão modal ────────────────────────────────────────────── */
 function openCopaoModal() {
