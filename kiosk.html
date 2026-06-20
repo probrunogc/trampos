@@ -106,9 +106,10 @@
       overflow: hidden;
     }
     .logo {
-      width: 84px; height: 84px;
-      border-radius: 50%;
-      object-fit: cover;
+      width: 80px; height: 80px;
+      border-radius: 0;
+      object-fit: contain;
+      filter: drop-shadow(0 2px 6px rgba(0,0,0,.5));
     }
     .logo-fallback {
       font-size: 34px;
@@ -488,7 +489,7 @@
 
   <div class="header">
     <div class="logo-wrap">
-      <img class="logo" src="./assets/logo.png" alt=""
+      <img class="logo" src="./assets/logo-emporio.png" alt=""
            onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
       <span class="logo-fallback" style="display:none">G</span>
     </div>
