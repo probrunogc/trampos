@@ -170,7 +170,22 @@
       <!-- Kiosk navigation bar — visible only when _km flag is set -->
       <nav class="kiosk-nav" id="kiosk-nav">
         <div class="kiosk-brand">
-          <img src="assets/logo.png" class="kiosk-logo" alt="">
+          <div class="kiosk-logo-gem">
+            <svg viewBox="0 0 40 40" width="36" height="36" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <linearGradient id="gem-gold" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#F4D77A"/>
+                  <stop offset="100%" stop-color="#A8861C"/>
+                </linearGradient>
+              </defs>
+              <polygon points="20,3 35,11.5 35,28.5 20,37 5,28.5 5,11.5"
+                fill="rgba(212,175,55,0.12)" stroke="url(#gem-gold)" stroke-width="1.5"/>
+              <polygon points="20,10 29,15.5 29,24.5 20,30 11,24.5 11,15.5"
+                fill="rgba(212,175,55,0.18)" stroke="rgba(248,212,122,0.6)" stroke-width="1"/>
+              <text x="20" y="26" text-anchor="middle" fill="url(#gem-gold)"
+                font-size="14" font-weight="900" font-family="Georgia,serif">E</text>
+            </svg>
+          </div>
           <span class="kiosk-brand-name">EMPÓRIO GO</span>
         </div>
         <div class="kiosk-tabs" id="kiosk-tabs">

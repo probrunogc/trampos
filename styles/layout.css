@@ -212,6 +212,17 @@
   border-radius: 50%;
   object-fit: cover;
 }
+.kiosk-logo-gem {
+  width: 38px; height: 38px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  filter: drop-shadow(0 0 7px rgba(212,175,55,.55));
+  animation: kiosk-gem-pulse 4s ease-in-out infinite;
+}
+@keyframes kiosk-gem-pulse {
+  0%,100% { filter: drop-shadow(0 0 5px rgba(212,175,55,.4)); }
+  50%      { filter: drop-shadow(0 0 12px rgba(212,175,55,.75)); }
+}
 .kiosk-brand-name {
   font-family: var(--font-brand);
   font-size: 1rem;
