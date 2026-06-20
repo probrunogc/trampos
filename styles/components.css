@@ -159,7 +159,11 @@
 .field textarea,
 input.input,
 select.input,
-textarea.input {
+textarea.input,
+input.field-input,
+select.field-input,
+textarea.field-input,
+.field-input {
   width: 100%;
   padding: 11px 14px;
   background: var(--bg-input);
@@ -177,7 +181,11 @@ textarea.input {
 .field textarea:focus,
 input.input:focus,
 select.input:focus,
-textarea.input:focus {
+textarea.input:focus,
+input.field-input:focus,
+select.field-input:focus,
+textarea.field-input:focus,
+.field-input:focus {
   border-color: var(--gold-400);
   background: var(--bg-input-focus);
   box-shadow:
