@@ -2133,3 +2133,246 @@
   border-top: 1px dashed var(--line); margin-top: 4px;
 }
 .pdv-remaining-row strong { font-size: .9rem; }
+
+
+/* ══════════════════════════════════════════════════════════════
+   PDV ARCADE / RETRO GAME THEME — visual overrides
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── Animations ─────────────────────────────────────────────── */
+@keyframes pdv-glow-pulse {
+  0%,100% { box-shadow: 0 0 10px rgba(212,175,55,.4), 0 4px 16px rgba(0,0,0,.4); }
+  50%      { box-shadow: 0 0 22px rgba(212,175,55,.7), 0 4px 20px rgba(0,0,0,.35); }
+}
+@keyframes pdv-shine-sweep {
+  0%   { transform: translateX(-200%); }
+  100% { transform: translateX(400%);  }
+}
+@keyframes pdv-score-pop {
+  0%,100% { transform: scale(1); }
+  45%     { transform: scale(1.1); text-shadow: 0 0 16px rgba(212,175,55,.8); }
+}
+@keyframes pdv-item-in {
+  from { opacity:0; transform: translateX(16px) scale(.96); }
+  60%  { transform: translateX(-2px) scale(1.01); }
+  to   { opacity:1; transform: none; }
+}
+
+/* ── Products panel borders ─────────────────────────────────── */
+.pdv-products {
+  border-width: 2px;
+  border-color: rgba(212,175,55,.22);
+}
+
+/* ── Search — terminal feel ──────────────────────────────────── */
+.pdv-search-bar input {
+  border-width: 2px;
+  border-color: rgba(212,175,55,.2);
+  letter-spacing: .025em;
+}
+.pdv-search-bar input:focus {
+  border-color: var(--gold-400);
+  box-shadow: 0 0 0 3px rgba(212,175,55,.18), 0 0 14px rgba(212,175,55,.1);
+}
+
+/* ── Category chips — arcade tokens ─────────────────────────── */
+.pdv-cat-chip {
+  text-transform: uppercase;
+  font-size: .72rem;
+  letter-spacing: .08em;
+  border-width: 2px;
+  transition: all .13s cubic-bezier(.34,1.56,.64,1);
+}
+.pdv-cat-chip:hover { border-color: rgba(212,175,55,.45); color: var(--cream); }
+.pdv-cat-chip.active {
+  box-shadow: 0 0 0 2px rgba(212,175,55,.5), 0 4px 14px rgba(212,175,55,.3);
+  letter-spacing: .1em;
+}
+
+/* ── Product cards — game cards ─────────────────────────────── */
+.pdv-product:hover {
+  transform: translateY(-4px) scale(1.03);
+  box-shadow: 0 0 0 2px var(--gold-500), 0 12px 28px rgba(0,0,0,.55);
+  z-index: 2;
+}
+.pdv-product:active { transform: scale(.96) translateY(1px); transition-duration: 55ms; }
+/* Name faintly visible always */
+.pdv-product-name { opacity: .38; transition: opacity .18s ease; }
+.pdv-product:hover .pdv-product-name,
+.pdv-product:active .pdv-product-name { opacity: 1; }
+
+/* ── Quick action buttons — arcade panel ────────────────────── */
+.pdv-quick-btn {
+  height: 68px;
+  border-width: 2px;
+  flex-direction: row;
+  gap: 8px;
+  font-family: var(--font-brand);
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  font-size: .62rem;
+  font-weight: 700;
+  position: relative;
+  overflow: hidden;
+  transition: transform .11s, box-shadow .15s, background .13s;
+}
+.pdv-quick-btn::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: currentColor;
+  opacity: 0;
+  transition: opacity .12s;
+  pointer-events: none;
+}
+.pdv-quick-btn:hover::before { opacity: .07; }
+.pdv-quick-btn:hover {
+  box-shadow: 0 0 18px rgba(0,0,0,.2), 0 0 14px currentColor;
+  transform: translateY(-2px);
+}
+.pdv-quick-btn:active {
+  transform: scale(.93) translateY(2px);
+  box-shadow: inset 0 2px 8px rgba(0,0,0,.3), 0 0 6px currentColor;
+  transition-duration: 50ms;
+}
+.pdv-quick-icon { width: 24px; height: 24px; }
+.pdv-quick-label { font-size: .64rem; letter-spacing: .06em; }
+
+/* ── Cart — inventory panel ─────────────────────────────────── */
+.pdv-cart {
+  border-width: 2px;
+  border-color: rgba(212,175,55,.32);
+  box-shadow: 0 0 30px rgba(0,0,0,.4), 0 0 0 1px rgba(212,175,55,.06);
+}
+.pdv-cart-head h3 {
+  font-size: .96rem;
+  letter-spacing: .18em;
+  text-shadow: 0 0 12px rgba(212,175,55,.4);
+}
+
+/* Cart items — inventory slots */
+.cart-item {
+  background: rgba(212,175,55,.04);
+  border-color: rgba(212,175,55,.14);
+  border-width: 1.5px;
+  border-radius: 10px;
+  transition: border-color .12s, background .12s, transform .1s;
+}
+.cart-item:hover {
+  border-color: rgba(212,175,55,.38);
+  background: rgba(212,175,55,.07);
+}
+.cart-item-name { letter-spacing: .01em; }
+.cart-item-total {
+  font-size: .9rem;
+  text-shadow: 0 0 8px rgba(212,175,55,.3);
+}
+
+/* Qty buttons — circular arcade style */
+.cart-qty-btn {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  font-size: 1rem;
+  border-width: 1.5px;
+  transition: all .12s cubic-bezier(.34,1.56,.64,1);
+}
+.cart-qty-btn:hover {
+  transform: scale(1.18);
+  box-shadow: 0 0 10px rgba(212,175,55,.4);
+}
+
+/* ── Payment buttons — game pad ──────────────────────────────── */
+.pdv-payment-label {
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  font-size: .68rem;
+  color: var(--gold-600);
+}
+.pdv-pay-btn {
+  height: 52px;
+  border-width: 2px;
+  border-radius: 12px;
+  font-size: .6rem;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  font-weight: 700;
+  transition: all .13s cubic-bezier(.34,1.56,.64,1);
+}
+.pdv-pay-btn:hover {
+  border-color: rgba(212,175,55,.5);
+  background: rgba(212,175,55,.07);
+  transform: translateY(-2px);
+  box-shadow: 0 5px 14px rgba(0,0,0,.3);
+}
+.pdv-pay-btn.active {
+  border-color: var(--gold-400);
+  background: rgba(212,175,55,.13);
+  color: var(--gold-200);
+  box-shadow: 0 0 16px rgba(212,175,55,.35), inset 0 0 10px rgba(212,175,55,.06);
+}
+.pdv-pay-icon svg { width: 1.25rem; height: 1.25rem; }
+
+/* ── Totals — arcade score board ────────────────────────────── */
+.pdv-total-row { padding: 5px 2px; }
+.pdv-total-row.grand {
+  background: rgba(212,175,55,.07);
+  border: 1.5px solid rgba(212,175,55,.3);
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin-top: 6px;
+  box-shadow: 0 0 18px rgba(212,175,55,.1), inset 0 0 10px rgba(212,175,55,.04);
+}
+.total-value {
+  font-family: var(--font-mono);
+  font-size: 1.15rem;
+  text-shadow: 0 0 12px rgba(212,175,55,.45);
+}
+
+/* ── Splits — styled entries ─────────────────────────────────── */
+.pdv-split-entry {
+  border-color: rgba(212,175,55,.22);
+  background: rgba(212,175,55,.05);
+}
+
+/* ── Finalizar — START GAME button ──────────────────────────── */
+#pdv-finish:not(:disabled) {
+  height: 50px;
+  font-family: var(--font-brand);
+  font-size: .88rem;
+  font-weight: 800;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  position: relative;
+  overflow: hidden;
+  animation: pdv-glow-pulse 2.6s ease-in-out infinite;
+}
+#pdv-finish:not(:disabled)::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 35%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.16), transparent);
+  animation: pdv-shine-sweep 3s linear infinite;
+  pointer-events: none;
+}
+#pdv-finish:not(:disabled):active {
+  transform: scale(.96) translateY(2px);
+  animation: none;
+  transition-duration: 50ms;
+}
+
+/* ── Kiosk nav — arcade header ──────────────────────────────── */
+.kiosk-nav {
+  border-bottom-color: rgba(212,175,55,.5);
+  background: linear-gradient(180deg, rgba(10,22,40,.98) 0%, rgba(5,11,23,.99) 100%);
+  box-shadow: 0 4px 24px rgba(0,0,0,.5), 0 1px 0 rgba(212,175,55,.2);
+}
+.kiosk-brand-name {
+  font-size: 1.05rem;
+  letter-spacing: .2em;
+  text-shadow: 0 0 16px rgba(212,175,55,.35);
+}
+.kiosk-tab.active {
+  text-shadow: 0 0 8px rgba(212,175,55,.4);
+  box-shadow: inset 0 -3px 0 var(--gold-400);
+  border-bottom-color: transparent;
+}
