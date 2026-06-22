@@ -2092,7 +2092,7 @@ function paintPayments() {
   if (state.payments.length === 0) {
     container.innerHTML = `<div class="pdv-splits-empty">Selecione a forma de pagamento acima</div>`;
     const finBtn = document.getElementById('pdv-finish');
-    if (finBtn) finBtn.disabled = state.cart.length === 0 || true;
+    if (finBtn) finBtn.disabled = state.cart.length === 0;
     return;
   }
 
@@ -2144,7 +2144,7 @@ function paintPayments() {
         remRow?.remove();
       }
       const finBtn = document.getElementById('pdv-finish');
-      if (finBtn) finBtn.disabled = state.cart.length === 0 || rem2 > 0;
+      if (finBtn) finBtn.disabled = state.cart.length === 0;
     };
   });
 
@@ -2181,7 +2181,16 @@ function paintPayments() {
   });
 
   const finBtn = document.getElementById('pdv-finish');
-  if (finBtn) finBtn.disabled = state.cart.length === 0 || remaining > 0;
+  if (finBtn) finBtn.disabled = state.cart.length === 0;
+}
+
+function flashPayGrid() {
+  const grid = document.getElementById('pdv-pay-grid');
+  if (!grid) return;
+  grid.classList.remove('pdv-pay-grid-flash');
+  void grid.offsetWidth; // força reflow p/ reiniciar a animação
+  grid.classList.add('pdv-pay-grid-flash');
+  setTimeout(() => grid.classList.remove('pdv-pay-grid-flash'), 1200);
 }
 
 async function openStockModal() {
@@ -2479,12 +2488,25 @@ function confirmRichSale({ subtotal, discount, fee, payFeeRate, paymentFee, tota
 
 async function finishSale() {
   if (state.cart.length === 0) return;
+
+  if (state.payments.length === 0) {
+    ui.toast('Selecione a forma de pagamento', 'warning');
+    flashPayGrid();
+    return;
+  }
   if (state.needsDelivery && !state.customer) {
     ui.toast('Para gerar nota de entrega, selecione um cliente.', 'warning');
     return;
   }
 
   const { subtotal, discount, deliveryFee: fee, payFeeRate, paymentFee, total } = _calcTotals();
+
+  const paid = state.payments.reduce((s, p) => s + (p.amount || 0), 0);
+  const remaining = parseFloat(Math.max(0, total - paid).toFixed(2));
+  if (remaining > 0) {
+    ui.toast(`Faltam ${fmt.currency(remaining)} em pagamentos`, 'warning');
+    return;
+  }
 
   // Confirmação visual rica
   const ok = await confirmRichSale({ subtotal, discount, fee, payFeeRate, paymentFee, total });
