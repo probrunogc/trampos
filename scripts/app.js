@@ -3,7 +3,7 @@
  * Inicializa: seed (demo), restaura sessão, registra rotas, monta sidebar,
  * conecta login/logout, gerencia tela inicial.
  */
-import { auth, router, ui, icon, fmt, seedDemoIfNeeded, $, $$ } from './core.js';
+import { auth, router, ui, icon, fmt, seedDemoIfNeeded, kioskPrefs, $, $$ } from './core.js';
 
 import * as Dashboard   from './modules/dashboard.js';
 import * as Customers   from './modules/customers.js';
@@ -252,6 +252,9 @@ function setupKioskNav() {
     location.href = './kiosk.html';
   };
 
+  // Configurações rápidas do quiosque
+  $('#kiosk-settings').onclick = openKioskSettings;
+
   // Exit fullscreen
   $('#kiosk-fullscreen-exit').onclick = () => {
     if (document.fullscreenElement) {
@@ -284,6 +287,45 @@ function setupKioskNav() {
       b.classList.toggle('active', path === '/' + b.dataset.mod);
     });
   });
+}
+
+/* Configurações rápidas do quiosque — preferências locais do terminal */
+function openKioskSettings() {
+  const autoPrint = kioskPrefs.get('autoPrint');
+
+  const body = document.createElement('div');
+  body.className = 'kset-body';
+  body.innerHTML = `
+    <div class="kset-row">
+      <div class="kset-row-text">
+        <span class="kset-row-title">Imprimir cupom automaticamente</span>
+        <span class="kset-row-desc">
+          Quando ligado, o cupom imprime sozinho ao finalizar a venda.
+          Desligado, o sistema pergunta antes de imprimir.
+        </span>
+      </div>
+      <label class="switch">
+        <input type="checkbox" id="kset-autoprint" ${autoPrint ? 'checked' : ''}>
+        <span class="switch-knob"></span>
+      </label>
+    </div>
+  `;
+
+  body.querySelector('#kset-autoprint').onchange = (e) => {
+    kioskPrefs.set('autoPrint', e.target.checked);
+    ui.toast(
+      e.target.checked ? 'Impressão automática ligada' : 'Impressão com confirmação',
+      'success'
+    );
+  };
+
+  const closeBtn = document.createElement('button');
+  closeBtn.className = 'btn btn-primary';
+  closeBtn.type = 'button';
+  closeBtn.textContent = 'Pronto';
+  closeBtn.onclick = () => ui.closeModal(null);
+
+  ui.modal({ title: 'Configurações do quiosque', body, footer: [closeBtn], narrow: true });
 }
 
 async function renderModule(module) {

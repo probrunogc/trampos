@@ -375,6 +375,8 @@ hr {border:0;border-top:1px dashed #000;margin:4pt 0}
 .doc-title{text-align:center;font-weight:900;font-size:10.5pt;text-transform:uppercase;
            letter-spacing:.1em;border-top:1px solid #000;border-bottom:1px solid #000;
            padding:2.5pt 0;margin:3pt 0}
+.doc-fiscal{text-align:center;font-weight:900;font-size:9pt;letter-spacing:.18em;
+            text-transform:uppercase;margin:2pt 0 3pt}
 .block{margin:3pt 0}
 .lbl{font-size:7.5pt;text-transform:uppercase;letter-spacing:.07em}
 .addr-box{font-size:9.5pt;line-height:1.4;border:1px solid #000;padding:3pt;margin:3pt 0}
@@ -425,6 +427,7 @@ function buildCupomHTML(sale, company) {
       </div>
 
       <div class="print-doc-title">${sale.delivery ? 'NOTA DE ENTREGA' : 'COMPROVANTE DE VENDA'}</div>
+      <div class="print-strong" style="text-align:center;font-size:9pt;letter-spacing:.18em;margin:2pt 0 3pt">CUPOM NÃO FISCAL</div>
 
       <div class="print-row print-strong" style="font-size: 11pt">
         <span>${fmt.escape(sale.code)}</span>
@@ -524,6 +527,7 @@ function buildCupomBody(sale, logoSrc, qrSrc) {
 
     <hr>
     <div class="doc-title">${isDeliv ? 'Nota de Entrega' : 'Comprovante de Venda'}</div>
+    <div class="doc-fiscal">CUPOM NÃO FISCAL</div>
 
     <div class="rs rb" style="font-size:11pt;margin-bottom:2pt">
       <span>${fmt.escape(sale.code || '')}</span>

@@ -2092,8 +2092,37 @@
 #pdv-splits { margin-top: var(--sp-2); }
 
 .pdv-splits-empty {
-  font-size: .78rem; color: var(--text-3); text-align: center;
-  padding: var(--sp-2) 0; font-style: italic;
+  font-size: .9rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  text-align: center;
+  padding: 10px 8px;
+  margin-top: 4px;
+  border-radius: 10px;
+  animation: pdv-neon-pulse 1.05s ease-in-out infinite;
+}
+@keyframes pdv-neon-pulse {
+  0% {
+    color: #00eaff;
+    text-shadow: 0 0 6px #00eaff, 0 0 14px #00eaff, 0 0 26px rgba(0,234,255,.6);
+    box-shadow: inset 0 0 18px rgba(0,234,255,.18), 0 0 0 1.5px rgba(0,234,255,.55), 0 0 16px rgba(0,234,255,.35);
+  }
+  33% {
+    color: #ff2bd6;
+    text-shadow: 0 0 6px #ff2bd6, 0 0 14px #ff2bd6, 0 0 26px rgba(255,43,214,.6);
+    box-shadow: inset 0 0 18px rgba(255,43,214,.18), 0 0 0 1.5px rgba(255,43,214,.55), 0 0 16px rgba(255,43,214,.35);
+  }
+  66% {
+    color: #b6ff2b;
+    text-shadow: 0 0 6px #b6ff2b, 0 0 14px #b6ff2b, 0 0 26px rgba(182,255,43,.6);
+    box-shadow: inset 0 0 18px rgba(182,255,43,.18), 0 0 0 1.5px rgba(182,255,43,.55), 0 0 16px rgba(182,255,43,.35);
+  }
+  100% {
+    color: #00eaff;
+    text-shadow: 0 0 6px #00eaff, 0 0 14px #00eaff, 0 0 26px rgba(0,234,255,.6);
+    box-shadow: inset 0 0 18px rgba(0,234,255,.18), 0 0 0 1.5px rgba(0,234,255,.55), 0 0 16px rgba(0,234,255,.35);
+  }
 }
 
 .pdv-split-entry {
@@ -2377,12 +2406,28 @@
   border-bottom-color: transparent;
 }
 
-/* ── Destaque dos botões de pagamento quando faltam ─────────── */
+/* ── Destaque neon dos botões de pagamento quando faltam ────── */
 @keyframes pdv-pay-flash {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(212,175,55,0); }
-  30%, 70% { box-shadow: 0 0 0 3px rgba(212,175,55,.65), 0 0 20px rgba(212,175,55,.45); }
+  0%   { box-shadow: 0 0 0 0 rgba(0,234,255,0); }
+  25%  { box-shadow: 0 0 0 3px rgba(0,234,255,.75), 0 0 22px rgba(0,234,255,.5); }
+  50%  { box-shadow: 0 0 0 3px rgba(255,43,214,.75), 0 0 22px rgba(255,43,214,.5); }
+  75%  { box-shadow: 0 0 0 3px rgba(182,255,43,.75), 0 0 22px rgba(182,255,43,.5); }
+  100% { box-shadow: 0 0 0 0 rgba(0,234,255,0); }
 }
 .pdv-pay-grid-flash {
   border-radius: 12px;
-  animation: pdv-pay-flash 1.1s ease-in-out;
+  animation: pdv-pay-flash 1.2s ease-in-out 2;
 }
+
+/* ── Configurações rápidas do quiosque (modal) ──────────────── */
+.kset-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  padding: var(--sp-3) 0;
+}
+.kset-row + .kset-row { border-top: 1px solid var(--line); }
+.kset-row-text { display: flex; flex-direction: column; gap: 3px; }
+.kset-row-title { font-weight: 700; font-size: .95rem; color: var(--text-1); }
+.kset-row-desc { font-size: .8rem; color: var(--text-3); line-height: 1.4; max-width: 320px; }

@@ -1001,3 +1001,22 @@ export function $$(sel, root = document) { return [...root.querySelectorAll(sel)
 
 /* Exibe DEMO MODE flag globally para o app */
 export const isDemoMode = () => DEMO_MODE;
+
+/* =================================================================
+ * KIOSK PREFS — preferências locais do terminal (por máquina)
+ * Guardadas em localStorage; não sincronizam entre dispositivos.
+ * ================================================================= */
+export const kioskPrefs = {
+  _key: '_kprefs',
+  _defaults: { autoPrint: true },
+  all() {
+    try { return { ...this._defaults, ...JSON.parse(localStorage.getItem(this._key) || '{}') }; }
+    catch { return { ...this._defaults }; }
+  },
+  get(k) { return this.all()[k]; },
+  set(k, v) {
+    const cur = this.all();
+    cur[k] = v;
+    localStorage.setItem(this._key, JSON.stringify(cur));
+  },
+};

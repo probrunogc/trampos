@@ -3,7 +3,7 @@
  * Interface de venda rápida: categoria, busca, grade de produtos, carrinho,
  * cliente, finalização com forma de pagamento, geração de nota de entrega.
  */
-import { db, fmt, ui, icon, el, clearNode, auth } from '../core.js';
+import { db, fmt, ui, icon, el, clearNode, auth, kioskPrefs } from '../core.js';
 import { printSaleCupom } from './deliveries.js';
 import { productImage } from '../product-art.js';
 
@@ -2090,7 +2090,7 @@ function paintPayments() {
   });
 
   if (state.payments.length === 0) {
-    container.innerHTML = `<div class="pdv-splits-empty">Selecione a forma de pagamento acima</div>`;
+    container.innerHTML = `<div class="pdv-splits-empty">↑ Selecione a forma de pagamento ↑</div>`;
     const finBtn = document.getElementById('pdv-finish');
     if (finBtn) finBtn.disabled = state.cart.length === 0;
     return;
@@ -2585,13 +2585,16 @@ async function finishSale() {
 
     ui.toast(`Venda ${code} registrada!`, 'success', { title: 'Sucesso' });
 
-    // Oferece imprimir cupom
-    const printNow = await ui.confirm({
-      title: 'Imprimir cupom?',
-      message: 'Deseja imprimir o cupom da venda agora?',
-      okText: 'Imprimir',
-      cancelText: 'Mais tarde'
-    });
+    // Impressão do cupom — automática ou com confirmação, conforme preferência do terminal
+    let printNow = kioskPrefs.get('autoPrint');
+    if (!printNow) {
+      printNow = await ui.confirm({
+        title: 'Imprimir cupom?',
+        message: 'Deseja imprimir o cupom da venda agora?',
+        okText: 'Imprimir',
+        cancelText: 'Mais tarde'
+      });
+    }
     if (printNow) {
       await printSaleCupom(created.id);
     }
