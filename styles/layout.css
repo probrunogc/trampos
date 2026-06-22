@@ -686,3 +686,51 @@
   .pdv-cart { min-height: 0; }
   .pdv-cart-items { max-height: 40vh; }
 }
+
+/* === KIOSK SHORTCUT BAR === */
+.kiosk-shortcut-bar {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0 20px;
+  padding: 5px 20px;
+  background: rgba(5, 11, 23, 0.7);
+  border-top: 1px solid rgba(255,255,255,0.05);
+  flex-shrink: 0;
+}
+.app-shell.kiosk-mode ~ .kiosk-shortcut-bar,
+.app-shell.kiosk-mode + * .kiosk-shortcut-bar,
+.kiosk-mode .kiosk-shortcut-bar { display: flex; }
+.app-shell.kiosk-mode .kiosk-shortcut-bar { display: flex; }
+.ksc {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.68rem;
+  font-weight: 300;
+  letter-spacing: 0.04em;
+  color: rgba(255,255,255,0.28);
+  white-space: nowrap;
+}
+.ksc kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  padding: 1px 5px;
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+  font-weight: 500;
+  color: rgba(212,175,55,0.55);
+  background: rgba(212,175,55,0.06);
+  border: 1px solid rgba(212,175,55,0.18);
+  border-radius: 4px;
+  line-height: 1.6;
+}
+.ksc-sep {
+  width: 1px;
+  height: 14px;
+  background: rgba(255,255,255,0.08);
+  margin: 0 4px;
+}
