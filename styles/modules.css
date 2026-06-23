@@ -220,21 +220,16 @@
 
 .pdv-category-bar,
 .pdv-cat-swiper {
+  display: flex;
+  gap: 6px;
   padding: var(--sp-3) var(--sp-4);
   border-bottom: 1px solid var(--line);
-}
-/* Swiper slide para cada chip */
-.pdv-cat-slide {
-  width: auto !important;
-  padding-right: 6px;
-}
-/* Fallback sem Swiper (display flex) */
-.pdv-category-bar:not(.swiper) {
-  display: flex;
-  gap: var(--sp-2);
   overflow-x: auto;
   white-space: nowrap;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
 }
+.pdv-cat-swiper::-webkit-scrollbar { display: none; }
 .pdv-cat-chip {
   padding: 6px 14px;
   border-radius: var(--r-pill);
@@ -1859,14 +1854,10 @@
   background: rgba(200,60,60,0.85);
 }
 
-/* Chips de categoria — Swiper override */
+/* Chips de categoria — kiosk override */
 .kiosk-mode .pdv-cat-swiper {
   border-bottom: 1px solid var(--line);
   padding: var(--sp-3) var(--sp-4);
-}
-.kiosk-mode .pdv-cat-slide {
-  width: auto !important;
-  padding-right: 6px;
 }
 .kiosk-mode .pdv-cat-chip {
   font-size: 0.9rem;
