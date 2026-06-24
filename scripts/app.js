@@ -177,11 +177,11 @@ function showApp(user) {
 
   buildSidebar(user);
 
-  // Start router após login
+  // Start router após login — quiosque sempre abre no PDV
   if (!router.current()) {
+    if (localStorage.getItem('_km') && !location.hash) location.hash = '#/sales';
     router.start();
   } else {
-    // re-render rota atual com user atual
     router._handleRoute();
   }
 }
