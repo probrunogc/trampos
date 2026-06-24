@@ -1,0 +1,18 @@
+{
+  "name": "Empório GO",
+  "short_name": "Empório GO",
+  "description": "Terminal de Caixa — Empório das Bebidas",
+  "start_url": "/kiosk.html",
+  "display": "standalone",
+  "background_color": "#0a1628",
+  "theme_color": "#0a1628",
+  "orientation": "landscape",
+  "icons": [
+    {
+      "src": "assets/logo-emporio.png",
+      "sizes": "160x145",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
